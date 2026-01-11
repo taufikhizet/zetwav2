@@ -209,9 +209,9 @@ export default function ApiKeysPage() {
                     {/* Key display */}
                     <div className="flex items-center gap-2 mt-3 font-mono text-sm">
                       <code className="flex-1 bg-muted px-3 py-2 rounded truncate">
-                        {visibleKeys.has(apiKey.id) 
-                          ? apiKey.keyPreview.replace('...', '••••••••••••••••••••')
-                          : apiKey.keyPreview}
+                        {visibleKeys.has(apiKey.id)
+                          ? (apiKey.keyPreview ? apiKey.keyPreview.replace('...', '••••••••••••••••••••') : '')
+                          : (apiKey.keyPreview ?? '')}
                       </code>
                       <Button
                         variant="ghost"
@@ -227,7 +227,7 @@ export default function ApiKeysPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleCopy(apiKey.keyPreview, apiKey.id)}
+                        onClick={() => handleCopy(apiKey.keyPreview ?? '', apiKey.id)}
                       >
                         {copiedId === apiKey.id ? (
                           <Check className="h-4 w-4" />
@@ -239,7 +239,7 @@ export default function ApiKeysPage() {
 
                     {/* Scopes */}
                     <div className="flex flex-wrap gap-1.5 mt-3">
-                      {apiKey.scopes.map((scope) => (
+                      {(apiKey.scopes ?? []).map((scope) => (
                         <Badge key={scope} variant="secondary" className="text-xs">
                           {scope}
                         </Badge>
@@ -286,138 +286,158 @@ export default function ApiKeysPage() {
       )}
 
       {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={handleCloseCreate}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {newKeyResult ? 'API Key Created' : 'Create API Key'}
-            </DialogTitle>
-            <DialogDescription>
-              {newKeyResult
-                ? 'Your API key has been created. Make sure to copy it now, you won\'t be able to see it again!'
-                : 'Create a new API key for external application access'}
-            </DialogDescription>
-          </DialogHeader>
+      <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open)
+          if (!open) {
+            setNewKeyResult(null)
+            setForm({ name: '', expiresAt: '', scopes: ['sessions:read', 'sessions:write', 'messages:send'] })
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg w-full">
+          <div className="flex flex-col max-h-[80vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>
+                {newKeyResult ? 'API Key Created' : 'Create API Key'}
+              </DialogTitle>
+              <DialogDescription>
+                {newKeyResult
+                  ? 'Your API key has been created. Make sure to copy it now, you won\'t be able to see it again!'
+                  : 'Create a new API key for external application access'}
+              </DialogDescription>
+            </DialogHeader>
 
-          {newKeyResult ? (
-            <div className="space-y-4 py-4">
-              <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg">
-                <Label className="text-green-700 dark:text-green-300">Your API Key</Label>
-                <div className="flex items-center gap-2 mt-2">
-                  <code className="flex-1 font-mono text-sm bg-white dark:bg-gray-900 px-3 py-2 rounded border break-all">
-                    {newKeyResult.key}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleCopy(newKeyResult.key, 'new-key')}
-                  >
-                    {copiedId === 'new-key' ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
+            <div className="flex-1 overflow-auto px-6 py-4 space-y-4">
+              {newKeyResult ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg">
+                    <Label className="text-green-700 dark:text-green-300">Your API Key</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <code className="flex-1 font-mono text-sm bg-white dark:bg-gray-900 px-3 py-2 rounded border break-words overflow-auto max-h-40">
+                        {newKeyResult.key}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleCopy(newKeyResult.key, 'new-key')}
+                      >
+                        {copiedId === 'new-key' ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="h-4 w-4 mt-0.5" />
+                    <p>
+                      This is the only time you'll see this key. Store it securely!
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Name *</Label>
+                    <Input
+                      placeholder="My Application"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Expiration (optional)</Label>
+                    <Input
+                      type="date"
+                      value={form.expiresAt}
+                      onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Leave empty for no expiration
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Permissions</Label>
+                    <div className="grid gap-2 mt-2">
+                      {availableScopes.map((scope) => (
+                        <label
+                          key={scope.value}
+                          className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={form.scopes.includes(scope.value)}
+                            onChange={() => toggleScope(scope.value)}
+                            className="mt-0.5"
+                          />
+                          <div>
+                            <p className="font-medium text-sm">{scope.label}</p>
+                            <p className="text-xs text-muted-foreground">{scope.description}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="px-6 py-4 border-t">
+              {newKeyResult ? (
+                <Button onClick={handleCloseCreate}>Done</Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={handleCloseCreate}>
+                    Cancel
                   </Button>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-400">
-                <AlertTriangle className="h-4 w-4 mt-0.5" />
-                <p>
-                  This is the only time you'll see this key. Store it securely!
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Name *</Label>
-                <Input
-                  placeholder="My Application"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Expiration (optional)</Label>
-                <Input
-                  type="date"
-                  value={form.expiresAt}
-                  onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Leave empty for no expiration
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Permissions</Label>
-                <div className="grid gap-2 mt-2">
-                  {availableScopes.map((scope) => (
-                    <label
-                      key={scope.value}
-                      className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={form.scopes.includes(scope.value)}
-                        onChange={() => toggleScope(scope.value)}
-                        className="mt-0.5"
-                      />
-                      <div>
-                        <p className="font-medium text-sm">{scope.label}</p>
-                        <p className="text-xs text-muted-foreground">{scope.description}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            {newKeyResult ? (
-              <Button onClick={handleCloseCreate}>Done</Button>
-            ) : (
-              <>
-                <Button variant="outline" onClick={handleCloseCreate}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreate}
-                  disabled={createMutation.isPending || !form.name || form.scopes.length === 0}
-                >
-                  {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create API Key
-                </Button>
-              </>
-            )}
-          </DialogFooter>
+                  <Button
+                    onClick={handleCreate}
+                    disabled={createMutation.isPending || !form.name || form.scopes.length === 0}
+                  >
+                    {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Create API Key
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Dialog */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete API Key</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{selectedKey?.name}"? This action cannot be undone
-              and any applications using this key will lose access.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => selectedKey && deleteMutation.mutate(selectedKey.id)}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
-            </Button>
-          </DialogFooter>
+      <Dialog open={deleteOpen} onOpenChange={(open) => setDeleteOpen(open)}>
+        <DialogContent className="max-w-md w-full">
+          <div className="flex flex-col max-h-[60vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>Delete API Key</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete "{selectedKey?.name}"? This action cannot be undone
+                and any applications using this key will lose access.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-auto px-6 py-4">
+              {/* Optional: add any extra details here if needed */}
+            </div>
+
+            <DialogFooter className="px-6 py-4 border-t">
+              <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => selectedKey && deleteMutation.mutate(selectedKey.id)}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Delete
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
