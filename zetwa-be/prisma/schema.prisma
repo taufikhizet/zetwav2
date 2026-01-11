@@ -1,0 +1,350 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  avatar        String?
+  isActive      Boolean   @default(true)
+  isVerified    Boolean   @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  sessions      WaSession[]
+  apiKeys       ApiKey[]
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+  @@index([isActive])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ============================================
+// API KEY MANAGEMENT
+// ============================================
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  key         String    @unique
+  keyHash     String    // Hashed version for security
+  userId      String
+  permissions String[]  @default(["read", "write"])
+  isActive    Boolean   @default(true)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([key])
+  @@index([keyHash])
+  @@index([userId])
+  @@index([isActive])
+  @@map("api_keys")
+}
+
+// ============================================
+// WHATSAPP SESSION MANAGEMENT
+// ============================================
+
+enum SessionStatus {
+  INITIALIZING
+  QR_READY
+  AUTHENTICATING
+  CONNECTED
+  DISCONNECTED
+  FAILED
+  LOGGED_OUT
+}
+
+model WaSession {
+  id              String        @id @default(cuid())
+  name            String
+  description     String?
+  userId          String
+  status          SessionStatus @default(INITIALIZING)
+  phoneNumber     String?
+  pushName        String?       // WhatsApp display name
+  profilePicUrl   String?
+  qrCode          String?       // Current QR code (temporary)
+  lastQrAt        DateTime?
+  connectedAt     DateTime?
+  disconnectedAt  DateTime?
+  isActive        Boolean       @default(true)
+  metadata        Json?         // Store additional session data
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  webhooks        Webhook[]
+  messages        Message[]
+  contacts        Contact[]
+  chats           Chat[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@index([status])
+  @@index([isActive])
+  @@map("wa_sessions")
+}
+
+// ============================================
+// WEBHOOK MANAGEMENT
+// ============================================
+
+enum WebhookEvent {
+  MESSAGE_RECEIVED
+  MESSAGE_SENT
+  MESSAGE_ACK
+  MESSAGE_REVOKED
+  QR_RECEIVED
+  AUTHENTICATED
+  AUTH_FAILURE
+  READY
+  DISCONNECTED
+  STATE_CHANGE
+  CONTACT_CHANGED
+  GROUP_JOIN
+  GROUP_LEAVE
+  GROUP_UPDATE
+  CALL_RECEIVED
+  ALL
+}
+
+model Webhook {
+  id          String         @id @default(cuid())
+  name        String
+  url         String
+  sessionId   String
+  events      WebhookEvent[] @default([ALL])
+  headers     Json?          // Custom headers to send
+  secret      String?        // HMAC secret for signature
+  isActive    Boolean        @default(true)
+  retryCount  Int            @default(3)
+  timeout     Int            @default(30000) // ms
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  session     WaSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  logs        WebhookLog[]
+
+  @@index([sessionId])
+  @@index([isActive])
+  @@map("webhooks")
+}
+
+model WebhookLog {
+  id          String   @id @default(cuid())
+  webhookId   String
+  event       String
+  payload     Json
+  statusCode  Int?
+  response    String?
+  error       String?
+  duration    Int?     // ms
+  attempts    Int      @default(1)
+  success     Boolean
+  createdAt   DateTime @default(now())
+
+  // Relations
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([createdAt])
+  @@index([success])
+  @@map("webhook_logs")
+}
+
+// ============================================
+// MESSAGE MANAGEMENT
+// ============================================
+
+enum MessageDirection {
+  INCOMING
+  OUTGOING
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  STICKER
+  LOCATION
+  CONTACT
+  POLL
+  REACTION
+  SYSTEM
+  UNKNOWN
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  REVOKED
+}
+
+model Message {
+  id              String           @id @default(cuid())
+  waMessageId     String           // WhatsApp message ID
+  sessionId       String
+  chatId          String
+  direction       MessageDirection
+  type            MessageType      @default(TEXT)
+  body            String?
+  caption         String?
+  mediaUrl        String?
+  mediaType       String?
+  mediaMimeType   String?
+  mediaFilename   String?
+  mediaSize       Int?
+  quotedMessageId String?
+  mentionedIds    String[]         @default([])
+  isForwarded     Boolean          @default(false)
+  isFromMe        Boolean          @default(false)
+  status          MessageStatus    @default(PENDING)
+  timestamp       DateTime
+  ackAt           DateTime?
+  metadata        Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  session     WaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  chat        Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, waMessageId])
+  @@index([sessionId])
+  @@index([chatId])
+  @@index([timestamp])
+  @@index([direction])
+  @@map("messages")
+}
+
+// ============================================
+// CHAT & CONTACT MANAGEMENT
+// ============================================
+
+enum ChatType {
+  PRIVATE
+  GROUP
+  BROADCAST
+}
+
+model Chat {
+  id            String    @id @default(cuid())
+  waChatId      String    // WhatsApp chat ID (e.g., 628xxx@c.us)
+  sessionId     String
+  type          ChatType  @default(PRIVATE)
+  name          String?
+  isGroup       Boolean   @default(false)
+  isMuted       Boolean   @default(false)
+  isPinned      Boolean   @default(false)
+  isArchived    Boolean   @default(false)
+  unreadCount   Int       @default(0)
+  lastMessageAt DateTime?
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  session  WaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([sessionId, waChatId])
+  @@index([sessionId])
+  @@index([type])
+  @@map("chats")
+}
+
+model Contact {
+  id            String   @id @default(cuid())
+  waContactId   String   // WhatsApp contact ID
+  sessionId     String
+  name          String?
+  pushName      String?  // WhatsApp display name
+  shortName     String?
+  number        String?
+  isMyContact   Boolean  @default(false)
+  isBlocked     Boolean  @default(false)
+  isBusiness    Boolean  @default(false)
+  profilePicUrl String?
+  about         String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  session WaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, waContactId])
+  @@index([sessionId])
+  @@index([number])
+  @@map("contacts")
+}
+
+// ============================================
+// AUDIT & LOGGING
+// ============================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  oldData   Json?
+  newData   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
