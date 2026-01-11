@@ -15,10 +15,12 @@ interface AuthState {
   accessToken: string | null
   refreshToken: string | null
   isAuthenticated: boolean
+  isLoading: boolean
   setUser: (user: User) => void
   setTokens: (accessToken: string, refreshToken: string) => void
   login: (user: User, accessToken: string, refreshToken: string) => void
   logout: () => void
+  setLoading: (loading: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -28,6 +30,7 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
+      isLoading: false,
 
       setUser: (user) => set({ user }),
 
@@ -49,6 +52,8 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
         }),
+
+      setLoading: (loading) => set({ isLoading: loading }),
     }),
     {
       name: 'zetwa-auth',

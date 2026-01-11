@@ -13,6 +13,7 @@ import RegisterPage from '@/pages/auth/RegisterPage'
 // Dashboard Pages
 import DashboardPage from '@/pages/dashboard/DashboardPage'
 import SessionsPage from '@/pages/dashboard/SessionsPage'
+import NewSessionPage from '@/pages/dashboard/NewSessionPage'
 import SessionDetailPage from '@/pages/dashboard/SessionDetailPage'
 import ApiKeysPage from '@/pages/dashboard/ApiKeysPage'
 import DocumentationPage from '@/pages/dashboard/DocumentationPage'
@@ -101,6 +102,7 @@ function App() {
           >
             <Route index element={<DashboardPage />} />
             <Route path="sessions" element={<SessionsPage />} />
+            <Route path="sessions/new" element={<NewSessionPage />} />
             <Route path="sessions/:sessionId" element={<SessionDetailPage />} />
             <Route path="api-keys" element={<ApiKeysPage />} />
             <Route path="docs" element={<DocumentationPage />} />

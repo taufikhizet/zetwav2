@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject, ZodError } from 'zod';
+import { AnyZodObject, ZodError, ZodTypeAny } from 'zod';
 
 export const validate = (schema: AnyZodObject) => {
   return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
@@ -20,7 +20,7 @@ export const validate = (schema: AnyZodObject) => {
   };
 };
 
-export const validateBody = (schema: AnyZodObject) => {
+export const validateBody = (schema: ZodTypeAny) => {
   return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     try {
       req.body = await schema.parseAsync(req.body);

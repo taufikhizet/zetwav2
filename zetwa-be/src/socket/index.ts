@@ -145,6 +145,40 @@ const setupWhatsAppEventForwarding = (io: SocketServer): void => {
     });
   });
 
+  // QR Timeout event - when max QR retries reached (abandoned session)
+  whatsappService.on('qr_timeout', (data) => {
+    io.to(`session:${data.sessionId}`).emit('session:qr_timeout', {
+      sessionId: data.sessionId,
+      reason: data.reason,
+      message: 'QR code expired. Session was not connected in time.',
+      timestamp: new Date().toISOString(),
+    });
+
+    io.to(`user:${data.userId}`).emit('session:qr_timeout', {
+      sessionId: data.sessionId,
+      reason: data.reason,
+      message: 'QR code expired. Session was not connected in time.',
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Auth Timeout event
+  whatsappService.on('auth_timeout', (data) => {
+    io.to(`session:${data.sessionId}`).emit('session:auth_timeout', {
+      sessionId: data.sessionId,
+      reason: data.reason,
+      message: 'Authentication timed out. Please try again.',
+      timestamp: new Date().toISOString(),
+    });
+
+    io.to(`user:${data.userId}`).emit('session:auth_timeout', {
+      sessionId: data.sessionId,
+      reason: data.reason,
+      message: 'Authentication timed out. Please try again.',
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // Message received event
   whatsappService.on('message', (data) => {
     io.to(`session:${data.sessionId}`).emit('message:received', {

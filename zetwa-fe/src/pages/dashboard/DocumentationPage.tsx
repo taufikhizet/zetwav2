@@ -1,22 +1,18 @@
 import { useState } from 'react'
 import { 
   Book, 
-  Code, 
   Copy, 
   Check, 
-  ChevronRight,
-  Send,
   Webhook,
   Key,
   Smartphone,
   MessageSquare,
-  Users,
   Shield,
+  ExternalLink,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { copyToClipboard } from '@/lib/utils'
 
@@ -29,7 +25,7 @@ export default function DocumentationPage() {
     setTimeout(() => setCopiedCode(null), 2000)
   }
 
-  const baseUrl = import.meta.env.VITE_API_URL || 'https://api.zetwa.com'
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3222'
 
   return (
     <div className="space-y-6">
@@ -37,410 +33,210 @@ export default function DocumentationPage() {
       <div>
         <h1 className="text-3xl font-bold">API Documentation</h1>
         <p className="text-muted-foreground mt-1">
-          Learn how to integrate Zetwa WhatsApp API into your applications
+          Panduan penggunaan Zetwa WhatsApp API
         </p>
       </div>
 
-      <Tabs defaultValue="quickstart" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="quickstart">Quick Start</TabsTrigger>
-          <TabsTrigger value="auth">Authentication</TabsTrigger>
-          <TabsTrigger value="sessions">Sessions</TabsTrigger>
-          <TabsTrigger value="messages">Messages</TabsTrigger>
-          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-        </TabsList>
+      {/* Quick Start */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Book className="h-5 w-5" />
+            Quick Start
+          </CardTitle>
+          <CardDescription>
+            Mulai menggunakan Zetwa API dalam 3 langkah
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <StepItem 
+              number={1} 
+              title="Buat API Key" 
+              description="Buka menu API Keys dan buat key baru dengan permission yang diperlukan."
+            />
+            <StepItem 
+              number={2} 
+              title="Buat Session WhatsApp" 
+              description="Buat session baru dan scan QR code dengan WhatsApp di ponsel Anda."
+            />
+            <StepItem 
+              number={3} 
+              title="Kirim Pesan" 
+              description="Gunakan API untuk mengirim pesan!"
+            />
+          </div>
 
-        {/* Quick Start */}
-        <TabsContent value="quickstart" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Book className="h-5 w-5" />
-                Getting Started
-              </CardTitle>
-              <CardDescription>
-                Get up and running with Zetwa API in minutes
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                    1
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Create an API Key</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Go to the API Keys page and create a new key with the required permissions.
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                    2
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Create a Session</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Create a WhatsApp session and scan the QR code to connect your phone.
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                    3
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Send Messages</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Use the API to send messages, media, and more!
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="font-semibold">Example: Send a Message</h4>
-                <CodeBlock
-                  id="quickstart-example"
-                  code={`curl -X POST ${baseUrl}/api/sessions/{sessionId}/messages/send \\
+          <div className="space-y-2">
+            <h4 className="font-semibold">Contoh: Kirim Pesan</h4>
+            <CodeBlock
+              id="quickstart-example"
+              code={`curl -X POST ${baseUrl}/api/sessions/{sessionId}/messages/send \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -d '{
     "to": "628123456789",
     "message": "Hello from Zetwa!"
   }'`}
-                  onCopy={handleCopy}
-                  copied={copiedCode === 'quickstart-example'}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <FeatureCard
-              icon={Smartphone}
-              title="Multi-Session"
-              description="Connect unlimited WhatsApp accounts per user"
-            />
-            <FeatureCard
-              icon={Webhook}
-              title="Webhooks"
-              description="Real-time event notifications for incoming messages"
-            />
-            <FeatureCard
-              icon={Shield}
-              title="Secure"
-              description="API key authentication with granular permissions"
+              onCopy={handleCopy}
+              copied={copiedCode === 'quickstart-example'}
             />
           </div>
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        {/* Authentication */}
-        <TabsContent value="auth" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                Authentication
-              </CardTitle>
-              <CardDescription>
-                How to authenticate your API requests
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h4 className="font-semibold">API Key Authentication</h4>
-                <p className="text-sm text-muted-foreground">
-                  Include your API key in the <code className="bg-muted px-1 rounded">X-API-Key</code> header:
-                </p>
-                <CodeBlock
-                  id="auth-header"
-                  code={`X-API-Key: zetwa_xxxxxxxxxxxxxxxxxxxx`}
-                  onCopy={handleCopy}
-                  copied={copiedCode === 'auth-header'}
-                />
-              </div>
+      {/* Features */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <FeatureCard
+          icon={Smartphone}
+          title="Multi-Session"
+          description="Hubungkan banyak akun WhatsApp dalam satu dashboard"
+        />
+        <FeatureCard
+          icon={Webhook}
+          title="Webhooks"
+          description="Terima notifikasi real-time untuk pesan masuk"
+        />
+        <FeatureCard
+          icon={Shield}
+          title="Secure"
+          description="Autentikasi API key dengan permission granular"
+        />
+      </div>
 
-              <div className="space-y-4">
-                <h4 className="font-semibold">JWT Authentication (Dashboard)</h4>
-                <p className="text-sm text-muted-foreground">
-                  For dashboard access, use JWT tokens in the <code className="bg-muted px-1 rounded">Authorization</code> header:
-                </p>
-                <CodeBlock
-                  id="auth-jwt"
-                  code={`Authorization: Bearer eyJhbGciOiJIUzI1NiIs...`}
-                  onCopy={handleCopy}
-                  copied={copiedCode === 'auth-jwt'}
-                />
-              </div>
+      {/* Authentication */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Key className="h-5 w-5" />
+            Autentikasi
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Sertakan API key di header <code className="bg-muted px-1 rounded">X-API-Key</code> pada setiap request:
+          </p>
+          <CodeBlock
+            id="auth-header"
+            code={`X-API-Key: zetwa_xxxxxxxxxxxxxxxxxxxx`}
+            onCopy={handleCopy}
+            copied={copiedCode === 'auth-header'}
+          />
+          
+          <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              <strong>⚠️ Penting:</strong> Jangan pernah expose API key di client-side code. 
+              Selalu panggil API dari backend server Anda.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
-              <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg">
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  <strong>Security Note:</strong> Never expose your API keys in client-side code. 
-                  Always make API calls from your backend server.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Send Message */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Mengirim Pesan
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <h4 className="font-semibold">Pesan Teks</h4>
+            <CodeBlock
+              id="send-text"
+              code={`curl -X POST ${baseUrl}/api/sessions/{sessionId}/messages/send \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "to": "628123456789",
+    "message": "Hello World!"
+  }'`}
+              onCopy={handleCopy}
+              copied={copiedCode === 'send-text'}
+            />
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>API Key Scopes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <ScopeItem scope="sessions:read" description="View session information and status" />
-                <ScopeItem scope="sessions:write" description="Create, update, and delete sessions" />
-                <ScopeItem scope="messages:send" description="Send messages through connected sessions" />
-                <ScopeItem scope="messages:read" description="View message history" />
-                <ScopeItem scope="webhooks:manage" description="Create and manage webhooks" />
-                <ScopeItem scope="contacts:read" description="View contact information" />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          <div className="space-y-3">
+            <h4 className="font-semibold">Pesan Gambar</h4>
+            <CodeBlock
+              id="send-image"
+              code={`curl -X POST ${baseUrl}/api/sessions/{sessionId}/messages/send \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "to": "628123456789",
+    "media": {
+      "type": "image",
+      "url": "https://example.com/image.jpg",
+      "caption": "Check this out!"
+    }
+  }'`}
+              onCopy={handleCopy}
+              copied={copiedCode === 'send-image'}
+            />
+          </div>
 
-        {/* Sessions */}
-        <TabsContent value="sessions" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Smartphone className="h-5 w-5" />
-                Session Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <EndpointDoc
-                method="GET"
-                path="/api/sessions"
-                description="List all sessions"
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
+          <div className="space-y-2">
+            <h4 className="font-semibold">Format Nomor Telepon</h4>
+            <p className="text-sm text-muted-foreground">
+              Gunakan kode negara tanpa simbol <code className="bg-muted px-1 rounded">+</code>:
+            </p>
+            <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+              <li><code className="bg-muted px-1 rounded">628123456789</code> - Indonesia</li>
+              <li><code className="bg-muted px-1 rounded">14155551234</code> - USA</li>
+              <li><code className="bg-muted px-1 rounded">447911123456</code> - UK</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
 
-              <EndpointDoc
-                method="POST"
-                path="/api/sessions"
-                description="Create a new session"
-                body={{
-                  name: "My Session",
-                  description: "Optional description"
-                }}
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
+      {/* Webhooks */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Webhook className="h-5 w-5" />
+            Webhooks
+          </CardTitle>
+          <CardDescription>
+            Terima notifikasi real-time untuk event WhatsApp
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <h4 className="font-semibold">Buat Webhook</h4>
+            <CodeBlock
+              id="create-webhook"
+              code={`curl -X POST ${baseUrl}/api/sessions/{sessionId}/webhooks \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "name": "My Webhook",
+    "url": "https://your-server.com/webhook",
+    "events": ["message", "message_ack"]
+  }'`}
+              onCopy={handleCopy}
+              copied={copiedCode === 'create-webhook'}
+            />
+          </div>
 
-              <EndpointDoc
-                method="GET"
-                path="/api/sessions/{sessionId}"
-                description="Get session details"
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
+          <div className="space-y-2">
+            <h4 className="font-semibold">Event yang Tersedia</h4>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">message</Badge>
+              <Badge variant="secondary">message_ack</Badge>
+              <Badge variant="secondary">message_create</Badge>
+              <Badge variant="secondary">qr</Badge>
+              <Badge variant="secondary">ready</Badge>
+              <Badge variant="secondary">disconnected</Badge>
+            </div>
+          </div>
 
-              <EndpointDoc
-                method="GET"
-                path="/api/sessions/{sessionId}/status"
-                description="Get session status and QR code"
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-
-              <EndpointDoc
-                method="POST"
-                path="/api/sessions/{sessionId}/restart"
-                description="Restart a session"
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-
-              <EndpointDoc
-                method="POST"
-                path="/api/sessions/{sessionId}/logout"
-                description="Logout from WhatsApp"
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-
-              <EndpointDoc
-                method="DELETE"
-                path="/api/sessions/{sessionId}"
-                description="Delete a session"
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Messages */}
-        <TabsContent value="messages" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Messaging
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <EndpointDoc
-                method="POST"
-                path="/api/sessions/{sessionId}/messages/send"
-                description="Send a text message"
-                body={{
-                  to: "628123456789",
-                  message: "Hello from Zetwa!"
-                }}
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-
-              <EndpointDoc
-                method="POST"
-                path="/api/sessions/{sessionId}/messages/send"
-                description="Send an image"
-                body={{
-                  to: "628123456789",
-                  media: {
-                    type: "image",
-                    url: "https://example.com/image.jpg",
-                    caption: "Check this out!"
-                  }
-                }}
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-
-              <EndpointDoc
-                method="GET"
-                path="/api/sessions/{sessionId}/messages"
-                description="Get message history"
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-
-              <div className="space-y-2">
-                <h4 className="font-semibold">Phone Number Format</h4>
-                <p className="text-sm text-muted-foreground">
-                  Phone numbers should include the country code without the + symbol:
-                </p>
-                <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-                  <li><code className="bg-muted px-1 rounded">628123456789</code> (Indonesia)</li>
-                  <li><code className="bg-muted px-1 rounded">14155551234</code> (USA)</li>
-                  <li><code className="bg-muted px-1 rounded">447911123456</code> (UK)</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Contacts
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <EndpointDoc
-                method="GET"
-                path="/api/sessions/{sessionId}/contacts"
-                description="Get all contacts"
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-
-              <EndpointDoc
-                method="GET"
-                path="/api/sessions/{sessionId}/contacts/{phone}/check"
-                description="Check if number is registered on WhatsApp"
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Webhooks */}
-        <TabsContent value="webhooks" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Webhook className="h-5 w-5" />
-                Webhooks
-              </CardTitle>
-              <CardDescription>
-                Receive real-time notifications for WhatsApp events
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <EndpointDoc
-                method="POST"
-                path="/api/sessions/{sessionId}/webhooks"
-                description="Create a webhook"
-                body={{
-                  name: "n8n Webhook",
-                  url: "https://n8n.example.com/webhook/xxx",
-                  events: ["message", "message_ack"],
-                  secret: "optional_secret_for_signing"
-                }}
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-
-              <EndpointDoc
-                method="GET"
-                path="/api/sessions/{sessionId}/webhooks"
-                description="List webhooks"
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-
-              <EndpointDoc
-                method="POST"
-                path="/api/sessions/{sessionId}/webhooks/{webhookId}/test"
-                description="Test a webhook"
-                onCopy={handleCopy}
-                copiedCode={copiedCode}
-                baseUrl={baseUrl}
-              />
-
-              <div className="space-y-2">
-                <h4 className="font-semibold">Available Events</h4>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">message</Badge>
-                  <Badge variant="secondary">message_ack</Badge>
-                  <Badge variant="secondary">message_create</Badge>
-                  <Badge variant="secondary">message_revoke</Badge>
-                  <Badge variant="secondary">qr</Badge>
-                  <Badge variant="secondary">ready</Badge>
-                  <Badge variant="secondary">disconnected</Badge>
-                  <Badge variant="secondary">group_join</Badge>
-                  <Badge variant="secondary">group_leave</Badge>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="font-semibold">Webhook Payload Example</h4>
-                <CodeBlock
-                  id="webhook-payload"
-                  code={`{
+          <div className="space-y-3">
+            <h4 className="font-semibold">Contoh Payload Webhook</h4>
+            <CodeBlock
+              id="webhook-payload"
+              code={`{
   "event": "message",
   "sessionId": "my-session",
   "timestamp": 1699123456789,
@@ -448,57 +244,92 @@ export default function DocumentationPage() {
     "message": {
       "id": "true_628xxx@c.us_ABCD1234",
       "from": "628123456789@c.us",
-      "to": "628987654321@c.us",
       "body": "Hello!",
       "type": "TEXT",
-      "timestamp": 1699123456,
       "fromMe": false
-    },
-    "chat": {
-      "id": "628123456789@c.us",
-      "name": "John Doe",
-      "isGroup": false
     }
   }
 }`}
-                  onCopy={handleCopy}
-                  copied={copiedCode === 'webhook-payload'}
-                />
-              </div>
+              onCopy={handleCopy}
+              copied={copiedCode === 'webhook-payload'}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-              <div className="space-y-2">
-                <h4 className="font-semibold">Webhook Signature Verification</h4>
-                <p className="text-sm text-muted-foreground">
-                  If you provide a secret, webhooks will be signed with HMAC-SHA256. 
-                  Verify using the <code className="bg-muted px-1 rounded">X-Webhook-Signature</code> header:
-                </p>
-                <CodeBlock
-                  id="webhook-verify"
-                  code={`const crypto = require('crypto');
+      {/* API Reference Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>API Reference</CardTitle>
+          <CardDescription>Daftar endpoint yang tersedia</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <EndpointGroup title="Sessions">
+              <EndpointItem method="GET" path="/api/sessions" description="List semua session" />
+              <EndpointItem method="POST" path="/api/sessions" description="Buat session baru" />
+              <EndpointItem method="GET" path="/api/sessions/{id}/status" description="Status & QR code" />
+              <EndpointItem method="POST" path="/api/sessions/{id}/restart" description="Restart session" />
+              <EndpointItem method="POST" path="/api/sessions/{id}/logout" description="Logout WhatsApp" />
+            </EndpointGroup>
 
-function verifyWebhook(payload, signature, secret) {
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(JSON.stringify(payload))
-    .digest('hex');
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expected)
-  );
-}`}
-                  onCopy={handleCopy}
-                  copied={copiedCode === 'webhook-verify'}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            <EndpointGroup title="Messages">
+              <EndpointItem method="POST" path="/api/sessions/{id}/messages/send" description="Kirim pesan" />
+              <EndpointItem method="GET" path="/api/sessions/{id}/messages" description="Riwayat pesan" />
+            </EndpointGroup>
+
+            <EndpointGroup title="Contacts">
+              <EndpointItem method="GET" path="/api/sessions/{id}/contacts" description="List kontak" />
+              <EndpointItem method="GET" path="/api/sessions/{id}/contacts/{phone}/check" description="Cek nomor WhatsApp" />
+            </EndpointGroup>
+
+            <EndpointGroup title="Webhooks">
+              <EndpointItem method="GET" path="/api/sessions/{id}/webhooks" description="List webhooks" />
+              <EndpointItem method="POST" path="/api/sessions/{id}/webhooks" description="Buat webhook" />
+              <EndpointItem method="POST" path="/api/sessions/{id}/webhooks/{wid}/test" description="Test webhook" />
+            </EndpointGroup>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Full Documentation Link */}
+      <Card className="bg-muted/50">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Dokumentasi Lengkap</h3>
+              <p className="text-sm text-muted-foreground">
+                Lihat dokumentasi lengkap untuk developer di file documentation.md
+              </p>
+            </div>
+            <Button variant="outline" asChild>
+              <a href="https://github.com/your-repo" target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                GitHub
+              </a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
 
 // Helper Components
+function StepItem({ number, title, description }: { number: number; title: string; description: string }) {
+  return (
+    <div className="flex items-start gap-4">
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold shrink-0">
+        {number}
+      </div>
+      <div>
+        <h4 className="font-semibold">{title}</h4>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+    </div>
+  )
+}
+
 function CodeBlock({ 
   id, 
   code, 
@@ -551,61 +382,28 @@ function FeatureCard({
   )
 }
 
-function ScopeItem({ scope, description }: { scope: string; description: string }) {
+function EndpointGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b last:border-0">
-      <code className="text-sm bg-muted px-2 py-1 rounded">{scope}</code>
-      <span className="text-sm text-muted-foreground">{description}</span>
+    <div className="space-y-2">
+      <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{title}</h4>
+      <div className="space-y-1">{children}</div>
     </div>
   )
 }
 
-function EndpointDoc({ 
-  method, 
-  path, 
-  description, 
-  body,
-  onCopy,
-  copiedCode,
-  baseUrl,
-}: { 
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
-  path: string
-  description: string
-  body?: Record<string, unknown>
-  onCopy: (code: string, id: string) => void
-  copiedCode: string | null
-  baseUrl: string
-}) {
-  const methodColors = {
+function EndpointItem({ method, path, description }: { method: string; path: string; description: string }) {
+  const methodColors: Record<string, string> = {
     GET: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
     POST: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     PUT: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
     DELETE: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
   }
 
-  const id = `${method}-${path}`
-  const curlExample = body
-    ? `curl -X ${method} ${baseUrl}${path} \\
-  -H "Content-Type: application/json" \\
-  -H "X-API-Key: YOUR_API_KEY" \\
-  -d '${JSON.stringify(body, null, 2)}'`
-    : `curl -X ${method} ${baseUrl}${path} \\
-  -H "X-API-Key: YOUR_API_KEY"`
-
   return (
-    <div className="border rounded-lg p-4 space-y-3">
-      <div className="flex items-center gap-3">
-        <Badge className={methodColors[method]}>{method}</Badge>
-        <code className="text-sm">{path}</code>
-      </div>
-      <p className="text-sm text-muted-foreground">{description}</p>
-      <CodeBlock
-        id={id}
-        code={curlExample}
-        onCopy={onCopy}
-        copied={copiedCode === id}
-      />
+    <div className="flex items-center gap-3 py-1.5">
+      <Badge className={`${methodColors[method]} text-xs w-14 justify-center`}>{method}</Badge>
+      <code className="text-sm flex-1">{path}</code>
+      <span className="text-sm text-muted-foreground hidden md:block">{description}</span>
     </div>
   )
 }

@@ -29,6 +29,8 @@ const envSchema = z.object({
   WA_SESSION_PATH: z.string().default('./wa-sessions'),
   PUPPETEER_EXECUTABLE_PATH: z.string().optional(),
   WA_HEADLESS: z.string().transform((v) => v === 'true').default('true'),
+  WA_QR_MAX_RETRIES: z.string().transform(Number).default('5'), // Max QR regenerations before giving up
+  WA_AUTH_TIMEOUT_MS: z.string().transform(Number).default('120000'), // 2 minutes timeout for auth
 
   // Webhook
   WEBHOOK_TIMEOUT: z.string().transform(Number).default('30000'),
@@ -89,6 +91,8 @@ export const config = {
     sessionPath: parsed.data.WA_SESSION_PATH,
     puppeteerPath: parsed.data.PUPPETEER_EXECUTABLE_PATH,
     headless: parsed.data.WA_HEADLESS,
+    qrMaxRetries: parsed.data.WA_QR_MAX_RETRIES,
+    authTimeoutMs: parsed.data.WA_AUTH_TIMEOUT_MS,
   },
 
   webhook: {

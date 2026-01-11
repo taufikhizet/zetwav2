@@ -1,8 +1,13 @@
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import { Router, type Response, type NextFunction } from 'express';
+import type { Request, ParamsDictionary } from 'express-serve-static-core';
 import { apiKeyService } from '../services/api-key.service.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { validateBody } from '../middleware/validate.middleware.js';
 import { createApiKeySchema, updateApiKeySchema } from '../schemas/index.js';
+
+interface KeyParams extends ParamsDictionary {
+  keyId: string;
+}
 
 const router = Router();
 
@@ -58,9 +63,9 @@ router.post(
  * @route GET /api/api-keys/:keyId
  * @desc Get API key by ID
  */
-router.get('/:keyId', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:keyId', async (req: Request<KeyParams>, res: Response, next: NextFunction) => {
   try {
-    const apiKey = await apiKeyService.getById(req.userId!, req.params.keyId!);
+    const apiKey = await apiKeyService.getById(req.userId!, req.params.keyId);
 
     res.json({
       success: true,
@@ -78,9 +83,9 @@ router.get('/:keyId', async (req: Request, res: Response, next: NextFunction) =>
 router.patch(
   '/:keyId',
   validateBody(updateApiKeySchema),
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request<KeyParams>, res: Response, next: NextFunction) => {
     try {
-      const apiKey = await apiKeyService.update(req.userId!, req.params.keyId!, req.body);
+      const apiKey = await apiKeyService.update(req.userId!, req.params.keyId, req.body);
 
       res.json({
         success: true,
@@ -97,9 +102,9 @@ router.patch(
  * @route DELETE /api/api-keys/:keyId
  * @desc Delete API key
  */
-router.delete('/:keyId', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:keyId', async (req: Request<KeyParams>, res: Response, next: NextFunction) => {
   try {
-    await apiKeyService.delete(req.userId!, req.params.keyId!);
+    await apiKeyService.delete(req.userId!, req.params.keyId);
 
     res.json({
       success: true,
@@ -114,9 +119,9 @@ router.delete('/:keyId', async (req: Request, res: Response, next: NextFunction)
  * @route POST /api/api-keys/:keyId/regenerate
  * @desc Regenerate API key
  */
-router.post('/:keyId/regenerate', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:keyId/regenerate', async (req: Request<KeyParams>, res: Response, next: NextFunction) => {
   try {
-    const apiKey = await apiKeyService.regenerate(req.userId!, req.params.keyId!);
+    const apiKey = await apiKeyService.regenerate(req.userId!, req.params.keyId);
 
     res.json({
       success: true,

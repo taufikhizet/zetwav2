@@ -41,8 +41,9 @@ export function getStatusColor(status: string) {
     QR_READY: 'bg-yellow-500',
     INITIALIZING: 'bg-blue-500',
     AUTHENTICATING: 'bg-blue-500',
-    FAILED: 'bg-red-500',
-    LOGGED_OUT: 'bg-gray-500',
+    FAILED: 'bg-orange-500',
+    LOGGED_OUT: 'bg-blue-500', // Blue to indicate intentional action, not error
+    QR_TIMEOUT: 'bg-orange-500',
   }
   return colors[status] || 'bg-gray-500'
 }
@@ -54,8 +55,9 @@ export function getStatusText(status: string) {
     QR_READY: 'Scan QR Code',
     INITIALIZING: 'Initializing...',
     AUTHENTICATING: 'Authenticating...',
-    FAILED: 'Failed',
+    FAILED: 'Session Expired',
     LOGGED_OUT: 'Logged Out',
+    QR_TIMEOUT: 'QR Code Expired',
   }
   return texts[status] || status
 }

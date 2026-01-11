@@ -5,9 +5,27 @@ import { config } from '../config/index.js';
 import { createLogger } from '../utils/logger.js';
 import { whatsappService } from './whatsapp.service.js';
 import { sleep } from '../utils/helpers.js';
-import type { WebhookEvent } from '@prisma/client';
 
 const logger = createLogger('webhook-service');
+
+// Define WebhookEvent enum locally matching Prisma schema
+type WebhookEvent = 
+  | 'MESSAGE_RECEIVED'
+  | 'MESSAGE_SENT'
+  | 'MESSAGE_ACK'
+  | 'MESSAGE_REVOKED'
+  | 'QR_RECEIVED'
+  | 'AUTHENTICATED'
+  | 'AUTH_FAILURE'
+  | 'READY'
+  | 'DISCONNECTED'
+  | 'STATE_CHANGE'
+  | 'CONTACT_CHANGED'
+  | 'GROUP_JOIN'
+  | 'GROUP_LEAVE'
+  | 'GROUP_UPDATE'
+  | 'CALL_RECEIVED'
+  | 'ALL';
 
 export interface WebhookPayload {
   event: string;
@@ -106,11 +124,11 @@ class WebhookService {
 
       // Send to all webhooks in parallel
       const results = await Promise.allSettled(
-        webhooks.map((webhook) => this.sendWebhook(webhook.id, webhook, payload))
+        webhooks.map((webhook: { id: string; url: string; events: string[]; headers: unknown; secret: string | null; retryCount: number; timeout: number }) => this.sendWebhook(webhook.id, webhook, payload))
       );
 
       // Log results
-      results.forEach((result, index) => {
+      results.forEach((result: PromiseSettledResult<unknown>, index: number) => {
         const webhook = webhooks[index];
         if (result.status === 'rejected') {
           logger.error(

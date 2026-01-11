@@ -130,7 +130,7 @@ export class ApiKeyService {
   } | null> {
     const keyHash = hashApiKey(key);
 
-    const apiKey = await prisma.apiKey.findUnique({
+    const apiKey = await prisma.apiKey.findFirst({
       where: { keyHash },
       include: { user: true },
     });

@@ -2,9 +2,28 @@ import { prisma } from '../lib/prisma.js';
 import { whatsappService } from './whatsapp.service.js';
 import { NotFoundError, ForbiddenError, ConflictError, BadRequestError } from '../utils/errors.js';
 import { createLogger } from '../utils/logger.js';
-import type { SessionStatus, WebhookEvent } from '@prisma/client';
 
 const logger = createLogger('session-service');
+
+// Define enums locally matching Prisma schema
+type SessionStatus = 'INITIALIZING' | 'QR_READY' | 'AUTHENTICATING' | 'CONNECTED' | 'DISCONNECTED' | 'FAILED' | 'LOGGED_OUT';
+type WebhookEvent = 
+  | 'MESSAGE_RECEIVED'
+  | 'MESSAGE_SENT'
+  | 'MESSAGE_ACK'
+  | 'MESSAGE_REVOKED'
+  | 'QR_RECEIVED'
+  | 'AUTHENTICATED'
+  | 'AUTH_FAILURE'
+  | 'READY'
+  | 'DISCONNECTED'
+  | 'STATE_CHANGE'
+  | 'CONTACT_CHANGED'
+  | 'GROUP_JOIN'
+  | 'GROUP_LEAVE'
+  | 'GROUP_UPDATE'
+  | 'CALL_RECEIVED'
+  | 'ALL';
 
 export interface CreateSessionInput {
   name: string;
@@ -140,11 +159,54 @@ class SessionService {
       throw new ForbiddenError('Access denied');
     }
 
+    // Get live status from memory, but also consider database status
+    // This is important for cases where session was destroyed (QR timeout, auth failure)
+    // but page is refreshed - the in-memory session no longer exists
+    const memoryStatus = whatsappService.getStatus(sessionId);
+    const dbStatus = session.status;
+    
+    logger.debug({ sessionId, memoryStatus, dbStatus }, 'Session status check');
+    
+    // If database shows FAILED but memory has no session, trust database
+    // If memory has session, trust memory status
+    // This handles the case where session expired and was cleaned up
+    let liveStatus: string;
+    if (memoryStatus) {
+      liveStatus = memoryStatus;
+    } else {
+      // No session in memory - use database status
+      // If status is QR_READY but no session in memory, it means session expired
+      // and the QR was never scanned - treat as FAILED
+      if (dbStatus === 'QR_READY' || dbStatus === 'INITIALIZING' || dbStatus === 'AUTHENTICATING') {
+        // Session should exist in memory but doesn't - mark as expired/failed
+        // This can happen if server restarted or session was cleaned up
+        logger.info({ sessionId, dbStatus }, 'Detected stale session, marking as FAILED');
+        liveStatus = 'FAILED';
+        
+        // Also update database to reflect this
+        prisma.waSession.update({
+          where: { id: sessionId },
+          data: { status: 'FAILED', qrCode: null }
+        }).catch((err) => {
+          // Log but don't throw - this is a cleanup operation
+          logger.error({ sessionId, error: err }, 'Failed to update stale session status');
+        });
+      } else {
+        liveStatus = dbStatus;
+      }
+    }
+    
+    logger.debug({ sessionId, liveStatus }, 'Final live status');
+    
+    const isFailedOrDisconnected = ['FAILED', 'DISCONNECTED', 'LOGGED_OUT'].includes(liveStatus);
+
     return {
       ...session,
-      liveStatus: whatsappService.getStatus(sessionId) || session.status,
+      liveStatus,
       isOnline: whatsappService.isConnected(sessionId),
-      qrCode: whatsappService.getQRCode(sessionId),
+      // Don't return stale QR code if session is failed/disconnected
+      qrCode: isFailedOrDisconnected ? null : whatsappService.getQRCode(sessionId),
+      lastQrAt: session.lastQrAt,
     };
   }
 
@@ -203,6 +265,38 @@ class SessionService {
     const session = await this.getById(userId, sessionId);
 
     const qrCode = whatsappService.getQRCode(sessionId);
+    const liveStatus = whatsappService.getStatus(sessionId);
+    const currentStatus = liveStatus || session.status;
+
+    // Check if session has failed (QR timeout/max retries reached)
+    if (currentStatus === 'FAILED') {
+      return {
+        status: 'FAILED',
+        qrCode: null,
+        message: 'Session expired. QR code was not scanned in time. Please restart the session to get a new QR code.',
+        canRetry: true,
+      };
+    }
+
+    // Check if session is logged out
+    if (currentStatus === 'LOGGED_OUT') {
+      return {
+        status: 'LOGGED_OUT',
+        qrCode: null,
+        message: 'Session has been logged out. Please restart to reconnect.',
+        canRetry: true,
+      };
+    }
+
+    // Check if session is disconnected
+    if (currentStatus === 'DISCONNECTED') {
+      return {
+        status: 'DISCONNECTED',
+        qrCode: null,
+        message: 'Session disconnected. Please restart the session.',
+        canRetry: true,
+      };
+    }
 
     if (!qrCode) {
       const status = whatsappService.getStatus(sessionId);

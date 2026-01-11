@@ -1,4 +1,5 @@
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import { Router, type Response, type NextFunction } from 'express';
+import type { Request, ParamsDictionary } from 'express-serve-static-core';
 import { MessageMedia } from 'whatsapp-web.js';
 import axios from 'axios';
 import { whatsappService } from '../services/whatsapp.service.js';
@@ -9,6 +10,18 @@ import { validateBody } from '../middleware/validate.middleware.js';
 import { messageLimiter } from '../middleware/rate-limit.middleware.js';
 import { sendMessageSchema, sendMediaSchema, messageQuerySchema } from '../schemas/index.js';
 import { BadRequestError } from '../utils/errors.js';
+
+interface SessionParams extends ParamsDictionary {
+  sessionId: string;
+}
+
+interface NumberParams extends SessionParams {
+  number: string;
+}
+
+interface ContactParams extends SessionParams {
+  contactId: string;
+}
 
 const router = Router();
 
@@ -23,15 +36,15 @@ router.post(
   '/:sessionId/messages/send',
   messageLimiter,
   validateBody(sendMessageSchema),
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
       // Verify session ownership
-      await sessionService.getById(req.userId!, req.params.sessionId!);
+      await sessionService.getById(req.userId!, req.params.sessionId);
 
       const { to, message, quotedMessageId, mentions } = req.body;
 
       const sentMessage = await whatsappService.sendMessage(
-        req.params.sessionId!,
+        req.params.sessionId,
         to,
         message,
         { quotedMessageId, mentions }
@@ -60,10 +73,10 @@ router.post(
   '/:sessionId/messages/send-media',
   messageLimiter,
   validateBody(sendMediaSchema),
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
       // Verify session ownership
-      await sessionService.getById(req.userId!, req.params.sessionId!);
+      await sessionService.getById(req.userId!, req.params.sessionId);
 
       const { to, mediaUrl, mediaBase64, mimetype, filename, caption } = req.body;
 
@@ -94,7 +107,7 @@ router.post(
       }
 
       const sentMessage = await whatsappService.sendMedia(
-        req.params.sessionId!,
+        req.params.sessionId,
         to,
         media,
         { caption }
@@ -119,10 +132,10 @@ router.post(
  * @route GET /api/sessions/:sessionId/messages
  * @desc Get messages for session
  */
-router.get('/:sessionId/messages', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:sessionId/messages', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     // Verify session ownership
-    await sessionService.getById(req.userId!, req.params.sessionId!);
+    await sessionService.getById(req.userId!, req.params.sessionId);
 
     const query = messageQuerySchema.parse(req.query);
     const { page, limit, direction, type, chatId, startDate, endDate } = query;
@@ -180,10 +193,10 @@ router.get('/:sessionId/messages', async (req: Request, res: Response, next: Nex
  * @route GET /api/sessions/:sessionId/chats
  * @desc Get chats for session
  */
-router.get('/:sessionId/chats', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:sessionId/chats', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     // Verify session ownership
-    await sessionService.getById(req.userId!, req.params.sessionId!);
+    await sessionService.getById(req.userId!, req.params.sessionId);
 
     const chats = await prisma.chat.findMany({
       where: { sessionId: req.params.sessionId },
@@ -204,12 +217,12 @@ router.get('/:sessionId/chats', async (req: Request, res: Response, next: NextFu
  * @route GET /api/sessions/:sessionId/chats/live
  * @desc Get live chats from WhatsApp
  */
-router.get('/:sessionId/chats/live', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:sessionId/chats/live', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     // Verify session ownership
-    await sessionService.getById(req.userId!, req.params.sessionId!);
+    await sessionService.getById(req.userId!, req.params.sessionId);
 
-    const chats = await whatsappService.getChats(req.params.sessionId!);
+    const chats = await whatsappService.getChats(req.params.sessionId);
 
     const formattedChats = chats.map((chat) => ({
       id: chat.id._serialized,
@@ -233,10 +246,10 @@ router.get('/:sessionId/chats/live', async (req: Request, res: Response, next: N
  * @route GET /api/sessions/:sessionId/contacts
  * @desc Get contacts for session
  */
-router.get('/:sessionId/contacts', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:sessionId/contacts', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     // Verify session ownership
-    await sessionService.getById(req.userId!, req.params.sessionId!);
+    await sessionService.getById(req.userId!, req.params.sessionId);
 
     const contacts = await prisma.contact.findMany({
       where: { sessionId: req.params.sessionId },
@@ -256,12 +269,12 @@ router.get('/:sessionId/contacts', async (req: Request, res: Response, next: Nex
  * @route GET /api/sessions/:sessionId/contacts/live
  * @desc Get live contacts from WhatsApp
  */
-router.get('/:sessionId/contacts/live', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:sessionId/contacts/live', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     // Verify session ownership
-    await sessionService.getById(req.userId!, req.params.sessionId!);
+    await sessionService.getById(req.userId!, req.params.sessionId);
 
-    const contacts = await whatsappService.getContacts(req.params.sessionId!);
+    const contacts = await whatsappService.getContacts(req.params.sessionId);
 
     const formattedContacts = contacts
       .filter((c) => c.isMyContact || c.isWAContact)
@@ -289,14 +302,14 @@ router.get('/:sessionId/contacts/live', async (req: Request, res: Response, next
  */
 router.get(
   '/:sessionId/check-number/:number',
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request<NumberParams>, res: Response, next: NextFunction) => {
     try {
       // Verify session ownership
-      await sessionService.getById(req.userId!, req.params.sessionId!);
+      await sessionService.getById(req.userId!, req.params.sessionId);
 
       const isRegistered = await whatsappService.isRegistered(
-        req.params.sessionId!,
-        req.params.number!
+        req.params.sessionId,
+        req.params.number
       );
 
       res.json({
@@ -318,14 +331,14 @@ router.get(
  */
 router.get(
   '/:sessionId/profile-pic/:contactId',
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request<ContactParams>, res: Response, next: NextFunction) => {
     try {
       // Verify session ownership
-      await sessionService.getById(req.userId!, req.params.sessionId!);
+      await sessionService.getById(req.userId!, req.params.sessionId);
 
       const url = await whatsappService.getProfilePicUrl(
-        req.params.sessionId!,
-        req.params.contactId!
+        req.params.sessionId,
+        req.params.contactId
       );
 
       res.json({

@@ -5,7 +5,6 @@ import {
   MessageSquare,
   Smartphone,
   Key,
-  Webhook,
   Settings,
   LogOut,
   Menu,
@@ -24,7 +23,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Separator } from '@/components/ui/separator'
 import { useAuthStore } from '@/stores/auth.store'
 import { cn } from '@/lib/utils'
 

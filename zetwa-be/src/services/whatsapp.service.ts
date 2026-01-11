@@ -7,9 +7,13 @@ import { prisma } from '../lib/prisma.js';
 import { config } from '../config/index.js';
 import { createLogger } from '../utils/logger.js';
 import { SessionNotFoundError, SessionNotConnectedError } from '../utils/errors.js';
-import type { SessionStatus, MessageType, MessageDirection } from '@prisma/client';
 
 const logger = createLogger('whatsapp-service');
+
+// Define enums locally matching Prisma schema
+type SessionStatus = 'INITIALIZING' | 'QR_READY' | 'AUTHENTICATING' | 'CONNECTED' | 'DISCONNECTED' | 'FAILED' | 'LOGGED_OUT';
+type MessageType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'STICKER' | 'LOCATION' | 'CONTACT' | 'POLL' | 'REACTION' | 'SYSTEM' | 'UNKNOWN';
+type MessageDirection = 'INCOMING' | 'OUTGOING';
 
 export interface WASession {
   client: Client;
@@ -108,6 +112,11 @@ class WhatsAppService extends EventEmitter {
             executablePath: config.whatsapp.puppeteerPath,
           }),
         },
+        // Resource management: Limit QR retries to prevent abandoned sessions from wasting resources
+        // After qrMaxRetries, the client will emit 'disconnected' with reason 'Max qrcode retries reached'
+        qrMaxRetries: config.whatsapp.qrMaxRetries,
+        // Auth timeout: If not authenticated within this time, destroy the session
+        authTimeoutMs: config.whatsapp.authTimeoutMs,
       };
 
       const client = new Client(clientOptions);
@@ -266,18 +275,49 @@ class WhatsAppService extends EventEmitter {
         const session = this.sessions.get(sessionId);
         if (session) {
           session.status = 'DISCONNECTED';
+          session.qrCode = undefined; // Clear QR code
         }
+
+        // Convert reason to string for comparison (whatsapp-web.js types can vary)
+        const reasonStr = String(reason);
+        
+        // Determine appropriate status based on disconnect reason
+        const isQrTimeout = reasonStr === 'Max qrcode retries reached';
+        const isAuthTimeout = reasonStr === 'Auth timeout';
+        const newStatus: SessionStatus = isQrTimeout || isAuthTimeout ? 'FAILED' : 'DISCONNECTED';
 
         await prisma.waSession.update({
           where: { id: sessionId },
           data: {
-            status: 'DISCONNECTED',
+            status: newStatus,
+            qrCode: null, // Clear stale QR
             disconnectedAt: new Date(),
           },
         });
 
-        this.emit('disconnected', { sessionId, userId, reason });
-        logger.info({ sessionId, reason }, 'Session disconnected');
+        // Emit appropriate event
+        if (isQrTimeout) {
+          this.emit('qr_timeout', { sessionId, userId, reason: reasonStr });
+          logger.warn({ sessionId }, 'Session QR timeout - max retries reached, resources cleaned up');
+        } else if (isAuthTimeout) {
+          this.emit('auth_timeout', { sessionId, userId, reason: reasonStr });
+          logger.warn({ sessionId }, 'Session auth timeout, resources cleaned up');
+        }
+        
+        this.emit('disconnected', { sessionId, userId, reason: reasonStr });
+        logger.info({ sessionId, reason: reasonStr }, 'Session disconnected');
+
+        // Clean up Puppeteer instance to free resources
+        // This is critical for abandoned sessions
+        if (isQrTimeout || isAuthTimeout) {
+          try {
+            await client.destroy();
+            this.sessions.delete(sessionId);
+            logger.info({ sessionId }, 'Abandoned session cleaned up, resources freed');
+          } catch (destroyError) {
+            logger.error({ sessionId, error: destroyError }, 'Failed to destroy abandoned session');
+          }
+        }
       } catch (error) {
         logger.error({ sessionId, error }, 'Error handling disconnected event');
       }
@@ -677,6 +717,13 @@ class WhatsAppService extends EventEmitter {
       data: {
         status: 'LOGGED_OUT',
         disconnectedAt: new Date(),
+        // Clear user data on logout - user intentionally logged out
+        phoneNumber: null,
+        pushName: null,
+        profilePicUrl: null,
+        qrCode: null,
+        lastQrAt: null,
+        connectedAt: null,
       },
     });
 
@@ -705,6 +752,20 @@ class WhatsAppService extends EventEmitter {
       }
       this.sessions.delete(sessionId);
     }
+
+    // Clear session data in database (phone, name, etc.)
+    await prisma.waSession.update({
+      where: { id: sessionId },
+      data: {
+        status: 'INITIALIZING',
+        phoneNumber: null,
+        pushName: null,
+        profilePicUrl: null,
+        connectedAt: null,
+        qrCode: null,
+        lastQrAt: null,
+      },
+    });
 
     // Create new session
     await this.createSession(sessionId, dbSession.userId);

@@ -1,4 +1,5 @@
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import { Router, type Response, type NextFunction } from 'express';
+import type { Request, ParamsDictionary } from 'express-serve-static-core';
 import { sessionService } from '../services/session.service.js';
 import { webhookService } from '../services/webhook.service.js';
 import { authenticateAny } from '../middleware/auth.middleware.js';
@@ -9,6 +10,14 @@ import {
   createWebhookSchema,
   updateWebhookSchema,
 } from '../schemas/index.js';
+
+interface SessionParams extends ParamsDictionary {
+  sessionId: string;
+}
+
+interface WebhookParams extends SessionParams {
+  webhookId: string;
+}
 
 const router = Router();
 
@@ -58,9 +67,9 @@ router.post(
  * @route GET /api/sessions/:sessionId
  * @desc Get session by ID
  */
-router.get('/:sessionId', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:sessionId', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
-    const session = await sessionService.getById(req.userId!, req.params.sessionId!);
+    const session = await sessionService.getById(req.userId!, req.params.sessionId);
 
     res.json({
       success: true,
@@ -78,9 +87,9 @@ router.get('/:sessionId', async (req: Request, res: Response, next: NextFunction
 router.patch(
   '/:sessionId',
   validateBody(updateSessionSchema),
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
-      const session = await sessionService.update(req.userId!, req.params.sessionId!, req.body);
+      const session = await sessionService.update(req.userId!, req.params.sessionId, req.body);
 
       res.json({
         success: true,
@@ -97,9 +106,9 @@ router.patch(
  * @route DELETE /api/sessions/:sessionId
  * @desc Delete session
  */
-router.delete('/:sessionId', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:sessionId', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
-    await sessionService.delete(req.userId!, req.params.sessionId!);
+    await sessionService.delete(req.userId!, req.params.sessionId);
 
     res.json({
       success: true,
@@ -114,9 +123,9 @@ router.delete('/:sessionId', async (req: Request, res: Response, next: NextFunct
  * @route GET /api/sessions/:sessionId/qr
  * @desc Get QR code for session
  */
-router.get('/:sessionId/qr', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:sessionId/qr', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
-    const result = await sessionService.getQRCode(req.userId!, req.params.sessionId!);
+    const result = await sessionService.getQRCode(req.userId!, req.params.sessionId);
 
     res.json({
       success: true,
@@ -131,9 +140,9 @@ router.get('/:sessionId/qr', async (req: Request, res: Response, next: NextFunct
  * @route GET /api/sessions/:sessionId/status
  * @desc Get session status
  */
-router.get('/:sessionId/status', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:sessionId/status', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
-    const status = await sessionService.getStatus(req.userId!, req.params.sessionId!);
+    const status = await sessionService.getStatus(req.userId!, req.params.sessionId);
 
     res.json({
       success: true,
@@ -148,9 +157,9 @@ router.get('/:sessionId/status', async (req: Request, res: Response, next: NextF
  * @route POST /api/sessions/:sessionId/restart
  * @desc Restart session
  */
-router.post('/:sessionId/restart', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:sessionId/restart', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
-    const result = await sessionService.restart(req.userId!, req.params.sessionId!);
+    const result = await sessionService.restart(req.userId!, req.params.sessionId);
 
     res.json({
       success: true,
@@ -166,9 +175,9 @@ router.post('/:sessionId/restart', async (req: Request, res: Response, next: Nex
  * @route POST /api/sessions/:sessionId/logout
  * @desc Logout session (disconnect WhatsApp)
  */
-router.post('/:sessionId/logout', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:sessionId/logout', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
-    const result = await sessionService.logout(req.userId!, req.params.sessionId!);
+    const result = await sessionService.logout(req.userId!, req.params.sessionId);
 
     res.json({
       success: true,
@@ -188,9 +197,9 @@ router.post('/:sessionId/logout', async (req: Request, res: Response, next: Next
  * @route GET /api/sessions/:sessionId/webhooks
  * @desc Get all webhooks for session
  */
-router.get('/:sessionId/webhooks', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:sessionId/webhooks', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
-    const webhooks = await sessionService.getWebhooks(req.userId!, req.params.sessionId!);
+    const webhooks = await sessionService.getWebhooks(req.userId!, req.params.sessionId);
 
     res.json({
       success: true,
@@ -208,11 +217,11 @@ router.get('/:sessionId/webhooks', async (req: Request, res: Response, next: Nex
 router.post(
   '/:sessionId/webhooks',
   validateBody(createWebhookSchema),
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
       const webhook = await sessionService.createWebhook(
         req.userId!,
-        req.params.sessionId!,
+        req.params.sessionId,
         req.body
       );
 
@@ -234,12 +243,12 @@ router.post(
 router.patch(
   '/:sessionId/webhooks/:webhookId',
   validateBody(updateWebhookSchema),
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request<WebhookParams>, res: Response, next: NextFunction) => {
     try {
       const webhook = await sessionService.updateWebhook(
         req.userId!,
-        req.params.sessionId!,
-        req.params.webhookId!,
+        req.params.sessionId,
+        req.params.webhookId,
         req.body
       );
 
@@ -260,12 +269,12 @@ router.patch(
  */
 router.delete(
   '/:sessionId/webhooks/:webhookId',
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request<WebhookParams>, res: Response, next: NextFunction) => {
     try {
       await sessionService.deleteWebhook(
         req.userId!,
-        req.params.sessionId!,
-        req.params.webhookId!
+        req.params.sessionId,
+        req.params.webhookId
       );
 
       res.json({
@@ -284,12 +293,12 @@ router.delete(
  */
 router.post(
   '/:sessionId/webhooks/:webhookId/test',
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request<WebhookParams>, res: Response, next: NextFunction) => {
     try {
       // Verify ownership
-      await sessionService.getById(req.userId!, req.params.sessionId!);
+      await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const result = await webhookService.testWebhook(req.params.webhookId!);
+      const result = await webhookService.testWebhook(req.params.webhookId);
 
       res.json({
         success: true,
@@ -308,13 +317,13 @@ router.post(
  */
 router.get(
   '/:sessionId/webhooks/:webhookId/logs',
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request<WebhookParams>, res: Response, next: NextFunction) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
       const logs = await sessionService.getWebhookLogs(
         req.userId!,
-        req.params.sessionId!,
-        req.params.webhookId!,
+        req.params.sessionId,
+        req.params.webhookId,
         limit
       );
 

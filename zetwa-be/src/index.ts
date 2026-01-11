@@ -4,7 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { config } from './config/index.js';
 import { connectDatabase, disconnectDatabase } from './lib/prisma.js';
-import { getRedis, closeRedis } from './lib/redis.js';
+import { getRedis, closeRedis, isRedisAvailable } from './lib/redis.js';
 import { whatsappService } from './services/whatsapp.service.js';
 import { webhookService } from './services/webhook.service.js';
 import { setupSocketIO } from './socket/index.js';
@@ -107,8 +107,17 @@ const startServer = async () => {
     // Connect to database
     await connectDatabase();
 
-    // Initialize Redis
+    // Initialize Redis (optional - app works without it)
     getRedis();
+    
+    // Give Redis a moment to connect, then log status
+    setTimeout(() => {
+      if (isRedisAvailable()) {
+        logger.info('✅ Redis cache enabled');
+      } else {
+        logger.info('ℹ️ Running without Redis cache (optional)');
+      }
+    }, 2000);
 
     // Initialize stored WhatsApp sessions
     await whatsappService.initializeStoredSessions();

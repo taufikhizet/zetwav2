@@ -209,7 +209,11 @@ export default function SessionsPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Status</span>
-                    <Badge variant={session.isOnline ? 'success' : 'secondary'}>
+                    <Badge variant={
+                      session.isOnline ? 'success' : 
+                      (session.liveStatus || session.status) === 'FAILED' ? 'destructive' : 
+                      'secondary'
+                    }>
                       {getStatusText(session.liveStatus || session.status)}
                     </Badge>
                   </div>

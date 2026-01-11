@@ -13,6 +13,7 @@ export interface Session {
   liveStatus?: string
   isOnline?: boolean
   qrCode?: string | null
+  lastQrAt?: string | null
   _count?: {
     webhooks: number
     messages: number
@@ -89,8 +90,8 @@ export const sessionApi = {
     await api.delete(`/sessions/${sessionId}`)
   },
 
-  getQR: async (sessionId: string): Promise<{ status: string; qrCode: string | null; message?: string }> => {
-    const response = await api.get<ApiResponse<{ status: string; qrCode: string | null; message?: string }>>(
+  getQR: async (sessionId: string): Promise<{ status: string; qrCode: string | null; message?: string; canRetry?: boolean }> => {
+    const response = await api.get<ApiResponse<{ status: string; qrCode: string | null; message?: string; canRetry?: boolean }>>(
       `/sessions/${sessionId}/qr`
     )
     return response.data.data

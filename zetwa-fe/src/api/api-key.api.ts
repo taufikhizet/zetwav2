@@ -4,7 +4,9 @@ export interface ApiKey {
   id: string
   name: string
   key: string
+  keyPreview: string
   permissions: string[]
+  scopes: string[]
   isActive: boolean
   lastUsedAt: string | null
   expiresAt: string | null
@@ -14,6 +16,7 @@ export interface ApiKey {
 export interface CreateApiKeyInput {
   name: string
   permissions?: string[]
+  scopes?: string[]
   expiresAt?: string
 }
 

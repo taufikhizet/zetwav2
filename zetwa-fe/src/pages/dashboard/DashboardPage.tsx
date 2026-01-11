@@ -7,9 +7,6 @@ import {
   Webhook,
   Plus,
   ArrowRight,
-  CheckCircle,
-  XCircle,
-  Clock,
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { sessionApi } from '@/api/session.api'
 import { apiKeyApi } from '@/api/api-key.api'
 import { useAuthStore } from '@/stores/auth.store'
-import { getStatusColor, getStatusText, formatRelativeTime } from '@/lib/utils'
+import { getStatusColor, getStatusText } from '@/lib/utils'
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user)

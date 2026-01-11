@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -104,7 +104,7 @@ export default function ApiKeysPage() {
 
     createMutation.mutate({
       name: form.name,
-      expiresAt: form.expiresAt ? new Date(form.expiresAt) : undefined,
+      expiresAt: form.expiresAt || undefined,
       scopes: form.scopes,
     })
   }
