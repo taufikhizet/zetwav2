@@ -126,11 +126,22 @@ export class WhatsAppService {
       '--no-first-run',
       '--no-zygote',
       '--disable-gpu',
+      '--disable-extensions',
+      '--disable-background-networking',
+      '--disable-sync',
+      '--disable-translate',
+      '--disable-features=TranslateUI',
+      '--metrics-recording-only',
+      '--mute-audio',
+      '--no-default-browser-check',
+      '--autoplay-policy=user-gesture-required',
     ];
 
-    // Add proxy args if configured
-    if (sessionConfig?.proxy?.server) {
-      baseArgs.push(`--proxy-server=${sessionConfig.proxy.server}`);
+    // Add proxy args if configured AND proxy server is provided
+    if (sessionConfig?.proxy?.server && sessionConfig.proxy.server.trim()) {
+      const proxyServer = sessionConfig.proxy.server.trim();
+      logger.info({ proxyServer }, 'Using proxy for session');
+      baseArgs.push(`--proxy-server=${proxyServer}`);
     }
 
     return baseArgs;
@@ -157,7 +168,7 @@ export class WhatsAppService {
       return this.sessions.get(sessionId)!;
     }
 
-    logger.info({ sessionId, hasConfig: !!sessionConfig }, 'Creating WhatsApp session');
+    logger.info({ sessionId, hasConfig: !!sessionConfig, hasProxy: !!sessionConfig?.proxy?.server }, 'Creating WhatsApp session');
 
     // Build client options
     const puppeteerArgs = this.getPuppeteerArgs(sessionConfig);
@@ -171,7 +182,9 @@ export class WhatsAppService {
       puppeteer: {
         headless: true,
         args: puppeteerArgs,
+        timeout: 60000, // 60 second timeout for puppeteer operations
       },
+      qrMaxRetries: 5,
       ...clientInfo,
     });
 
@@ -194,12 +207,36 @@ export class WhatsAppService {
       this.updateSessionStatus.bind(this)
     );
 
-    // Initialize client
+    // Initialize client with better error handling
     try {
       await client.initialize();
-    } catch (error) {
-      logger.error({ sessionId, error }, 'Failed to initialize client');
+    } catch (error: any) {
+      logger.error({ sessionId, error: error?.message || error }, 'Failed to initialize client');
       this.sessions.delete(sessionId);
+      
+      // Provide more helpful error messages
+      const errorMessage = error?.message || String(error);
+      if (errorMessage.includes('ERR_CONNECTION_RESET') || errorMessage.includes('ERR_CONNECTION_REFUSED')) {
+        throw new Error(
+          'Failed to connect to WhatsApp Web. This could be due to: ' +
+          '(1) Network connectivity issues, ' +
+          '(2) WhatsApp Web is temporarily unavailable, ' +
+          '(3) Invalid proxy configuration, or ' +
+          '(4) Firewall blocking the connection. ' +
+          'Please check your network and try again.'
+        );
+      }
+      if (errorMessage.includes('ERR_PROXY')) {
+        throw new Error(
+          'Proxy connection failed. Please verify your proxy server address and credentials are correct.'
+        );
+      }
+      if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+        throw new Error(
+          'Connection timed out while connecting to WhatsApp Web. Please check your internet connection and try again.'
+        );
+      }
+      
       throw error;
     }
 

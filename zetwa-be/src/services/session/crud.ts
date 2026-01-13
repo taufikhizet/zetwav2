@@ -2,11 +2,81 @@
  * Session CRUD Operations
  */
 
+import { WebhookEvent } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { whatsappService } from '../whatsapp/index.js';
 import { NotFoundError, ForbiddenError, ConflictError, BadRequestError } from '../../utils/errors.js';
 import { logger } from '../../utils/logger.js';
-import type { CreateSessionInput, UpdateSessionInput, SessionConfig } from './types.js';
+import type { CreateSessionInput, UpdateSessionInput, SessionConfig, WebhookEvent as WebhookEventType } from './types.js';
+
+/**
+ * Create webhooks from inline webhook config
+ * Internal use - called during session creation
+ */
+async function createWebhooksFromConfig(sessionId: string, webhooks: SessionConfig['webhooks']) {
+  if (!webhooks || webhooks.length === 0) return [];
+  
+  const createdWebhooks = [];
+  
+  for (const webhookConfig of webhooks) {
+    if (!webhookConfig.url) continue;
+    
+    try {
+      // Map string events to WebhookEvent enum
+      // If '*' or 'ALL' is present, use ALL enum value
+      const events: WebhookEvent[] = webhookConfig.events?.length 
+        ? webhookConfig.events.map(e => {
+            // Handle wildcard
+            if (e === '*' || e === 'ALL') return WebhookEvent.ALL;
+            // Handle WAHA-style events (with dots) by converting to underscore format
+            const normalizedEvent = e.replace(/\./g, '_');
+            // Check if it's a valid enum value
+            if (normalizedEvent in WebhookEvent) {
+              return normalizedEvent as WebhookEvent;
+            }
+            // Default to ALL if unknown event
+            return WebhookEvent.ALL;
+          })
+        : [WebhookEvent.ALL];
+      
+      // Remove duplicates
+      const uniqueEvents = [...new Set(events)];
+      
+      // Convert inline webhook config to database format
+      const webhook = await prisma.webhook.create({
+        data: {
+          name: new URL(webhookConfig.url).hostname || 'Webhook',
+          url: webhookConfig.url,
+          sessionId,
+          events: uniqueEvents,
+          headers: {
+            // Store custom headers
+            ...(webhookConfig.customHeaders?.reduce((acc, h) => ({ ...acc, [h.name]: h.value }), {}) || {}),
+            // Store retry config as special header (will be extracted by webhook sender)
+            ...(webhookConfig.retries ? {
+              '__retries_config': JSON.stringify({
+                delaySeconds: webhookConfig.retries.delaySeconds,
+                policy: webhookConfig.retries.policy,
+              })
+            } : {}),
+          },
+          // Store HMAC secret
+          secret: webhookConfig.hmac?.key,
+          // Store retry config in metadata
+          retryCount: webhookConfig.retries?.attempts || 3,
+          timeout: 30000,
+        },
+      });
+      
+      createdWebhooks.push(webhook);
+      logger.info({ webhookId: webhook.id, sessionId, url: webhookConfig.url }, 'Inline webhook created');
+    } catch (error) {
+      logger.warn({ sessionId, url: webhookConfig.url, error }, 'Failed to create inline webhook');
+    }
+  }
+  
+  return createdWebhooks;
+}
 
 /**
  * Create a new WhatsApp session
@@ -45,13 +115,24 @@ export async function create(userId: string, input: CreateSessionInput) {
     },
   });
 
+  // Create webhooks from inline config if provided
+  if (config?.webhooks && config.webhooks.length > 0) {
+    await createWebhooksFromConfig(session.id, config.webhooks);
+  }
+
   // Start WhatsApp client if start option is true
   if (start) {
     try {
       await whatsappService.createSession(session.id, userId, config);
-    } catch (error) {
-      // If WhatsApp client fails, delete the database record
+    } catch (error: any) {
+      // If WhatsApp client fails, delete the database record and webhooks
+      logger.error({ sessionId: session.id, error: error?.message || error }, 'Failed to start session, cleaning up');
+      
+      // Delete webhooks first (cascade should handle this, but be explicit)
+      await prisma.webhook.deleteMany({ where: { sessionId: session.id } });
       await prisma.waSession.delete({ where: { id: session.id } });
+      
+      // Re-throw with better error message
       throw error;
     }
   }

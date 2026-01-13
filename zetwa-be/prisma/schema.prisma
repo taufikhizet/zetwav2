@@ -131,6 +131,32 @@ model WaSession {
 // ============================================
 
 enum WebhookEvent {
+  // WAHA-style events (preferred)
+  message           // Any incoming message
+  message_any       // All messages (sent and received)
+  message_ack       // Message delivery/read status
+  message_reaction  // Reactions to messages
+  message_revoked   // Deleted/revoked messages
+  message_edited    // Edited messages
+  message_waiting   // Messages waiting to be sent
+  session_status    // Session status changes
+  group_join        // Someone joined a group
+  group_leave       // Someone left a group
+  group_update      // Group info updated
+  presence_update   // Online/typing status updates
+  poll_vote         // Poll vote received
+  poll_vote_failed  // Poll vote failed
+  call_received     // Incoming call
+  call_accepted     // Call accepted
+  call_rejected     // Call rejected
+  label_upsert      // Label created/updated
+  label_deleted     // Label deleted
+  label_chat_added  // Chat added to label
+  label_chat_deleted // Chat removed from label
+  contact_update    // Contact info updated
+  chat_archive      // Chat archived/unarchived
+  
+  // Legacy events (backward compatibility)
   MESSAGE_RECEIVED
   MESSAGE_SENT
   MESSAGE_ACK
@@ -146,6 +172,8 @@ enum WebhookEvent {
   GROUP_LEAVE
   GROUP_UPDATE
   CALL_RECEIVED
+  
+  // Wildcard
   ALL
 }
 
@@ -157,6 +185,7 @@ model Webhook {
   events      WebhookEvent[] @default([ALL])
   headers     Json?          // Custom headers to send
   secret      String?        // HMAC secret for signature
+  metadata    Json?          // Additional config (retries, etc.)
   isActive    Boolean        @default(true)
   retryCount  Int            @default(3)
   timeout     Int            @default(30000) // ms

@@ -19,6 +19,7 @@ import {
   MessageSquare,
   Users,
   Radio,
+  Webhook,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -31,7 +32,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { sessionApi, type CreateSessionInput, type SessionConfig } from '@/api/session.api'
+import { sessionApi, type CreateSessionInput, type SessionConfig, type InlineWebhookConfig } from '@/api/session.api'
+import { WebhookList } from '@/components/webhook'
 
 export default function NewSessionPage() {
   const navigate = useNavigate()
@@ -63,6 +65,10 @@ export default function NewSessionPage() {
   
   // Metadata
   const [metadataJson, setMetadataJson] = useState('')
+  
+  // Webhooks
+  const [webhooks, setWebhooks] = useState<InlineWebhookConfig[]>([])
+  const [showWebhooks, setShowWebhooks] = useState(false)
 
   // Validation
   const isNameValid = /^[a-zA-Z0-9_-]+$/.test(name) || name === ''
@@ -138,6 +144,12 @@ export default function NewSessionPage() {
         toast.error('Invalid metadata JSON format')
         return
       }
+    }
+    
+    // Webhooks - filter out invalid ones and add to config
+    const validWebhooks = webhooks.filter(w => w.url && w.url.trim() !== '' && w.events && w.events.length > 0)
+    if (validWebhooks.length > 0) {
+      config.webhooks = validWebhooks
     }
     
     const input: CreateSessionInput = {
@@ -566,6 +578,68 @@ export default function NewSessionPage() {
                     </div>
                   </div>
 
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Step 3: Webhooks Configuration */}
+          <Collapsible open={showWebhooks} onOpenChange={setShowWebhooks}>
+            <Card className="border-2 shadow-sm overflow-hidden">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${showWebhooks ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                        3
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Webhook className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <CardTitle className="text-xl">Webhooks</CardTitle>
+                          <CardDescription className="mt-1">
+                            Configure webhooks to receive real-time event notifications
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {webhooks.length > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {webhooks.length} configured
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-xs">Optional</Badge>
+                      {showWebhooks ? (
+                        <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent>
+                <CardContent className="space-y-4 border-t pt-6">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
+                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                    <div className="text-sm text-muted-foreground">
+                      <p className="font-medium text-foreground mb-1">What are webhooks?</p>
+                      <p>
+                        Webhooks allow your application to receive HTTP POST notifications when events occur 
+                        (e.g., new messages, status updates). Configure multiple webhooks with different 
+                        event subscriptions, HMAC security, retry policies, and custom headers.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <WebhookList
+                    webhooks={webhooks}
+                    onChange={setWebhooks}
+                    disabled={createMutation.isPending}
+                    maxWebhooks={10}
+                  />
                 </CardContent>
               </CollapsibleContent>
             </Card>
