@@ -4,6 +4,14 @@ import sessionRoutes from './session.routes.js';
 import messageRoutes from './message.routes.js';
 import apiKeyRoutes from './api-key.routes.js';
 
+// New modular routes
+import groupRoutes from './groups/index.js';
+import presenceRoutes from './presence/index.js';
+import labelsRoutes from './labels/index.js';
+import statusRoutes from './status/index.js';
+import profileRoutes from './profile/index.js';
+import messagesExtendedRoutes from './messages/extended.routes.js';
+
 const router = Router();
 
 // Health check
@@ -21,5 +29,15 @@ router.use('/auth', authRoutes);
 router.use('/sessions', sessionRoutes);
 router.use('/sessions', messageRoutes); // Message routes are nested under sessions
 router.use('/api-keys', apiKeyRoutes);
+
+// New WAHA-like routes (nested under sessions/:sessionId)
+router.use('/sessions/:sessionId/groups', groupRoutes);
+router.use('/sessions/:sessionId/presence', presenceRoutes);
+router.use('/sessions/:sessionId/labels', labelsRoutes);
+router.use('/sessions/:sessionId/status', statusRoutes);
+router.use('/sessions/:sessionId/profile', profileRoutes);
+
+// Extended messages routes (reactions, polls, locations, etc.)
+router.use('/sessions/:sessionId/messages', messagesExtendedRoutes);
 
 export default router;
