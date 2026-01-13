@@ -11,6 +11,18 @@ export type {
   UpdateSessionInput,
   CreateWebhookInput,
   UpdateWebhookInput,
+  SessionConfig,
+  ProxyConfig,
+  WebhookConfig,
+  IgnoreConfig,
+  ClientConfig,
+  NowebConfig,
+  QRCodeFormat,
+  QRCodeQuery,
+  QRCodeResponse,
+  RequestCodeInput,
+  PairingCodeResponse,
+  MeInfo,
 } from './types.js';
 
 // Import CRUD and webhook functions
@@ -32,9 +44,12 @@ class SessionService {
   update = crud.update;
   delete = crud.remove;
   getQRCode = crud.getQRCode;
+  getQRCodeWithFormat = crud.getQRCodeWithFormat;
   restart = crud.restart;
   logout = crud.logout;
   getStatus = crud.getStatus;
+  requestPairingCode = crud.requestPairingCode;
+  getMeInfo = crud.getMeInfo;
 
   // ================================
   // Webhook Management

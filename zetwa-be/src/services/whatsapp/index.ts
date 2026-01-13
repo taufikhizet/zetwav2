@@ -12,6 +12,9 @@ import { SessionNotFoundError, SessionNotConnectedError } from '../../utils/erro
 import { logger } from '../../utils/logger.js';
 import { webhookService } from '../webhook.service.js';
 
+// Import session config types
+import type { SessionConfig, ClientConfig, ProxyConfig } from '../../types/session-config.js';
+
 // Import types
 import type {
   WASession,
@@ -42,10 +45,17 @@ import * as messagesExtended from './messages-extended.js';
 export type { WASession, SessionStatus, SendMessageOptions, SendMediaOptions } from './types.js';
 
 /**
+ * Extended session with config
+ */
+interface ExtendedWASession extends WASession {
+  config?: SessionConfig;
+}
+
+/**
  * Main WhatsApp Service Class
  */
 export class WhatsAppService {
-  private sessions: Map<string, WASession> = new Map();
+  private sessions: Map<string, ExtendedWASession> = new Map();
   private events: TypedEventEmitter = new EventEmitterClass();
 
   constructor() {
@@ -105,14 +115,53 @@ export class WhatsAppService {
   }
 
   /**
-   * Create a new WhatsApp session
+   * Build puppeteer arguments based on session config
    */
-  async createSession(sessionId: string, userId: string): Promise<WASession> {
+  private getPuppeteerArgs(sessionConfig?: SessionConfig): string[] {
+    const baseArgs = [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--disable-gpu',
+    ];
+
+    // Add proxy args if configured
+    if (sessionConfig?.proxy?.server) {
+      baseArgs.push(`--proxy-server=${sessionConfig.proxy.server}`);
+    }
+
+    return baseArgs;
+  }
+
+  /**
+   * Get browser identification from client config
+   */
+  private getClientInfo(clientConfig?: ClientConfig): { webVersion?: string; webVersionCache?: any } {
+    // whatsapp-web.js uses different browser identification
+    // This is a simplified version - can be extended based on needs
+    return {};
+  }
+
+  /**
+   * Create a new WhatsApp session with optional config
+   */
+  async createSession(
+    sessionId: string, 
+    userId: string, 
+    sessionConfig?: SessionConfig
+  ): Promise<ExtendedWASession> {
     if (this.sessions.has(sessionId)) {
       return this.sessions.get(sessionId)!;
     }
 
-    logger.info({ sessionId }, 'Creating WhatsApp session');
+    logger.info({ sessionId, hasConfig: !!sessionConfig }, 'Creating WhatsApp session');
+
+    // Build client options
+    const puppeteerArgs = this.getPuppeteerArgs(sessionConfig);
+    const clientInfo = this.getClientInfo(sessionConfig?.client);
 
     const client = new Client({
       authStrategy: new LocalAuth({
@@ -121,23 +170,17 @@ export class WhatsAppService {
       }),
       puppeteer: {
         headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu',
-        ],
+        args: puppeteerArgs,
       },
+      ...clientInfo,
     });
 
-    const session: WASession = {
+    const session: ExtendedWASession = {
       sessionId,
       userId,
       client,
       status: 'INITIALIZING',
+      config: sessionConfig,
     };
 
     this.sessions.set(sessionId, session);
@@ -220,6 +263,79 @@ export class WhatsAppService {
    */
   getStatus(sessionId: string): SessionStatus | undefined {
     return this.sessions.get(sessionId)?.status;
+  }
+
+  /**
+   * Get session configuration
+   */
+  getSessionConfig(sessionId: string): SessionConfig | undefined {
+    const session = this.sessions.get(sessionId);
+    return session?.config;
+  }
+
+  /**
+   * Get authenticated user ("me") information
+   */
+  getMeInfo(sessionId: string): { id?: string; phoneNumber?: string; pushName?: string } | null {
+    const session = this.sessions.get(sessionId);
+    if (!session || session.status !== 'CONNECTED') {
+      return null;
+    }
+    
+    try {
+      const info = session.client.info;
+      return {
+        id: info?.wid?._serialized,
+        phoneNumber: info?.wid?.user,
+        pushName: info?.pushname,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Request pairing code for phone number authentication
+   * This is an alternative to QR code scanning - user can enter a code
+   * displayed on their WhatsApp mobile app to link the device.
+   * 
+   * Note: This feature requires whatsapp-web.js version 1.23.0+
+   * and may not be available in all configurations.
+   */
+  async requestPairingCode(sessionId: string, phoneNumber: string): Promise<string> {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      throw new SessionNotFoundError(sessionId);
+    }
+
+    // Check if session is in a state where pairing code can be requested
+    const validStatuses: SessionStatus[] = ['SCAN_QR', 'INITIALIZING'];
+    if (!validStatuses.includes(session.status)) {
+      throw new Error(
+        `Cannot request pairing code. Session status is ${session.status}. ` +
+        `Expected one of: ${validStatuses.join(', ')}`
+      );
+    }
+
+    try {
+      // whatsapp-web.js supports requestPairingCode since v1.23.0
+      // Format phone number (remove + and spaces if present)
+      const formattedPhone = phoneNumber.replace(/[+\s-]/g, '');
+      
+      // Request pairing code from the client
+      // The method returns the pairing code as a string
+      const code = await session.client.requestPairingCode(formattedPhone);
+      
+      logger.info({ sessionId, phoneNumber: phoneNumber.slice(-4) }, 'Pairing code generated');
+      
+      return code;
+    } catch (error) {
+      logger.error({ sessionId, error }, 'Failed to request pairing code');
+      throw new Error(
+        'Failed to generate pairing code. This feature may not be available. ' +
+        'Please try scanning the QR code instead.'
+      );
+    }
   }
 
   // ================================

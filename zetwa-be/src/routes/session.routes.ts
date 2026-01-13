@@ -3,12 +3,14 @@ import type { Request, ParamsDictionary } from 'express-serve-static-core';
 import { sessionService } from '../services/session.service.js';
 import { webhookService } from '../services/webhook.service.js';
 import { authenticateAny } from '../middleware/auth.middleware.js';
-import { validateBody } from '../middleware/validate.middleware.js';
+import { validateBody, validateQuery } from '../middleware/validate.middleware.js';
 import {
   createSessionSchema,
   updateSessionSchema,
   createWebhookSchema,
   updateWebhookSchema,
+  qrCodeQuerySchema,
+  requestCodeSchema,
 } from '../schemas/index.js';
 
 interface SessionParams extends ParamsDictionary {
@@ -121,15 +123,78 @@ router.delete('/:sessionId', async (req: Request<SessionParams>, res: Response, 
 
 /**
  * @route GET /api/sessions/:sessionId/qr
- * @desc Get QR code for session
+ * @desc Get QR code for session (supports format query: image or raw)
  */
 router.get('/:sessionId/qr', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
-    const result = await sessionService.getQRCode(req.userId!, req.params.sessionId);
+    const format = (req.query.format as 'image' | 'raw') || 'image';
+    const result = await sessionService.getQRCodeWithFormat(req.userId!, req.params.sessionId, format);
 
     res.json({
       success: true,
       data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route GET /api/sessions/:sessionId/auth/qr
+ * @desc Get QR code for pairing WhatsApp (WAHA-compatible endpoint)
+ */
+router.get('/:sessionId/auth/qr', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+  try {
+    const format = (req.query.format as 'image' | 'raw') || 'image';
+    const result = await sessionService.getQRCodeWithFormat(req.userId!, req.params.sessionId, format);
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route POST /api/sessions/:sessionId/auth/request-code
+ * @desc Request pairing code for phone number authentication (alternative to QR)
+ */
+router.post(
+  '/:sessionId/auth/request-code',
+  validateBody(requestCodeSchema),
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+    try {
+      const { phoneNumber, method } = req.body;
+      const result = await sessionService.requestPairingCode(
+        req.userId!, 
+        req.params.sessionId, 
+        phoneNumber, 
+        method
+      );
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route GET /api/sessions/:sessionId/me
+ * @desc Get authenticated user information
+ */
+router.get('/:sessionId/me', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+  try {
+    const meInfo = await sessionService.getMeInfo(req.userId!, req.params.sessionId);
+
+    res.json({
+      success: true,
+      data: meInfo,
     });
   } catch (error) {
     next(error);

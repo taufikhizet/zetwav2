@@ -18,6 +18,8 @@ import {
   ExternalLink,
   AlertTriangle,
   XCircle,
+  Smartphone,
+  Hash,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -25,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -52,6 +55,14 @@ export default function SessionDetailPage() {
   const [isQrExpired, setIsQrExpired] = useState(false)
   // Flag to prevent race condition during restart - stops effect from re-setting isQrExpired
   const [isRestarting, setIsRestarting] = useState(false)
+  
+  // Pairing code state (alternative to QR)
+  const [pairingPhoneNumber, setPairingPhoneNumber] = useState('')
+  const [pairingCode, setPairingCode] = useState<string | null>(null)
+  const [pairingCodeCopied, setPairingCodeCopied] = useState(false)
+  
+  // Auth method tab (QR or Phone Number)
+  const [authMethod, setAuthMethod] = useState<'qr' | 'phone'>('qr')
   
   // Dialog states
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -290,6 +301,9 @@ export default function SessionDetailPage() {
     onMutate: () => {
       // Set restarting flag BEFORE mutation to prevent race conditions
       setIsRestarting(true)
+      // Reset pairing code when restarting
+      setPairingCode(null)
+      setPairingPhoneNumber('')
     },
     onSuccess: () => {
       setRestartOpen(false)
@@ -304,6 +318,40 @@ export default function SessionDetailPage() {
       toast.error('Failed to restart session')
     },
   })
+
+  // Request pairing code (alternative to QR code)
+  const pairingCodeMutation = useMutation({
+    mutationFn: (phoneNumber: string) => sessionApi.requestPairingCode(sessionId!, { phoneNumber }),
+    onSuccess: (data) => {
+      setPairingCode(data.code)
+      toast.success('Pairing code generated! Enter it in your WhatsApp app.')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to generate pairing code')
+    },
+  })
+
+  const handleRequestPairingCode = () => {
+    if (!pairingPhoneNumber.trim()) {
+      toast.error('Please enter your phone number')
+      return
+    }
+    // Remove any non-numeric characters
+    const cleanPhone = pairingPhoneNumber.replace(/\D/g, '')
+    if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+      toast.error('Please enter a valid phone number (10-15 digits)')
+      return
+    }
+    pairingCodeMutation.mutate(cleanPhone)
+  }
+
+  const handleCopyPairingCode = async () => {
+    if (pairingCode) {
+      await copyToClipboard(pairingCode)
+      setPairingCodeCopied(true)
+      setTimeout(() => setPairingCodeCopied(false), 2000)
+    }
+  }
 
   // Request new QR code - simple and direct
   // Based on whatsapp-web.js: WhatsApp auto-regenerates QR, we just fetch latest
@@ -663,7 +711,7 @@ export default function SessionDetailPage() {
             </Card>
           )}
 
-          {/* QR Code Card - show if QR_READY or INITIALIZING */}
+          {/* QR Code / Pairing Code Card - show if QR_READY or INITIALIZING */}
           {(showQRCard || status === 'INITIALIZING') && !isSessionFailed && !isSessionLoggedOut && (
             <Card>
               <CardHeader>
@@ -672,93 +720,216 @@ export default function SessionDetailPage() {
                   Connect WhatsApp
                 </CardTitle>
                 <CardDescription>
-                  Scan this QR code with your WhatsApp mobile app to connect
+                  Choose a method to connect your WhatsApp account
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col items-center">
-                {hasQRCode ? (
-                  // QR Code Display - Simple, no countdown
-                  // WhatsApp auto-regenerates QR and socket delivers new one
-                  <>
-                    <div className="relative">
-                      <div className={`bg-white p-4 rounded-lg shadow-sm transition-opacity duration-200 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
-                        <img src={qrCode} alt="QR Code" className="w-64 h-64" />
-                      </div>
-                      {/* Subtle loading overlay - doesn't hide QR, just dims it */}
-                      {isRefreshing && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="bg-background/80 rounded-full p-3">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <CardContent>
+                <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as 'qr' | 'phone')} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="qr" className="flex items-center gap-2">
+                      <QrCode className="h-4 w-4" />
+                      QR Code
+                    </TabsTrigger>
+                    <TabsTrigger value="phone" className="flex items-center gap-2">
+                      <Smartphone className="h-4 w-4" />
+                      Phone Number
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* QR Code Tab */}
+                  <TabsContent value="qr" className="flex flex-col items-center">
+                    {hasQRCode ? (
+                      // QR Code Display - Simple, no countdown
+                      // WhatsApp auto-regenerates QR and socket delivers new one
+                      <>
+                        <div className="relative">
+                          <div className={`bg-white p-4 rounded-lg shadow-sm transition-opacity duration-200 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
+                            <img src={qrCode} alt="QR Code" className="w-64 h-64" />
                           </div>
+                          {/* Subtle loading overlay - doesn't hide QR, just dims it */}
+                          {isRefreshing && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-background/80 rounded-full p-3">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    <p className="text-sm text-muted-foreground mt-4 text-center">
-                      Open WhatsApp → Settings → Linked Devices → Link a Device
-                    </p>
+                        <p className="text-sm text-muted-foreground mt-4 text-center">
+                          Open WhatsApp → Settings → Linked Devices → Link a Device
+                        </p>
 
-                    <p className="text-xs text-muted-foreground mt-2 text-center">
-                      QR code refreshes automatically
-                    </p>
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                          QR code refreshes automatically
+                        </p>
 
-                    {/* Manual Refresh Button - for when user wants to force refresh */}
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={requestNewQR} 
-                      className="mt-3"
-                      disabled={isRefreshing}
-                    >
-                      {isRefreshing ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Refreshing...
-                        </>
-                      ) : (
-                        <>
+                        {/* Manual Refresh Button - for when user wants to force refresh */}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={requestNewQR} 
+                          className="mt-3"
+                          disabled={isRefreshing}
+                        >
+                          {isRefreshing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Refreshing...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="mr-2 h-4 w-4" />
+                              Refresh QR Code
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    ) : showQRCard && !hasQRCode ? (
+                      // Waiting for QR Code (status is QR_READY but qrCode not yet received)
+                      <div className="flex flex-col items-center py-8">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                        <p className="text-muted-foreground">
+                          {isRefreshing ? 'Refreshing QR code...' : 'Waiting for QR code...'}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">QR code will appear shortly</p>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={requestNewQR} 
+                          className="mt-4"
+                          disabled={isRefreshing}
+                        >
+                          {isRefreshing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Refreshing...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="mr-2 h-4 w-4" />
+                              Refresh
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ) : (
+                      // Initializing State
+                      <div className="flex flex-col items-center py-8">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                        <p className="text-muted-foreground">Initializing session...</p>
+                        <p className="text-sm text-muted-foreground mt-2">This may take a moment...</p>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Phone Number / Pairing Code Tab */}
+                  <TabsContent value="phone" className="flex flex-col items-center">
+                    {!pairingCode ? (
+                      // Phone number input form
+                      <div className="w-full max-w-sm space-y-4">
+                        <div className="text-center mb-4">
+                          <Hash className="h-12 w-12 mx-auto text-primary mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            Enter your phone number to get a pairing code
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label htmlFor="phone" className="text-sm font-medium">
+                            Phone Number
+                          </label>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            placeholder="628123456789"
+                            value={pairingPhoneNumber}
+                            onChange={(e) => setPairingPhoneNumber(e.target.value)}
+                            className="text-center text-lg"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Include country code without + or 0 (e.g., 628123456789 for Indonesia)
+                          </p>
+                        </div>
+
+                        <Button
+                          onClick={handleRequestPairingCode}
+                          disabled={pairingCodeMutation.isPending || !pairingPhoneNumber.trim()}
+                          className="w-full"
+                        >
+                          {pairingCodeMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Generating Code...
+                            </>
+                          ) : (
+                            <>
+                              <Hash className="mr-2 h-4 w-4" />
+                              Get Pairing Code
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ) : (
+                      // Pairing code display
+                      <div className="w-full max-w-sm space-y-4">
+                        <div className="text-center mb-4">
+                          <div className="bg-primary/10 rounded-full p-4 w-fit mx-auto mb-4">
+                            <Hash className="h-8 w-8 text-primary" />
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Enter this code in your WhatsApp app
+                          </p>
+                        </div>
+
+                        <div className="relative">
+                          <div className="bg-muted rounded-lg p-6 text-center">
+                            <p className="text-3xl font-mono font-bold tracking-[0.5em]">
+                              {pairingCode.slice(0, 4)}-{pairingCode.slice(4)}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCopyPairingCode}
+                            className="absolute top-2 right-2"
+                          >
+                            {pairingCodeCopied ? (
+                              <Check className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+
+                        <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
+                          <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2 text-sm">
+                            How to use:
+                          </h4>
+                          <ol className="list-decimal list-inside text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                            <li>Open WhatsApp on your phone</li>
+                            <li>Go to Settings → Linked Devices</li>
+                            <li>Tap "Link a Device"</li>
+                            <li>Select "Link with phone number instead"</li>
+                            <li>Enter the pairing code above</li>
+                          </ol>
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setPairingCode(null)
+                            setPairingPhoneNumber('')
+                          }}
+                          className="w-full"
+                        >
                           <RefreshCw className="mr-2 h-4 w-4" />
-                          Refresh QR Code
-                        </>
-                      )}
-                    </Button>
-                  </>
-                ) : showQRCard && !hasQRCode ? (
-                  // Waiting for QR Code (status is QR_READY but qrCode not yet received)
-                  <div className="flex flex-col items-center py-8">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-                    <p className="text-muted-foreground">
-                      {isRefreshing ? 'Refreshing QR code...' : 'Waiting for QR code...'}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-2">QR code will appear shortly</p>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={requestNewQR} 
-                      className="mt-4"
-                      disabled={isRefreshing}
-                    >
-                      {isRefreshing ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Refreshing...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="mr-2 h-4 w-4" />
-                          Refresh
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  // Initializing State
-                  <div className="flex flex-col items-center py-8">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-                    <p className="text-muted-foreground">Initializing session...</p>
-                    <p className="text-sm text-muted-foreground mt-2">This may take a moment...</p>
-                  </div>
-                )}
+                          Get New Code
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           )}

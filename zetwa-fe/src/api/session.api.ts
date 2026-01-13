@@ -1,5 +1,84 @@
 import { api, type ApiResponse } from '@/lib/api'
 
+// ================================
+// Session Configuration Types (WAHA-inspired)
+// ================================
+
+/** Proxy configuration for the session */
+export interface ProxyConfig {
+  server: string
+  username?: string
+  password?: string
+}
+
+/** HMAC configuration for webhook security */
+export interface HmacConfig {
+  key?: string
+}
+
+/** Retry configuration for webhooks */
+export interface RetriesConfig {
+  delaySeconds?: number
+  attempts?: number
+  policy?: 'linear' | 'exponential' | 'constant'
+}
+
+/** Custom header for webhooks */
+export interface CustomHeader {
+  name: string
+  value: string
+}
+
+/** Inline webhook configuration (per session) */
+export interface InlineWebhookConfig {
+  url: string
+  events: string[]
+  hmac?: HmacConfig
+  retries?: RetriesConfig
+  customHeaders?: CustomHeader[]
+}
+
+/** Store configuration for session data persistence */
+export interface StoreConfig {
+  enabled: boolean
+  fullSync?: boolean
+}
+
+/** Engine-specific configuration (NOWEB/Baileys) */
+export interface NowebConfig {
+  store?: StoreConfig
+  markOnline?: boolean
+}
+
+/** Configuration for ignoring specific event types */
+export interface IgnoreConfig {
+  status?: boolean
+  groups?: boolean
+  channels?: boolean
+  broadcast?: boolean
+}
+
+/** Client configuration - how session appears in WhatsApp */
+export interface ClientConfig {
+  deviceName?: string
+  browserName?: string
+}
+
+/** Main session configuration object */
+export interface SessionConfig {
+  webhooks?: InlineWebhookConfig[]
+  metadata?: Record<string, string>
+  proxy?: ProxyConfig
+  debug?: boolean
+  ignore?: IgnoreConfig
+  client?: ClientConfig
+  noweb?: NowebConfig
+}
+
+// ================================
+// Session Types
+// ================================
+
 export interface Session {
   id: string
   name: string
@@ -14,6 +93,8 @@ export interface Session {
   isOnline?: boolean
   qrCode?: string | null
   lastQrAt?: string | null
+  config?: SessionConfig
+  metadata?: Record<string, unknown>
   _count?: {
     webhooks: number
     messages: number
@@ -25,6 +106,44 @@ export interface Session {
 export interface CreateSessionInput {
   name: string
   description?: string
+  config?: SessionConfig
+  start?: boolean
+}
+
+export interface UpdateSessionInput {
+  name?: string
+  description?: string
+  config?: SessionConfig
+}
+
+/** QR code response with format support */
+export interface QRCodeResponse {
+  status: string
+  value?: string | null
+  qrCode?: string | null
+  message?: string
+  canRetry?: boolean
+}
+
+/** Pairing code response */
+export interface PairingCodeResponse {
+  code: string
+  phoneNumber: string
+  message: string
+}
+
+/** Request pairing code input */
+export interface RequestCodeInput {
+  phoneNumber: string
+  method?: 'sms' | 'voice'
+}
+
+/** Me (authenticated user) information */
+export interface MeInfo {
+  id?: string
+  phoneNumber?: string
+  pushName?: string
+  profilePicUrl?: string
 }
 
 export interface Webhook {
@@ -81,7 +200,7 @@ export const sessionApi = {
     return response.data.data
   },
 
-  update: async (sessionId: string, data: Partial<CreateSessionInput>): Promise<Session> => {
+  update: async (sessionId: string, data: UpdateSessionInput): Promise<Session> => {
     const response = await api.patch<ApiResponse<Session>>(`/sessions/${sessionId}`, data)
     return response.data.data
   },
@@ -90,10 +209,36 @@ export const sessionApi = {
     await api.delete(`/sessions/${sessionId}`)
   },
 
-  getQR: async (sessionId: string): Promise<{ status: string; qrCode: string | null; message?: string; canRetry?: boolean }> => {
-    const response = await api.get<ApiResponse<{ status: string; qrCode: string | null; message?: string; canRetry?: boolean }>>(
-      `/sessions/${sessionId}/qr`
+  /** Get QR code with optional format (image or raw) */
+  getQR: async (sessionId: string, format: 'image' | 'raw' = 'image'): Promise<QRCodeResponse> => {
+    const response = await api.get<ApiResponse<QRCodeResponse>>(
+      `/sessions/${sessionId}/qr`,
+      { params: { format } }
     )
+    return response.data.data
+  },
+
+  /** Get QR code from auth endpoint (WAHA-compatible) */
+  getAuthQR: async (sessionId: string, format: 'image' | 'raw' = 'image'): Promise<QRCodeResponse> => {
+    const response = await api.get<ApiResponse<QRCodeResponse>>(
+      `/sessions/${sessionId}/auth/qr`,
+      { params: { format } }
+    )
+    return response.data.data
+  },
+
+  /** Request pairing code for phone number authentication (alternative to QR) */
+  requestPairingCode: async (sessionId: string, data: RequestCodeInput): Promise<PairingCodeResponse> => {
+    const response = await api.post<ApiResponse<PairingCodeResponse>>(
+      `/sessions/${sessionId}/auth/request-code`,
+      data
+    )
+    return response.data.data
+  },
+
+  /** Get authenticated user information */
+  getMeInfo: async (sessionId: string): Promise<MeInfo> => {
+    const response = await api.get<ApiResponse<MeInfo>>(`/sessions/${sessionId}/me`)
     return response.data.data
   },
 

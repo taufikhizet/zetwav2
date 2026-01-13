@@ -82,18 +82,47 @@ export function SessionsSection({ baseUrl }: SessionsSectionProps) {
         method="POST"
         path="/api/sessions"
         title="Create Session"
-        description="Buat sesi WhatsApp baru"
+        description="Buat sesi WhatsApp baru dengan konfigurasi opsional"
         auth="Both"
         bodyParams={[
           { name: 'name', type: 'string', required: true, description: 'Nama session (hanya huruf, angka, underscore, hyphen)' },
           { name: 'description', type: 'string', required: false, description: 'Deskripsi session (max 255 karakter)' },
+          { name: 'start', type: 'boolean', required: false, description: 'Mulai session langsung setelah dibuat (default: true)' },
+          { name: 'config', type: 'object', required: false, description: 'Konfigurasi session (lihat contoh)' },
+          { name: 'config.debug', type: 'boolean', required: false, description: 'Aktifkan mode debug' },
+          { name: 'config.proxy', type: 'object', required: false, description: 'Konfigurasi proxy (server, username, password)' },
+          { name: 'config.client', type: 'object', required: false, description: 'Info perangkat (deviceName, browserName)' },
+          { name: 'config.ignore', type: 'object', required: false, description: 'Filter event (status, groups, broadcast)' },
+          { name: 'config.metadata', type: 'object', required: false, description: 'Custom metadata untuk webhook' },
         ]}
         curlExample={`curl -X POST "${baseUrl}/api/sessions" \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -d '{
     "name": "my-session",
-    "description": "Session untuk bisnis"
+    "description": "Session untuk bisnis",
+    "start": true,
+    "config": {
+      "debug": false,
+      "client": {
+        "deviceName": "Windows",
+        "browserName": "Chrome"
+      },
+      "proxy": {
+        "server": "http://proxy.example.com:8080",
+        "username": "user",
+        "password": "pass"
+      },
+      "ignore": {
+        "status": true,
+        "groups": false,
+        "broadcast": true
+      },
+      "metadata": {
+        "user.id": "123",
+        "user.email": "user@example.com"
+      }
+    }
   }'`}
         responseExample={`{
   "success": true,
@@ -191,13 +220,66 @@ export function SessionsSection({ baseUrl }: SessionsSectionProps) {
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session' },
         ]}
-        curlExample={`curl -X GET "${baseUrl}/api/sessions/clxxx.../qr" \\
+        queryParams={[
+          { name: 'format', type: 'string', required: false, description: 'Format output: "image" (base64) atau "raw" (teks QR)' },
+        ]}
+        curlExample={`curl -X GET "${baseUrl}/api/sessions/clxxx.../qr?format=image" \\
   -H "X-API-Key: YOUR_API_KEY"`}
         responseExample={`{
   "success": true,
   "data": {
-    "qr": "data:image/png;base64,iVBORw0KGgo...",
+    "qrCode": "data:image/png;base64,iVBORw0KGgo...",
     "status": "QR_READY"
+  }
+}`}
+      />
+
+      <EndpointCard
+        method="POST"
+        path="/api/sessions/{sessionId}/auth/request-code"
+        title="Request Pairing Code"
+        description="Minta pairing code untuk autentikasi via nomor telepon (alternatif QR code)"
+        auth="Both"
+        pathParams={[
+          { name: 'sessionId', type: 'string', required: true, description: 'ID session' },
+        ]}
+        bodyParams={[
+          { name: 'phoneNumber', type: 'string', required: true, description: 'Nomor telepon dengan kode negara tanpa + atau 0 (contoh: 628123456789)' },
+        ]}
+        curlExample={`curl -X POST "${baseUrl}/api/sessions/clxxx.../auth/request-code" \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "phoneNumber": "628123456789"
+  }'`}
+        responseExample={`{
+  "success": true,
+  "data": {
+    "code": "12345678",
+    "phoneNumber": "628123456789",
+    "message": "Pairing code generated. Enter it in your WhatsApp app."
+  }
+}`}
+      />
+
+      <EndpointCard
+        method="GET"
+        path="/api/sessions/{sessionId}/me"
+        title="Get Me Info"
+        description="Ambil informasi akun WhatsApp yang terautentikasi"
+        auth="Both"
+        pathParams={[
+          { name: 'sessionId', type: 'string', required: true, description: 'ID session' },
+        ]}
+        curlExample={`curl -X GET "${baseUrl}/api/sessions/clxxx.../me" \\
+  -H "X-API-Key: YOUR_API_KEY"`}
+        responseExample={`{
+  "success": true,
+  "data": {
+    "id": "628123456789@c.us",
+    "phoneNumber": "628123456789",
+    "pushName": "John Doe",
+    "profilePicUrl": "https://..."
   }
 }`}
       />

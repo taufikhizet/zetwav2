@@ -31,38 +31,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { sessionApi, type Session } from '@/api/session.api'
 import { getStatusColor, getStatusText, formatRelativeTime } from '@/lib/utils'
 
 export default function SessionsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [createOpen, setCreateOpen] = useState(false)
   const [deleteSession, setDeleteSession] = useState<Session | null>(null)
-  const [newSessionName, setNewSessionName] = useState('')
-  const [newSessionDescription, setNewSessionDescription] = useState('')
 
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ['sessions'],
     queryFn: sessionApi.list,
     refetchInterval: 5000, // Refresh every 5 seconds
-  })
-
-  const createMutation = useMutation({
-    mutationFn: sessionApi.create,
-    onSuccess: (session) => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] })
-      toast.success('Session created successfully')
-      setCreateOpen(false)
-      setNewSessionName('')
-      setNewSessionDescription('')
-      navigate(`/dashboard/sessions/${session.id}`)
-    },
-    onError: (error: Error & { response?: { data?: { error?: { message?: string } } } }) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to create session')
-    },
   })
 
   const deleteMutation = useMutation({
@@ -99,17 +79,6 @@ export default function SessionsPage() {
     },
   })
 
-  const handleCreate = () => {
-    if (!newSessionName.trim()) {
-      toast.error('Session name is required')
-      return
-    }
-    createMutation.mutate({
-      name: newSessionName.trim(),
-      description: newSessionDescription.trim() || undefined,
-    })
-  }
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -128,7 +97,7 @@ export default function SessionsPage() {
             Manage your WhatsApp sessions
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button onClick={() => navigate('/dashboard/sessions/new')}>
           <Plus className="mr-2 h-4 w-4" />
           New Session
         </Button>
@@ -143,7 +112,7 @@ export default function SessionsPage() {
             <p className="text-muted-foreground text-center max-w-md mb-4">
               Create your first WhatsApp session to start sending and receiving messages via API.
             </p>
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button onClick={() => navigate('/dashboard/sessions/new')}>
               <Plus className="mr-2 h-4 w-4" />
               Create Session
             </Button>
@@ -251,50 +220,6 @@ export default function SessionsPage() {
           ))}
         </div>
       )}
-
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Session</DialogTitle>
-            <DialogDescription>
-              Create a new WhatsApp session. You'll need to scan a QR code to connect.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Session Name</Label>
-              <Input
-                id="name"
-                placeholder="my-session"
-                value={newSessionName}
-                onChange={(e) => setNewSessionName(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Only letters, numbers, underscores, and hyphens allowed.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description (optional)</Label>
-              <Input
-                id="description"
-                placeholder="Main business WhatsApp"
-                value={newSessionDescription}
-                onChange={(e) => setNewSessionDescription(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreate} disabled={createMutation.isPending}>
-              {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Session
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteSession} onOpenChange={() => setDeleteSession(null)}>

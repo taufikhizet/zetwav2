@@ -26,7 +26,82 @@ export const updateProfileSchema = z.object({
   avatar: z.string().url().optional(),
 });
 
-// Session schemas
+// ================================
+// Session Configuration Schemas (WAHA-inspired)
+// ================================
+
+// Proxy configuration
+const proxyConfigSchema = z.object({
+  server: z.string().min(1, 'Proxy server is required'),
+  username: z.string().optional(),
+  password: z.string().optional(),
+}).optional();
+
+// HMAC configuration for webhook security
+const hmacConfigSchema = z.object({
+  key: z.string().optional(),
+}).optional();
+
+// Retry configuration for webhooks
+const retriesConfigSchema = z.object({
+  delaySeconds: z.number().int().min(1).max(60).optional(),
+  attempts: z.number().int().min(0).max(15).optional(),
+  policy: z.enum(['linear', 'exponential', 'constant']).optional(),
+}).optional();
+
+// Custom header for webhooks
+const customHeaderSchema = z.object({
+  name: z.string().min(1),
+  value: z.string(),
+});
+
+// Inline webhook configuration (per session)
+const inlineWebhookConfigSchema = z.object({
+  url: z.string().url('Invalid webhook URL'),
+  events: z.array(z.string()).min(1, 'At least one event is required'),
+  hmac: hmacConfigSchema,
+  retries: retriesConfigSchema,
+  customHeaders: z.array(customHeaderSchema).optional(),
+});
+
+// Store configuration for session data persistence
+const storeConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  fullSync: z.boolean().optional(),
+}).optional();
+
+// Engine-specific configuration (NOWEB/Baileys)
+const nowebConfigSchema = z.object({
+  store: storeConfigSchema,
+  markOnline: z.boolean().optional(),
+}).optional();
+
+// Ignore configuration for specific event types
+const ignoreConfigSchema = z.object({
+  status: z.boolean().optional(),
+  groups: z.boolean().optional(),
+  channels: z.boolean().optional(),
+  broadcast: z.boolean().optional(),
+}).optional();
+
+// Client configuration - how session appears in WhatsApp
+const clientConfigSchema = z.object({
+  deviceName: z.string().max(50).optional(),
+  browserName: z.string().max(50).optional(),
+}).optional();
+
+// Main session configuration schema
+export const sessionConfigSchema = z.object({
+  webhooks: z.array(inlineWebhookConfigSchema).optional(),
+  metadata: z.record(z.string()).optional(),
+  proxy: proxyConfigSchema,
+  debug: z.boolean().optional(),
+  ignore: ignoreConfigSchema,
+  client: clientConfigSchema,
+  noweb: nowebConfigSchema,
+}).optional();
+
+// Session schemas (enhanced with config)
 export const createSessionSchema = z.object({
   name: z
     .string()
@@ -34,6 +109,8 @@ export const createSessionSchema = z.object({
     .max(50, 'Session name must be less than 50 characters')
     .regex(/^[a-zA-Z0-9_-]+$/, 'Session name can only contain letters, numbers, underscores, and hyphens'),
   description: z.string().max(255).optional(),
+  config: sessionConfigSchema,
+  start: z.boolean().default(true),
 });
 
 export const updateSessionSchema = z.object({
@@ -44,10 +121,48 @@ export const updateSessionSchema = z.object({
     .regex(/^[a-zA-Z0-9_-]+$/)
     .optional(),
   description: z.string().max(255).optional(),
+  config: sessionConfigSchema,
 });
 
-// Webhook schemas
+// QR Code schemas
+export const qrCodeQuerySchema = z.object({
+  format: z.enum(['image', 'raw']).default('image'),
+});
+
+// Request pairing code schema (alternative to QR)
+export const requestCodeSchema = z.object({
+  phoneNumber: z.string()
+    .min(10, 'Phone number must be at least 10 digits')
+    .max(15, 'Phone number must be at most 15 digits')
+    .regex(/^\d+$/, 'Phone number must contain only digits'),
+  method: z.enum(['sms', 'voice']).optional(),
+});
+
+// Webhook schemas (extended with WAHA-style events)
 export const webhookEventEnum = z.enum([
+  // WAHA-style events (preferred)
+  'message',
+  'message.any',
+  'message.ack',
+  'message.reaction',
+  'message.revoked',
+  'message.edited',
+  'message.waiting',
+  'session.status',
+  'group.join',
+  'group.leave',
+  'group.update',
+  'presence.update',
+  'poll.vote',
+  'poll.vote.failed',
+  'call.received',
+  'call.accepted',
+  'call.rejected',
+  'label.upsert',
+  'label.deleted',
+  'label.chat.added',
+  'label.chat.deleted',
+  // Legacy events (for backward compatibility)
   'MESSAGE_RECEIVED',
   'MESSAGE_SENT',
   'MESSAGE_ACK',
@@ -63,7 +178,9 @@ export const webhookEventEnum = z.enum([
   'GROUP_LEAVE',
   'GROUP_UPDATE',
   'CALL_RECEIVED',
+  // Wildcards
   'ALL',
+  '*',
 ]);
 
 export const createWebhookSchema = z.object({
