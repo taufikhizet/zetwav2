@@ -1,5 +1,10 @@
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { CodeBlock } from './CodeBlock'
 
 interface Parameter {
@@ -30,6 +35,14 @@ const methodColors: Record<string, string> = {
   DELETE: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
 }
 
+const methodBorderColors: Record<string, string> = {
+  GET: 'border-l-green-500',
+  POST: 'border-l-blue-500',
+  PUT: 'border-l-amber-500',
+  PATCH: 'border-l-orange-500',
+  DELETE: 'border-l-red-500',
+}
+
 export function EndpointCard({
   method,
   path,
@@ -42,127 +55,152 @@ export function EndpointCard({
   curlExample,
   responseExample,
 }: EndpointCardProps) {
+  // Generate unique ID for accordion
+  const accordionId = `${method}-${path}`.replace(/[^a-zA-Z0-9]/g, '-')
+
   return (
-    <Card className="mb-6">
-      <CardHeader>
-        <div className="flex items-center gap-3 mb-2">
-          <Badge className={`${methodColors[method]} font-mono`}>{method}</Badge>
-          <code className="text-sm bg-muted px-2 py-1 rounded">{path}</code>
-        </div>
-        <CardTitle className="text-lg">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Authentication */}
-        <div>
-          <h4 className="font-semibold text-sm mb-2">Autentikasi</h4>
-          <Badge variant="outline">{auth === 'Both' ? 'JWT Token atau API Key' : auth === 'JWT' ? 'JWT Token' : 'API Key (X-API-Key header)'}</Badge>
-        </div>
+    <Accordion type="single" collapsible className="mb-3">
+      <AccordionItem 
+        value={accordionId} 
+        className={`border rounded-lg overflow-hidden border-l-4 ${methodBorderColors[method]}`}
+      >
+        <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 [&[data-state=open]]:bg-muted/30">
+          <div className="flex items-center gap-3 text-left flex-1 min-w-0">
+            <Badge className={`${methodColors[method]} font-mono shrink-0 text-xs`}>
+              {method}
+            </Badge>
+            <code className="text-xs md:text-sm bg-muted px-2 py-0.5 rounded truncate max-w-[200px] md:max-w-none">
+              {path}
+            </code>
+            <span className="hidden sm:inline text-sm text-muted-foreground">—</span>
+            <span className="hidden sm:inline text-sm font-medium truncate">{title}</span>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-4 pb-4">
+          {/* Title and Description (visible on mobile since hidden in header) */}
+          <div className="sm:hidden mb-4 pt-2">
+            <h4 className="font-semibold">{title}</h4>
+            <p className="text-sm text-muted-foreground">{description}</p>
+          </div>
+          
+          {/* Description (desktop) */}
+          <p className="hidden sm:block text-sm text-muted-foreground mb-4 pt-2">{description}</p>
 
-        {/* Path Parameters */}
-        {pathParams && pathParams.length > 0 && (
-          <div>
-            <h4 className="font-semibold text-sm mb-2">Path Parameters</h4>
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="text-left p-2 font-medium">Parameter</th>
-                    <th className="text-left p-2 font-medium">Type</th>
-                    <th className="text-left p-2 font-medium">Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pathParams.map((param) => (
-                    <tr key={param.name} className="border-t">
-                      <td className="p-2">
-                        <code className="text-primary">{param.name}</code>
-                        {param.required && <span className="text-red-500 ml-1">*</span>}
-                      </td>
-                      <td className="p-2 text-muted-foreground">{param.type}</td>
-                      <td className="p-2">{param.description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="space-y-4">
+            {/* Authentication */}
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Autentikasi</h4>
+              <Badge variant="outline" className="text-xs">
+                {auth === 'Both' ? 'JWT Token atau API Key' : auth === 'JWT' ? 'JWT Token' : 'API Key (X-API-Key header)'}
+              </Badge>
             </div>
-          </div>
-        )}
 
-        {/* Query Parameters */}
-        {queryParams && queryParams.length > 0 && (
-          <div>
-            <h4 className="font-semibold text-sm mb-2">Query Parameters</h4>
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="text-left p-2 font-medium">Parameter</th>
-                    <th className="text-left p-2 font-medium">Type</th>
-                    <th className="text-left p-2 font-medium">Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {queryParams.map((param) => (
-                    <tr key={param.name} className="border-t">
-                      <td className="p-2">
-                        <code className="text-primary">{param.name}</code>
-                        {param.required && <span className="text-red-500 ml-1">*</span>}
-                      </td>
-                      <td className="p-2 text-muted-foreground">{param.type}</td>
-                      <td className="p-2">{param.description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Path Parameters */}
+            {pathParams && pathParams.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Path Parameters</h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted">
+                      <tr>
+                        <th className="text-left p-2 font-medium">Parameter</th>
+                        <th className="text-left p-2 font-medium">Type</th>
+                        <th className="text-left p-2 font-medium hidden sm:table-cell">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pathParams.map((param) => (
+                        <tr key={param.name} className="border-t">
+                          <td className="p-2">
+                            <code className="text-primary text-xs">{param.name}</code>
+                            {param.required && <span className="text-red-500 ml-1">*</span>}
+                          </td>
+                          <td className="p-2 text-muted-foreground text-xs">{param.type}</td>
+                          <td className="p-2 text-xs hidden sm:table-cell">{param.description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Query Parameters */}
+            {queryParams && queryParams.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Query Parameters</h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted">
+                      <tr>
+                        <th className="text-left p-2 font-medium">Parameter</th>
+                        <th className="text-left p-2 font-medium">Type</th>
+                        <th className="text-left p-2 font-medium hidden sm:table-cell">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {queryParams.map((param) => (
+                        <tr key={param.name} className="border-t">
+                          <td className="p-2">
+                            <code className="text-primary text-xs">{param.name}</code>
+                            {param.required && <span className="text-red-500 ml-1">*</span>}
+                          </td>
+                          <td className="p-2 text-muted-foreground text-xs">{param.type}</td>
+                          <td className="p-2 text-xs hidden sm:table-cell">{param.description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Body Parameters */}
+            {bodyParams && bodyParams.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Request Body</h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted">
+                      <tr>
+                        <th className="text-left p-2 font-medium">Parameter</th>
+                        <th className="text-left p-2 font-medium">Type</th>
+                        <th className="text-left p-2 font-medium hidden sm:table-cell">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bodyParams.map((param) => (
+                        <tr key={param.name} className="border-t">
+                          <td className="p-2">
+                            <code className="text-primary text-xs">{param.name}</code>
+                            {param.required && <span className="text-red-500 ml-1">*</span>}
+                          </td>
+                          <td className="p-2 text-muted-foreground text-xs">{param.type}</td>
+                          <td className="p-2 text-xs hidden sm:table-cell">{param.description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* cURL Example */}
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Contoh Request (cURL)</h4>
+              <CodeBlock code={curlExample} language="bash" />
             </div>
-          </div>
-        )}
 
-        {/* Body Parameters */}
-        {bodyParams && bodyParams.length > 0 && (
-          <div>
-            <h4 className="font-semibold text-sm mb-2">Request Body</h4>
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="text-left p-2 font-medium">Parameter</th>
-                    <th className="text-left p-2 font-medium">Type</th>
-                    <th className="text-left p-2 font-medium">Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bodyParams.map((param) => (
-                    <tr key={param.name} className="border-t">
-                      <td className="p-2">
-                        <code className="text-primary">{param.name}</code>
-                        {param.required && <span className="text-red-500 ml-1">*</span>}
-                      </td>
-                      <td className="p-2 text-muted-foreground">{param.type}</td>
-                      <td className="p-2">{param.description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {/* Response Example */}
+            {responseExample && (
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Contoh Response</h4>
+                <CodeBlock code={responseExample} language="json" />
+              </div>
+            )}
           </div>
-        )}
-
-        {/* cURL Example */}
-        <div>
-          <h4 className="font-semibold text-sm mb-2">Contoh Request (cURL)</h4>
-          <CodeBlock code={curlExample} language="bash" />
-        </div>
-
-        {/* Response Example */}
-        {responseExample && (
-          <div>
-            <h4 className="font-semibold text-sm mb-2">Contoh Response</h4>
-            <CodeBlock code={responseExample} language="json" />
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   )
 }

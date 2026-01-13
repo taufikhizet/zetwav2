@@ -9,6 +9,12 @@ import {
   ChevronRight,
   Menu,
   X,
+  UsersRound,
+  Radio,
+  Tag,
+  CircleDot,
+  UserCircle,
+  MessageCirclePlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -21,6 +27,12 @@ import {
   ContactsSection,
   WebhooksSection,
   ApiKeysSection,
+  GroupsSection,
+  PresenceSection,
+  LabelsSection,
+  StatusSection,
+  ProfileSection,
+  ExtendedMessagesSection,
 } from './sections'
 
 const sections = [
@@ -28,7 +40,13 @@ const sections = [
   { id: 'auth', label: 'Authentication', icon: Key },
   { id: 'sessions', label: 'Sessions', icon: Smartphone },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
+  { id: 'extended-messages', label: 'Extended Messages', icon: MessageCirclePlus },
   { id: 'contacts', label: 'Contacts & Chats', icon: Users },
+  { id: 'groups', label: 'Groups', icon: UsersRound },
+  { id: 'presence', label: 'Presence', icon: Radio },
+  { id: 'labels', label: 'Labels', icon: Tag },
+  { id: 'status', label: 'Status/Stories', icon: CircleDot },
+  { id: 'profile', label: 'Profile', icon: UserCircle },
   { id: 'webhooks', label: 'Webhooks', icon: Webhook },
   { id: 'apikeys', label: 'API Keys', icon: Key },
 ]
@@ -52,8 +70,20 @@ export default function DocumentationPage() {
         return <SessionsSection baseUrl={baseUrl} />
       case 'messages':
         return <MessagesSection baseUrl={baseUrl} />
+      case 'extended-messages':
+        return <ExtendedMessagesSection baseUrl={baseUrl} />
       case 'contacts':
         return <ContactsSection baseUrl={baseUrl} />
+      case 'groups':
+        return <GroupsSection baseUrl={baseUrl} />
+      case 'presence':
+        return <PresenceSection baseUrl={baseUrl} />
+      case 'labels':
+        return <LabelsSection baseUrl={baseUrl} />
+      case 'status':
+        return <StatusSection baseUrl={baseUrl} />
+      case 'profile':
+        return <ProfileSection baseUrl={baseUrl} />
       case 'webhooks':
         return <WebhooksSection baseUrl={baseUrl} />
       case 'apikeys':
