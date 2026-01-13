@@ -16,7 +16,7 @@ import SessionsPage from '@/pages/dashboard/SessionsPage'
 import NewSessionPage from '@/pages/dashboard/NewSessionPage'
 import SessionDetailPage from '@/pages/dashboard/SessionDetailPage'
 import ApiKeysPage from '@/pages/dashboard/ApiKeysPage'
-import DocumentationPage from '@/pages/dashboard/DocumentationPage'
+import DocumentationPage from '@/pages/dashboard/docs'
 import SettingsPage from '@/pages/dashboard/SettingsPage'
 
 // Create query client

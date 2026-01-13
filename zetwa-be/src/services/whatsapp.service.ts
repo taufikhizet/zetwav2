@@ -100,13 +100,36 @@ class WhatsAppService extends EventEmitter {
         puppeteer: {
           headless: config.whatsapp.headless,
           args: [
+            // Essential security/sandbox args
             '--no-sandbox',
             '--disable-setuid-sandbox',
+            
+            // Memory optimization args - CRITICAL for multi-session
             '--disable-dev-shm-usage',
             '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
             '--disable-gpu',
+            '--disable-software-rasterizer',
+            '--disable-extensions',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-component-update',
+            '--disable-default-apps',
+            '--disable-sync',
+            '--disable-translate',
+            '--disable-hang-monitor',
+            '--disable-popup-blocking',
+            '--disable-prompt-on-repost',
+            '--disable-domain-reliability',
+            '--disable-features=TranslateUI,BlinkGenPropertyTrees',
+            '--disable-ipc-flooding-protection',
+            
+            // Reduce memory footprint (Windows compatible)
+            '--js-flags=--max-old-space-size=256',
+            '--no-first-run',
+            
+            // Network optimization
+            '--dns-prefetch-disable',
           ],
           ...(config.whatsapp.puppeteerPath && {
             executablePath: config.whatsapp.puppeteerPath,
@@ -842,12 +865,27 @@ class WhatsAppService extends EventEmitter {
   async shutdown(): Promise<void> {
     logger.info('Shutting down WhatsApp service...');
 
+    const sessionCount = this.sessions.size;
+    if (sessionCount === 0) {
+      logger.info('No active sessions to close');
+      return;
+    }
+
+    logger.info({ sessionCount }, 'Closing active sessions...');
+
     const promises = Array.from(this.sessions.entries()).map(async ([sessionId, session]) => {
       try {
-        await session.client.destroy();
+        // Set a per-session timeout
+        const destroyPromise = session.client.destroy();
+        const timeoutPromise = new Promise<void>((_, reject) => 
+          setTimeout(() => reject(new Error('Session destroy timeout')), 5000)
+        );
+        
+        await Promise.race([destroyPromise, timeoutPromise]);
         logger.debug({ sessionId }, 'Session closed');
       } catch (error) {
-        logger.error({ sessionId, error }, 'Error closing session');
+        // Log but don't throw - we want to continue closing other sessions
+        logger.warn({ sessionId, error: error instanceof Error ? error.message : error }, 'Error closing session (will be force-closed)');
       }
     });
 

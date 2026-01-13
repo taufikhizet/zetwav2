@@ -25,7 +25,10 @@ export default function DocumentationPage() {
     setTimeout(() => setCopiedCode(null), 2000)
   }
 
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3222'
+  // Use base URL without /api suffix for documentation display
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3222/api'
+  // Remove trailing /api if present for curl examples to show correct full path
+  const baseUrl = apiBaseUrl.replace(/\/api\/?$/, '')
 
   return (
     <div className="space-y-6">
@@ -161,19 +164,33 @@ export default function DocumentationPage() {
             <h4 className="font-semibold">Pesan Gambar</h4>
             <CodeBlock
               id="send-image"
-              code={`curl -X POST ${baseUrl}/api/sessions/{sessionId}/messages/send \\
+              code={`curl -X POST ${baseUrl}/api/sessions/{sessionId}/messages/send-media \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -d '{
     "to": "628123456789",
-    "media": {
-      "type": "image",
-      "url": "https://example.com/image.jpg",
-      "caption": "Check this out!"
-    }
+    "mediaUrl": "https://example.com/image.jpg",
+    "caption": "Check this out!"
   }'`}
               onCopy={handleCopy}
               copied={copiedCode === 'send-image'}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="font-semibold">Dokumen</h4>
+            <CodeBlock
+              id="send-doc"
+              code={`curl -X POST ${baseUrl}/api/sessions/{sessionId}/messages/send-media \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -d '{
+    "to": "628123456789",
+    "mediaUrl": "https://example.com/file.pdf",
+    "filename": "document.pdf"
+  }'`}
+              onCopy={handleCopy}
+              copied={copiedCode === 'send-doc'}
             />
           </div>
 
@@ -265,28 +282,67 @@ export default function DocumentationPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            <EndpointGroup title="Authentication">
+              <EndpointItem method="POST" path="/api/auth/register" description="Register user baru" />
+              <EndpointItem method="POST" path="/api/auth/login" description="Login user" />
+              <EndpointItem method="POST" path="/api/auth/refresh" description="Refresh access token" />
+              <EndpointItem method="POST" path="/api/auth/logout" description="Logout user" />
+              <EndpointItem method="POST" path="/api/auth/logout-all" description="Logout semua device" />
+              <EndpointItem method="GET" path="/api/auth/profile" description="Get profile user" />
+              <EndpointItem method="PATCH" path="/api/auth/profile" description="Update profile user" />
+              <EndpointItem method="POST" path="/api/auth/change-password" description="Ganti password" />
+            </EndpointGroup>
+
             <EndpointGroup title="Sessions">
               <EndpointItem method="GET" path="/api/sessions" description="List semua session" />
               <EndpointItem method="POST" path="/api/sessions" description="Buat session baru" />
-              <EndpointItem method="GET" path="/api/sessions/{id}/status" description="Status & QR code" />
+              <EndpointItem method="GET" path="/api/sessions/{id}" description="Get session by ID" />
+              <EndpointItem method="PATCH" path="/api/sessions/{id}" description="Update session" />
+              <EndpointItem method="DELETE" path="/api/sessions/{id}" description="Delete session" />
+              <EndpointItem method="GET" path="/api/sessions/{id}/qr" description="Get QR code" />
+              <EndpointItem method="GET" path="/api/sessions/{id}/status" description="Get status session" />
               <EndpointItem method="POST" path="/api/sessions/{id}/restart" description="Restart session" />
               <EndpointItem method="POST" path="/api/sessions/{id}/logout" description="Logout WhatsApp" />
             </EndpointGroup>
 
             <EndpointGroup title="Messages">
-              <EndpointItem method="POST" path="/api/sessions/{id}/messages/send" description="Kirim pesan" />
+              <EndpointItem method="POST" path="/api/sessions/{id}/messages/send" description="Kirim pesan teks" />
+              <EndpointItem method="POST" path="/api/sessions/{id}/messages/send-media" description="Kirim media (gambar/dokumen)" />
               <EndpointItem method="GET" path="/api/sessions/{id}/messages" description="Riwayat pesan" />
             </EndpointGroup>
 
+            <EndpointGroup title="Chats">
+              <EndpointItem method="GET" path="/api/sessions/{id}/chats" description="List chats (dari DB)" />
+              <EndpointItem method="GET" path="/api/sessions/{id}/chats/live" description="List chats (live dari WA)" />
+            </EndpointGroup>
+
             <EndpointGroup title="Contacts">
-              <EndpointItem method="GET" path="/api/sessions/{id}/contacts" description="List kontak" />
-              <EndpointItem method="GET" path="/api/sessions/{id}/contacts/{phone}/check" description="Cek nomor WhatsApp" />
+              <EndpointItem method="GET" path="/api/sessions/{id}/contacts" description="List kontak (dari DB)" />
+              <EndpointItem method="GET" path="/api/sessions/{id}/contacts/live" description="List kontak (live dari WA)" />
+              <EndpointItem method="GET" path="/api/sessions/{id}/check-number/{number}" description="Cek nomor WhatsApp" />
+              <EndpointItem method="GET" path="/api/sessions/{id}/profile-pic/{contactId}" description="Get foto profil" />
             </EndpointGroup>
 
             <EndpointGroup title="Webhooks">
               <EndpointItem method="GET" path="/api/sessions/{id}/webhooks" description="List webhooks" />
               <EndpointItem method="POST" path="/api/sessions/{id}/webhooks" description="Buat webhook" />
+              <EndpointItem method="PATCH" path="/api/sessions/{id}/webhooks/{wid}" description="Update webhook" />
+              <EndpointItem method="DELETE" path="/api/sessions/{id}/webhooks/{wid}" description="Delete webhook" />
               <EndpointItem method="POST" path="/api/sessions/{id}/webhooks/{wid}/test" description="Test webhook" />
+              <EndpointItem method="GET" path="/api/sessions/{id}/webhooks/{wid}/logs" description="Get webhook logs" />
+            </EndpointGroup>
+
+            <EndpointGroup title="API Keys">
+              <EndpointItem method="GET" path="/api/api-keys" description="List API keys" />
+              <EndpointItem method="POST" path="/api/api-keys" description="Buat API key baru" />
+              <EndpointItem method="GET" path="/api/api-keys/{id}" description="Get API key by ID" />
+              <EndpointItem method="PATCH" path="/api/api-keys/{id}" description="Update API key" />
+              <EndpointItem method="DELETE" path="/api/api-keys/{id}" description="Delete API key" />
+              <EndpointItem method="POST" path="/api/api-keys/{id}/regenerate" description="Regenerate API key" />
+            </EndpointGroup>
+
+            <EndpointGroup title="Health">
+              <EndpointItem method="GET" path="/api/health" description="Health check" />
             </EndpointGroup>
           </div>
         </CardContent>
@@ -396,6 +452,7 @@ function EndpointItem({ method, path, description }: { method: string; path: str
     GET: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
     POST: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     PUT: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+    PATCH: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
     DELETE: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
   }
 

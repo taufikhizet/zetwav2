@@ -12,8 +12,12 @@ build/
 .env.local
 .env.*.local
 
-# WhatsApp session data
+# WhatsApp session data (CONTAINS AUTH DATA - NEVER COMMIT!)
 wa-sessions/
+
+# WhatsApp Web cache (can be regenerated)
+.wwebjs_cache/
+.wwebjs_auth/
 
 # Uploads
 uploads/

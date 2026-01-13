@@ -122,33 +122,52 @@ curl -X POST http://localhost:3222/api/sessions/{sessionId}/messages/send \
   }'
 ```
 
-### Image Message
+### Text Message with Reply (Quoted Message)
 ```bash
 curl -X POST http://localhost:3222/api/sessions/{sessionId}/messages/send \
   -H "Content-Type: application/json" \
   -H "X-API-Key: YOUR_API_KEY" \
   -d '{
     "to": "628123456789",
-    "media": {
-      "type": "image",
-      "url": "https://example.com/image.jpg",
-      "caption": "Check this out!"
-    }
+    "message": "This is a reply!",
+    "quotedMessageId": "true_628xxx@c.us_ABCD1234"
+  }'
+```
+
+### Image Message (via URL)
+```bash
+curl -X POST http://localhost:3222/api/sessions/{sessionId}/messages/send-media \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{
+    "to": "628123456789",
+    "mediaUrl": "https://example.com/image.jpg",
+    "caption": "Check this out!"
+  }'
+```
+
+### Image Message (via Base64)
+```bash
+curl -X POST http://localhost:3222/api/sessions/{sessionId}/messages/send-media \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{
+    "to": "628123456789",
+    "mediaBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    "mimetype": "image/png",
+    "caption": "Base64 image"
   }'
 ```
 
 ### Document Message
 ```bash
-curl -X POST http://localhost:3222/api/sessions/{sessionId}/messages/send \
+curl -X POST http://localhost:3222/api/sessions/{sessionId}/messages/send-media \
   -H "Content-Type: application/json" \
   -H "X-API-Key: YOUR_API_KEY" \
   -d '{
     "to": "628123456789",
-    "media": {
-      "type": "document",
-      "url": "https://example.com/file.pdf",
-      "filename": "document.pdf"
-    }
+    "mediaUrl": "https://example.com/file.pdf",
+    "filename": "document.pdf"
   }'
 ```
 
@@ -157,6 +176,23 @@ Nomor telepon harus menyertakan kode negara tanpa simbol `+`:
 - Indonesia: `628123456789`
 - USA: `14155551234`
 - UK: `447911123456`
+
+### Check if Number is on WhatsApp
+```bash
+curl -X GET http://localhost:3222/api/sessions/{sessionId}/check-number/628123456789 \
+  -H "X-API-Key: YOUR_API_KEY"
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "number": "628123456789",
+    "isRegistered": true
+  }
+}
+```
 
 ---
 
@@ -235,6 +271,25 @@ function verifyWebhook(payload, signature, secret) {
 
 ## API Reference
 
+### Health
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Health check endpoint |
+
+### Authentication
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Login user |
+| POST | `/api/auth/refresh` | Refresh access token |
+| POST | `/api/auth/logout` | Logout user |
+| POST | `/api/auth/logout-all` | Logout from all devices |
+| GET | `/api/auth/profile` | Get current user profile |
+| PATCH | `/api/auth/profile` | Update user profile |
+| POST | `/api/auth/change-password` | Change user password |
+
 ### Sessions
 
 | Method | Endpoint | Description |
@@ -242,24 +297,36 @@ function verifyWebhook(payload, signature, secret) {
 | GET | `/api/sessions` | List all sessions |
 | POST | `/api/sessions` | Create a new session |
 | GET | `/api/sessions/{id}` | Get session details |
-| GET | `/api/sessions/{id}/status` | Get session status and QR code |
+| PATCH | `/api/sessions/{id}` | Update session |
+| DELETE | `/api/sessions/{id}` | Delete session |
+| GET | `/api/sessions/{id}/qr` | Get QR code for session |
+| GET | `/api/sessions/{id}/status` | Get session status |
 | POST | `/api/sessions/{id}/restart` | Restart session |
 | POST | `/api/sessions/{id}/logout` | Logout from WhatsApp |
-| DELETE | `/api/sessions/{id}` | Delete session |
 
 ### Messages
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/sessions/{id}/messages/send` | Send a message |
+| POST | `/api/sessions/{id}/messages/send` | Send a text message |
+| POST | `/api/sessions/{id}/messages/send-media` | Send a media message (image/document) |
 | GET | `/api/sessions/{id}/messages` | Get message history |
+
+### Chats
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/sessions/{id}/chats` | Get chats (from database) |
+| GET | `/api/sessions/{id}/chats/live` | Get live chats from WhatsApp |
 
 ### Contacts
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/sessions/{id}/contacts` | Get all contacts |
-| GET | `/api/sessions/{id}/contacts/{phone}/check` | Check if number is on WhatsApp |
+| GET | `/api/sessions/{id}/contacts` | Get contacts (from database) |
+| GET | `/api/sessions/{id}/contacts/live` | Get live contacts from WhatsApp |
+| GET | `/api/sessions/{id}/check-number/{number}` | Check if number is on WhatsApp |
+| GET | `/api/sessions/{id}/profile-pic/{contactId}` | Get profile picture URL |
 
 ### Webhooks
 
@@ -267,9 +334,10 @@ function verifyWebhook(payload, signature, secret) {
 |--------|----------|-------------|
 | GET | `/api/sessions/{id}/webhooks` | List webhooks |
 | POST | `/api/sessions/{id}/webhooks` | Create webhook |
-| PUT | `/api/sessions/{id}/webhooks/{webhookId}` | Update webhook |
+| PATCH | `/api/sessions/{id}/webhooks/{webhookId}` | Update webhook |
 | DELETE | `/api/sessions/{id}/webhooks/{webhookId}` | Delete webhook |
 | POST | `/api/sessions/{id}/webhooks/{webhookId}/test` | Test webhook |
+| GET | `/api/sessions/{id}/webhooks/{webhookId}/logs` | Get webhook logs |
 
 ### API Keys
 
@@ -277,7 +345,10 @@ function verifyWebhook(payload, signature, secret) {
 |--------|----------|-------------|
 | GET | `/api/api-keys` | List API keys |
 | POST | `/api/api-keys` | Create API key |
+| GET | `/api/api-keys/{id}` | Get API key by ID |
+| PATCH | `/api/api-keys/{id}` | Update API key |
 | DELETE | `/api/api-keys/{id}` | Delete API key |
+| POST | `/api/api-keys/{id}/regenerate` | Regenerate API key |
 
 ---
 
@@ -623,6 +694,108 @@ volumes:
 - [ ] Set up database backups
 - [ ] Use Redis for session caching
 - [ ] Configure CORS properly
+
+---
+
+## Resource Management & Optimization
+
+### Memory Usage per WhatsApp Session
+
+Setiap sesi WhatsApp menggunakan instance Chromium (Puppeteer), yang memakan resource signifikan:
+
+| Sesi Aktif | Estimasi RAM | Estimasi CPU (idle) |
+|------------|--------------|---------------------|
+| 1 sesi | 150-300 MB | 1-2% |
+| 5 sesi | 750-1.5 GB | 5-10% |
+| 10 sesi | 1.5-3 GB | 10-20% |
+| 20 sesi | 3-6 GB | 20-40% |
+
+### Puppeteer Optimization Flags
+
+Project ini menggunakan flags Puppeteer yang dioptimasi untuk mengurangi penggunaan memory:
+
+```javascript
+args: [
+  '--disable-dev-shm-usage',      // Gunakan /tmp instead of /dev/shm
+  '--disable-gpu',                 // Disable GPU acceleration
+  '--disable-extensions',          // Disable extensions
+  '--single-process',              // Jalankan di single process
+  '--js-flags=--max-old-space-size=128',  // Limit JS heap
+]
+```
+
+### WhatsApp Data Storage
+
+Data autentikasi dan session WhatsApp disimpan di 3 lokasi:
+
+#### 1. Folder `wa-sessions/session-{sessionId}/`
+Lokasi utama penyimpanan data autentikasi:
+
+```
+wa-sessions/
+└── session-{sessionId}/
+    └── Default/
+        ├── IndexedDB/         # Encrypted WhatsApp database
+        ├── Local Storage/     # Auth tokens & credentials  
+        ├── Session Storage/   # Session state
+        ├── Service Worker/    # Web worker cache
+        └── ...                # Chrome profile data
+```
+
+**⚠️ PENTING:**
+- Folder ini berisi data sensitif (credentials WhatsApp)
+- JANGAN commit ke Git
+- Backup secara teratur jika perlu restore session
+- Ukuran per session: 50-200 MB
+
+#### 2. Database PostgreSQL
+Menyimpan metadata session:
+- Status koneksi (CONNECTED, DISCONNECTED, dll)
+- Phone number
+- Profile picture URL
+- QR Code terakhir
+
+#### 3. Memory (RAM)
+Session aktif di-cache di memory untuk akses cepat:
+- Instance Puppeteer/Chrome
+- WhatsApp Web client state
+- Event listeners
+
+### Cache `.wwebjs_cache/`
+
+Folder ini berisi cache HTML WhatsApp Web:
+- **Gunanya:** Mempercepat inisialisasi session
+- **Ukuran:** ~50-100KB per versi
+- **Cleanup:** Otomatis saat startup (hanya simpan versi terbaru)
+
+### Disk Space Management
+
+Untuk monitoring penggunaan disk:
+
+```bash
+# Linux/Mac
+du -sh ./wa-sessions/*
+
+# Check total
+du -sh ./wa-sessions/
+```
+
+Atau gunakan endpoint (jika diimplementasi):
+```bash
+GET /api/system/disk-usage
+```
+
+### Cleanup Orphaned Sessions
+
+Session yang tidak ada di database tapi masih ada di filesystem akan menghabiskan disk space. Cleanup otomatis dilakukan saat startup, atau bisa manual:
+
+```bash
+# Delete specific session folder
+rm -rf ./wa-sessions/session-{sessionId}
+
+# List all sessions
+ls -la ./wa-sessions/
+```
 
 ---
 
