@@ -178,7 +178,7 @@ export const webhookEventEnum = z.enum([
   'GROUP_LEAVE',
   'GROUP_UPDATE',
   'CALL_RECEIVED',
-  // Wildcards
+  // Wildcards - accepted in input but expanded to all events on save
   'ALL',
   '*',
 ]);
@@ -186,11 +186,14 @@ export const webhookEventEnum = z.enum([
 export const createWebhookSchema = z.object({
   name: z.string().min(1, 'Webhook name is required').max(100),
   url: z.string().url('Invalid webhook URL'),
-  events: z.array(webhookEventEnum).default(['ALL']),
+  events: z.array(webhookEventEnum).default(['*']), // Default to all events (will be expanded)
   headers: z.record(z.string()).optional(),
   secret: z.string().max(255).optional(),
-  retryCount: z.number().int().min(0).max(10).default(3),
-  timeout: z.number().int().min(1000).max(60000).default(30000),
+  retryCount: z.number().int().min(0).max(15).default(3),
+  timeout: z.number().int().min(1000).max(120000).default(30000),
+  // Retries config for comprehensive webhook configuration
+  retries: retriesConfigSchema,
+  customHeaders: z.array(customHeaderSchema).optional(),
 });
 
 export const updateWebhookSchema = z.object({
@@ -199,9 +202,12 @@ export const updateWebhookSchema = z.object({
   events: z.array(webhookEventEnum).optional(),
   headers: z.record(z.string()).optional(),
   secret: z.string().max(255).nullable().optional(),
-  retryCount: z.number().int().min(0).max(10).optional(),
-  timeout: z.number().int().min(1000).max(60000).optional(),
+  retryCount: z.number().int().min(0).max(15).optional(),
+  timeout: z.number().int().min(1000).max(120000).optional(),
   isActive: z.boolean().optional(),
+  // New fields for comprehensive webhook config
+  retries: retriesConfigSchema,
+  customHeaders: z.array(customHeaderSchema).optional(),
 });
 
 // Message schemas

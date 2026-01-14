@@ -31,6 +31,8 @@ export interface CustomHeader {
 
 // Inline webhook configuration (embedded in session config)
 export interface InlineWebhookConfig {
+  /** Optional webhook name (auto-generated from URL if not provided) */
+  name?: string
   /** Webhook URL endpoint */
   url: string
   /** Events to subscribe to */
@@ -41,6 +43,8 @@ export interface InlineWebhookConfig {
   retries?: RetriesConfig
   /** Custom headers to include in webhook requests */
   customHeaders?: CustomHeader[]
+  /** Request timeout in seconds (default: 30) */
+  timeout?: number
 }
 
 // Full webhook configuration (stored in database)
@@ -115,9 +119,37 @@ export const WEBHOOK_EVENTS = [
   { value: 'label.chat.added', label: 'Label Added to Chat', category: 'Labels', description: 'Label added to a chat' },
   { value: 'label.chat.deleted', label: 'Label Removed from Chat', category: 'Labels', description: 'Label removed from a chat' },
   
-  // Wildcard
+  // Contact events
+  { value: 'contact.update', label: 'Contact Update', category: 'Contacts', description: 'Contact info updated' },
+  
+  // Chat events
+  { value: 'chat.archive', label: 'Chat Archive', category: 'Chats', description: 'Chat archived/unarchived' },
+  
+  // Wildcard - only used in UI, not stored in database
   { value: '*', label: 'All Events', category: 'Special', description: 'Subscribe to all events' },
 ] as const
+
+// All WAHA event values (excluding wildcard *)
+// Used to detect if all events are selected
+export const ALL_WAHA_EVENT_VALUES = WEBHOOK_EVENTS
+  .filter(e => e.value !== '*')
+  .map(e => e.value)
+
+/**
+ * Check if all events are selected
+ * @param events Array of event strings from database (may be in underscore or dot format)
+ */
+export function isAllEventsSelected(events: string[]): boolean {
+  if (events.includes('*') || events.includes('ALL')) return true
+  
+  // Normalize events to dot format for comparison
+  const normalizedEvents = events.map(e => e.replace(/_/g, '.'))
+  
+  // Check if all WAHA events are present
+  return ALL_WAHA_EVENT_VALUES.every(wahaEvent => 
+    normalizedEvents.includes(wahaEvent)
+  )
+}
 
 // Group events by category
 export const WEBHOOK_EVENTS_BY_CATEGORY = WEBHOOK_EVENTS.reduce((acc, event) => {
@@ -134,6 +166,8 @@ export const EVENT_CATEGORIES = [
   'Session',
   'Messages',
   'Groups',
+  'Contacts',
+  'Chats',
   'Presence',
   'Calls',
   'Polls',

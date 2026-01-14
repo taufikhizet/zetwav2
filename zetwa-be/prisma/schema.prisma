@@ -208,23 +208,36 @@ enum WebhookEvent {
 }
 
 model Webhook {
-  id          String         @id @default(cuid())
-  name        String
-  url         String
-  sessionId   String
-  events      WebhookEvent[] @default([ALL])
-  headers     Json?          // Custom headers to send
-  secret      String?        // HMAC secret for signature
-  metadata    Json?          // Additional config (retries, etc.)
-  isActive    Boolean        @default(true)
-  retryCount  Int            @default(3)
-  timeout     Int            @default(30000) // ms
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id              String         @id @default(cuid())
+  name            String
+  url             String
+  sessionId       String
+  events          WebhookEvent[] @default([ALL])
+  
+  // Security
+  secret          String?        // HMAC secret for signature verification
+  
+  // Custom headers (key-value pairs to send with webhook)
+  customHeaders   Json?          // { "X-Custom-Header": "value", ... }
+  
+  // Retry configuration - dedicated columns for better querying
+  retryAttempts   Int            @default(3)      // Number of retry attempts (0-15)
+  retryDelay      Int            @default(2)      // Delay between retries in seconds
+  retryPolicy     String         @default("linear") // linear, exponential, constant
+  
+  // Request configuration
+  timeout         Int            @default(30000)  // Request timeout in milliseconds
+  
+  // Status
+  isActive        Boolean        @default(true)
+  
+  // Timestamps
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   // Relations
-  session     WaSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  logs        WebhookLog[]
+  session         WaSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  logs            WebhookLog[]
 
   @@index([sessionId])
   @@index([isActive])

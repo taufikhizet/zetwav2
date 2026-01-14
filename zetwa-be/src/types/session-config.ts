@@ -52,6 +52,8 @@ export interface HmacConfig {
  * Webhook configuration for session
  */
 export interface WebhookConfig {
+  /** Optional webhook name (auto-generated from URL if not provided) */
+  name?: string;
   /** Webhook URL endpoint */
   url: string;
   /** Events to subscribe to */
@@ -62,6 +64,8 @@ export interface WebhookConfig {
   retries?: RetriesConfig;
   /** Custom headers to send with webhook requests */
   customHeaders?: CustomHeader[];
+  /** Request timeout in seconds (default: 30) */
+  timeout?: number;
 }
 
 /**

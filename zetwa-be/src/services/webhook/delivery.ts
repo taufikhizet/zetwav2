@@ -33,9 +33,15 @@ export function prepareHeaders(
     'X-Zetwa-Session': payload.sessionId,
   };
 
-  // Add custom headers
-  if (webhook.headers && typeof webhook.headers === 'object') {
-    Object.assign(headers, webhook.headers);
+  // Add custom headers (new schema uses customHeaders, fallback to headers for backward compat)
+  const customHeaders = webhook.customHeaders || (webhook.headers as Record<string, string> | null);
+  if (customHeaders && typeof customHeaders === 'object') {
+    // Filter out internal config fields
+    for (const [key, value] of Object.entries(customHeaders)) {
+      if (!key.startsWith('__')) {
+        headers[key] = String(value);
+      }
+    }
   }
 
   // Add signature if secret is set
@@ -97,9 +103,14 @@ export async function sendWebhook(
   const startTime = Date.now();
 
   const headers = prepareHeaders(webhook, payload);
+  
+  // Get retry config from new schema columns
+  const maxAttempts = webhook.retryAttempts;
+  const retryDelaySec = webhook.retryDelay;
+  const retryPolicy = webhook.retryPolicy;
 
   // Retry loop
-  for (let attempt = 1; attempt <= webhook.retryCount; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const axiosResponse = await axios.post(webhook.url, payload, {
         headers,
@@ -139,7 +150,7 @@ export async function sendWebhook(
           webhookId,
           event: payload.event,
           attempt,
-          maxAttempts: webhook.retryCount,
+          maxAttempts,
           statusCode,
           error: axiosError.message,
         },
@@ -151,9 +162,21 @@ export async function sendWebhook(
         break;
       }
 
-      // Wait before retry (exponential backoff)
-      if (attempt < webhook.retryCount) {
-        const delay = config.webhook.retryDelay * Math.pow(2, attempt - 1);
+      // Wait before retry based on policy
+      if (attempt < maxAttempts) {
+        let delay: number;
+        switch (retryPolicy) {
+          case 'exponential':
+            delay = retryDelaySec * 1000 * Math.pow(2, attempt - 1);
+            break;
+          case 'constant':
+            delay = retryDelaySec * 1000;
+            break;
+          case 'linear':
+          default:
+            delay = retryDelaySec * 1000 * attempt;
+            break;
+        }
         await sleep(delay);
       }
     }
@@ -165,7 +188,7 @@ export async function sendWebhook(
     response,
     error: lastError?.message,
     duration: Date.now() - startTime,
-    attempts: webhook.retryCount,
+    attempts: maxAttempts,
     success: false,
   });
 
@@ -205,10 +228,12 @@ export async function testWebhook(webhookId: string): Promise<WebhookDeliveryRes
     {
       id: webhook.id,
       url: webhook.url,
-      headers: webhook.headers,
+      customHeaders: webhook.customHeaders as Record<string, string> | null,
       secret: webhook.secret,
       timeout: webhook.timeout,
-      retryCount: webhook.retryCount,
+      retryAttempts: webhook.retryAttempts,
+      retryDelay: webhook.retryDelay,
+      retryPolicy: webhook.retryPolicy,
     },
     testPayload
   );

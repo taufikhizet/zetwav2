@@ -19,6 +19,7 @@ import {
   Tv,
   MessageSquare,
   Loader2,
+  FileText,
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -107,6 +108,9 @@ export function SessionInfoTab({ session }: SessionInfoTabProps) {
         <CardContent className="space-y-0 divide-y">
           <InfoRow icon={Hash} label="Session ID" value={session.id} mono />
           <InfoRow icon={Smartphone} label="Session Name" value={session.name} />
+          {session.description && (
+            <InfoRow icon={FileText} label="Description" value={session.description} />
+          )}
           <InfoRow icon={Calendar} label="Created" value={session.createdAt ? formatDate(session.createdAt) : null} />
         </CardContent>
       </Card>

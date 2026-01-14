@@ -153,12 +153,27 @@ export interface Webhook {
   events: string[]
   isActive: boolean
   secret?: string | null
-  retryCount: number
+  // New dedicated columns from schema update
+  retryAttempts: number
+  retryDelay: number
+  retryPolicy: string
   timeout: number
+  customHeaders?: Array<{ name: string; value: string }> | null
+  // Retries object (transformed from backend for easy access)
+  retries?: {
+    attempts: number
+    delaySeconds: number
+    policy: string
+  }
   createdAt: string
   _count?: {
     logs: number
   }
+  // Legacy fields (for backward compat - deprecated)
+  /** @deprecated Use retryAttempts instead */
+  retryCount?: number
+  /** @deprecated Use customHeaders instead */
+  headers?: Record<string, unknown> | null
 }
 
 export interface CreateWebhookInput {
@@ -169,6 +184,14 @@ export interface CreateWebhookInput {
   secret?: string
   retryCount?: number
   timeout?: number
+  /** Retry configuration */
+  retries?: {
+    attempts?: number
+    delaySeconds?: number
+    policy?: 'linear' | 'exponential' | 'constant'
+  }
+  /** Custom headers to send with webhook */
+  customHeaders?: Array<{ name: string; value: string }>
 }
 
 export interface WebhookLog {

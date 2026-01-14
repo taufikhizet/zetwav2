@@ -59,6 +59,11 @@ export function WebhookList({
 
   // Get a display name for the webhook
   const getWebhookDisplayName = (webhook: InlineWebhookConfig, index: number): string => {
+    // Use explicit name if provided
+    if (webhook.name && webhook.name.trim()) {
+      return webhook.name
+    }
+    // Fall back to hostname from URL
     if (webhook.url) {
       try {
         const url = new URL(webhook.url)

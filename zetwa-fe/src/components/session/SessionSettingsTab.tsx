@@ -123,14 +123,16 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
   const buildConfig = (): SessionConfig => {
     const config: SessionConfig = {}
     
-    if (debugMode) config.debug = true
+    // Debug mode - always include to allow toggling off
+    config.debug = debugMode
     
-    if (deviceName || browserName) {
-      config.client = {}
-      if (deviceName) config.client.deviceName = deviceName
-      if (browserName) config.client.browserName = browserName
+    // Client config - always include to allow clearing
+    config.client = {
+      ...(deviceName && { deviceName }),
+      ...(browserName && { browserName }),
     }
     
+    // Proxy config - explicitly set to allow clearing
     if (useProxy && proxyServer) {
       config.proxy = {
         server: proxyServer,
@@ -138,25 +140,25 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
         ...(proxyPassword && { password: proxyPassword }),
       }
     }
+    // Note: If useProxy is false, proxy will be undefined (not sent), 
+    // which backend interprets as "don't change". This is intentional.
+    // To clear proxy, backend should handle empty proxy object.
     
-    if (ignoreStatus || ignoreGroups || ignoreChannels || ignoreBroadcast) {
-      config.ignore = {
-        ...(ignoreStatus && { status: true }),
-        ...(ignoreGroups && { groups: true }),
-        ...(ignoreChannels && { channels: true }),
-        ...(ignoreBroadcast && { broadcast: true }),
-      }
+    // Ignore config - always include to allow toggling
+    config.ignore = {
+      status: ignoreStatus,
+      groups: ignoreGroups,
+      channels: ignoreChannels,
+      broadcast: ignoreBroadcast,
     }
     
-    // NOWEB engine config (only if non-default values)
-    if (!nowebStoreEnabled || nowebFullSync || !nowebMarkOnline) {
-      config.noweb = {
-        store: {
-          enabled: nowebStoreEnabled,
-          ...(nowebFullSync && { fullSync: true }),
-        },
-        ...(nowebMarkOnline === false && { markOnline: false }),
-      }
+    // NOWEB engine config - always include to allow changing
+    config.noweb = {
+      store: {
+        enabled: nowebStoreEnabled,
+        fullSync: nowebFullSync,
+      },
+      markOnline: nowebMarkOnline,
     }
     
     if (metadataJson.trim()) {

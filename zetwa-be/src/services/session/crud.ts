@@ -10,6 +10,36 @@ import { logger } from '../../utils/logger.js';
 import type { CreateSessionInput, UpdateSessionInput, SessionConfig, WebhookEvent as WebhookEventType } from './types.js';
 
 /**
+ * All WAHA-style events (preferred modern format)
+ * When user selects "*" (all events), we expand to these individual events
+ */
+const ALL_WAHA_EVENTS: WebhookEvent[] = [
+  WebhookEvent.message,
+  WebhookEvent.message_any,
+  WebhookEvent.message_ack,
+  WebhookEvent.message_reaction,
+  WebhookEvent.message_revoked,
+  WebhookEvent.message_edited,
+  WebhookEvent.message_waiting,
+  WebhookEvent.session_status,
+  WebhookEvent.group_join,
+  WebhookEvent.group_leave,
+  WebhookEvent.group_update,
+  WebhookEvent.presence_update,
+  WebhookEvent.poll_vote,
+  WebhookEvent.poll_vote_failed,
+  WebhookEvent.call_received,
+  WebhookEvent.call_accepted,
+  WebhookEvent.call_rejected,
+  WebhookEvent.label_upsert,
+  WebhookEvent.label_deleted,
+  WebhookEvent.label_chat_added,
+  WebhookEvent.label_chat_deleted,
+  WebhookEvent.contact_update,
+  WebhookEvent.chat_archive,
+];
+
+/**
  * Create webhooks from inline webhook config
  * Internal use - called during session creation
  */
@@ -23,53 +53,82 @@ async function createWebhooksFromConfig(sessionId: string, webhooks: SessionConf
     
     try {
       // Map string events to WebhookEvent enum
-      // If '*' or 'ALL' is present, use ALL enum value
-      const events: WebhookEvent[] = webhookConfig.events?.length 
-        ? webhookConfig.events.map(e => {
-            // Handle wildcard
-            if (e === '*' || e === 'ALL') return WebhookEvent.ALL;
+      // If '*' or 'ALL' is present, expand to all individual WAHA events
+      let events: WebhookEvent[];
+      
+      if (!webhookConfig.events?.length) {
+        // Default to all events
+        events = ALL_WAHA_EVENTS;
+      } else if (webhookConfig.events.some(e => e === '*' || e === 'ALL')) {
+        // Wildcard - expand to all WAHA events
+        events = ALL_WAHA_EVENTS;
+      } else {
+        // Map individual events
+        events = webhookConfig.events
+          .map(e => {
             // Handle WAHA-style events (with dots) by converting to underscore format
             const normalizedEvent = e.replace(/\./g, '_');
             // Check if it's a valid enum value
             if (normalizedEvent in WebhookEvent) {
               return normalizedEvent as WebhookEvent;
             }
-            // Default to ALL if unknown event
-            return WebhookEvent.ALL;
+            return null;
           })
-        : [WebhookEvent.ALL];
+          .filter((e): e is WebhookEvent => e !== null);
+        
+        // If no valid events, use all events
+        if (events.length === 0) {
+          events = ALL_WAHA_EVENTS;
+        }
+      }
       
       // Remove duplicates
       const uniqueEvents = [...new Set(events)];
       
+      // Generate webhook name: use provided name, fallback to URL hostname
+      let webhookName = 'Webhook';
+      if (webhookConfig.name && webhookConfig.name.trim()) {
+        webhookName = webhookConfig.name.trim();
+      } else {
+        try {
+          webhookName = new URL(webhookConfig.url).hostname || 'Webhook';
+        } catch {
+          webhookName = 'Webhook';
+        }
+      }
+      
+      // Convert timeout from seconds to milliseconds, default 30000ms
+      const timeoutMs = webhookConfig.timeout 
+        ? webhookConfig.timeout * 1000 
+        : 30000;
+      
+      // Build custom headers JSON
+      const customHeaders = webhookConfig.customHeaders?.reduce(
+        (acc, h) => ({ ...acc, [h.name]: h.value }), 
+        {} as Record<string, string>
+      ) || null;
+      
       // Convert inline webhook config to database format
       const webhook = await prisma.webhook.create({
         data: {
-          name: new URL(webhookConfig.url).hostname || 'Webhook',
+          name: webhookName,
           url: webhookConfig.url,
           sessionId,
           events: uniqueEvents,
-          headers: {
-            // Store custom headers
-            ...(webhookConfig.customHeaders?.reduce((acc, h) => ({ ...acc, [h.name]: h.value }), {}) || {}),
-            // Store retry config as special header (will be extracted by webhook sender)
-            ...(webhookConfig.retries ? {
-              '__retries_config': JSON.stringify({
-                delaySeconds: webhookConfig.retries.delaySeconds,
-                policy: webhookConfig.retries.policy,
-              })
-            } : {}),
-          },
+          // Store custom headers as separate column (new schema)
+          customHeaders: customHeaders && Object.keys(customHeaders).length > 0 ? customHeaders : undefined,
           // Store HMAC secret
           secret: webhookConfig.hmac?.key,
-          // Store retry config in metadata
-          retryCount: webhookConfig.retries?.attempts || 3,
-          timeout: 30000,
+          // Store retry config in dedicated columns (new schema)
+          retryAttempts: webhookConfig.retries?.attempts ?? 3,
+          retryDelay: webhookConfig.retries?.delaySeconds ?? 2,
+          retryPolicy: webhookConfig.retries?.policy ?? 'linear',
+          timeout: timeoutMs,
         },
       });
       
       createdWebhooks.push(webhook);
-      logger.info({ webhookId: webhook.id, sessionId, url: webhookConfig.url }, 'Inline webhook created');
+      logger.info({ webhookId: webhook.id, sessionId, url: webhookConfig.url, name: webhookName }, 'Inline webhook created');
     } catch (error) {
       logger.warn({ sessionId, url: webhookConfig.url, error }, 'Failed to create inline webhook');
     }
@@ -210,6 +269,13 @@ export async function getById(userId: string, sessionId: string) {
           url: true,
           events: true,
           isActive: true,
+          // Include new schema columns
+          secret: true,
+          customHeaders: true,
+          retryAttempts: true,
+          retryDelay: true,
+          retryPolicy: true,
+          timeout: true,
         },
       },
       _count: {
@@ -262,16 +328,37 @@ export async function getById(userId: string, sessionId: string) {
   const isFailedOrDisconnected = ['FAILED', 'DISCONNECTED', 'LOGGED_OUT'].includes(liveStatus);
 
   // Build config object from dedicated columns (new structure)
-  const inlineWebhooks = session.webhooks.map((webhook) => ({
-    url: webhook.url,
-    // Convert underscore format to dot format for WAHA compatibility
-    events: webhook.events.map((event) => {
-      if (event === 'ALL' || event.toUpperCase() === event) {
-        return event;
-      }
-      return event.replace(/_/g, '.');
-    }),
-  }));
+  const inlineWebhooks = session.webhooks.map((webhook) => {
+    // Transform customHeaders from JSON object to array format
+    const customHeadersObj = webhook.customHeaders as Record<string, string> | null;
+    const customHeaders = customHeadersObj 
+      ? Object.entries(customHeadersObj).map(([name, value]) => ({ name, value }))
+      : [];
+    
+    return {
+      url: webhook.url,
+      // Convert underscore format to dot format for WAHA compatibility
+      events: webhook.events.map((event) => {
+        // Keep legacy uppercase events as-is (e.g., MESSAGE_RECEIVED)
+        if (event.toUpperCase() === event) {
+          return event;
+        }
+        return event.replace(/_/g, '.');
+      }),
+      // Include HMAC config if secret exists
+      ...(webhook.secret && { hmac: { key: webhook.secret } }),
+      // Include retry configuration
+      retries: {
+        attempts: webhook.retryAttempts,
+        delaySeconds: webhook.retryDelay,
+        policy: webhook.retryPolicy,
+      },
+      // Include custom headers if any
+      ...(customHeaders.length > 0 && { customHeaders }),
+      // Include timeout (converted to seconds for frontend)
+      timeout: Math.round(webhook.timeout / 1000),
+    };
+  });
   
   // Build config object from dedicated columns for frontend compatibility (WAHA-style)
   const config: Record<string, unknown> = {};
@@ -382,14 +469,12 @@ export async function update(userId: string, sessionId: string, input: UpdateSes
       updateData.debug = cfg.debug;
     }
     
-    // Client configuration
+    // Client configuration - handle empty object to clear values
     if (cfg.client !== undefined) {
-      if (cfg.client.deviceName !== undefined) {
-        updateData.deviceName = cfg.client.deviceName || null;
-      }
-      if (cfg.client.browserName !== undefined) {
-        updateData.browserName = cfg.client.browserName || null;
-      }
+      // If client is empty object {}, clear both values
+      const hasClientConfig = cfg.client.deviceName || cfg.client.browserName;
+      updateData.deviceName = cfg.client.deviceName || null;
+      updateData.browserName = cfg.client.browserName || null;
     }
     
     // Proxy configuration
@@ -399,35 +484,21 @@ export async function update(userId: string, sessionId: string, input: UpdateSes
       updateData.proxyPassword = cfg.proxy.password || null;
     }
     
-    // Ignore configuration
+    // Ignore configuration - always update all fields if ignore is provided
     if (cfg.ignore !== undefined) {
-      if (cfg.ignore.status !== undefined) {
-        updateData.ignoreStatus = cfg.ignore.status;
-      }
-      if (cfg.ignore.groups !== undefined) {
-        updateData.ignoreGroups = cfg.ignore.groups;
-      }
-      if (cfg.ignore.channels !== undefined) {
-        updateData.ignoreChannels = cfg.ignore.channels;
-      }
-      if (cfg.ignore.broadcast !== undefined) {
-        updateData.ignoreBroadcast = cfg.ignore.broadcast;
-      }
+      updateData.ignoreStatus = cfg.ignore.status ?? false;
+      updateData.ignoreGroups = cfg.ignore.groups ?? false;
+      updateData.ignoreChannels = cfg.ignore.channels ?? false;
+      updateData.ignoreBroadcast = cfg.ignore.broadcast ?? false;
     }
     
-    // NOWEB engine configuration
+    // NOWEB engine configuration - always update all fields if noweb is provided
     if (cfg.noweb !== undefined) {
       if (cfg.noweb.store !== undefined) {
-        if (cfg.noweb.store.enabled !== undefined) {
-          updateData.nowebStoreEnabled = cfg.noweb.store.enabled;
-        }
-        if (cfg.noweb.store.fullSync !== undefined) {
-          updateData.nowebFullSync = cfg.noweb.store.fullSync;
-        }
+        updateData.nowebStoreEnabled = cfg.noweb.store.enabled ?? true;
+        updateData.nowebFullSync = cfg.noweb.store.fullSync ?? false;
       }
-      if (cfg.noweb.markOnline !== undefined) {
-        updateData.nowebMarkOnline = cfg.noweb.markOnline;
-      }
+      updateData.nowebMarkOnline = cfg.noweb.markOnline ?? true;
     }
     
     // User custom metadata (only user-defined key-value pairs)

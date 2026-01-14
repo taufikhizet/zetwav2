@@ -17,12 +17,13 @@ export async function dispatch(
   data: unknown
 ): Promise<void> {
   try {
-    // Get all active webhooks for this session
+    // Get all active webhooks for this session that are subscribed to this event
+    // Note: We no longer store 'ALL' in database - all events are expanded to individual events
     const webhooks = await prisma.webhook.findMany({
       where: {
         sessionId,
         isActive: true,
-        OR: [{ events: { has: event } }, { events: { has: 'ALL' } }],
+        events: { has: event },
       },
     });
 
@@ -46,10 +47,12 @@ export async function dispatch(
           {
             id: webhook.id,
             url: webhook.url,
-            headers: webhook.headers,
+            customHeaders: webhook.customHeaders as Record<string, string> | null,
             secret: webhook.secret,
             timeout: webhook.timeout,
-            retryCount: webhook.retryCount,
+            retryAttempts: webhook.retryAttempts,
+            retryDelay: webhook.retryDelay,
+            retryPolicy: webhook.retryPolicy,
           },
           payload
         )

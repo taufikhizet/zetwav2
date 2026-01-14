@@ -14,6 +14,8 @@ import {
   RefreshCw,
   ListChecks,
   AlertCircle,
+  Clock,
+  Tag,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -114,6 +116,24 @@ export function WebhookForm({
 
   return (
     <div className={`space-y-4 ${compact ? '' : 'p-4 border rounded-lg bg-muted/20'}`}>
+      {/* Webhook Name */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-2">
+          <Tag className="h-4 w-4" />
+          Webhook Name
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Optional</Badge>
+        </Label>
+        <Input
+          placeholder="e.g., My Backend Server"
+          value={value.name || ''}
+          onChange={(e) => updateField('name', e.target.value || undefined)}
+          disabled={disabled}
+        />
+        <p className="text-xs text-muted-foreground">
+          A friendly name to identify this webhook. Auto-generated from URL if not provided.
+        </p>
+      </div>
+
       {/* Webhook URL */}
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
@@ -306,6 +326,34 @@ export function WebhookForm({
                 </Select>
               </div>
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Request Timeout */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Request Timeout
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={1}
+                max={120}
+                placeholder="30"
+                value={value.timeout || ''}
+                onChange={(e) =>
+                  updateField('timeout', e.target.value ? parseInt(e.target.value) : undefined)
+                }
+                disabled={disabled}
+                className="w-24"
+              />
+              <span className="text-sm text-muted-foreground">seconds</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Maximum time to wait for a response from the webhook endpoint (default: 30 seconds)
+            </p>
           </div>
 
           <Separator />

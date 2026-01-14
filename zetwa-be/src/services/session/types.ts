@@ -122,6 +122,14 @@ export interface CreateWebhookInput {
   secret?: string;
   retryCount?: number;
   timeout?: number;
+  /** Retry configuration */
+  retries?: {
+    attempts?: number;
+    delaySeconds?: number;
+    policy?: 'linear' | 'exponential' | 'constant';
+  };
+  /** Custom headers to send with webhook */
+  customHeaders?: Array<{ name: string; value: string }>;
 }
 
 export interface UpdateWebhookInput extends Partial<CreateWebhookInput> {

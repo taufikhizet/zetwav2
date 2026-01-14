@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { PasswordInput } from '@/components/ui/password-input'
 import {
   Dialog,
   DialogContent,
@@ -60,6 +61,7 @@ import type { Webhook as WebhookType, CreateWebhookInput } from '@/api/session.a
 import {
   WEBHOOK_EVENTS_BY_CATEGORY,
   EVENT_CATEGORIES,
+  isAllEventsSelected as checkAllEventsSelected,
   type RetryPolicy,
   type CustomHeader,
 } from '@/types/webhook.types'
@@ -76,13 +78,13 @@ interface WebhooksTabProps {
   isTesting: boolean
 }
 
-// Empty form state
+// Empty form state - timeout in SECONDS for UI consistency
 const emptyWebhookForm = {
   name: '',
   url: '',
   events: ['*'] as string[],
   secret: '',
-  timeout: 30000,
+  timeout: 30, // in seconds
   retryCount: 3,
   retries: {
     attempts: 3,
@@ -126,22 +128,42 @@ export function WebhooksTab({
 
   // Open edit dialog
   const openEdit = (webhook: WebhookType) => {
+    // Use retries object directly from backend response (new schema)
+    // Fallback to legacy fields for backward compatibility
+    const retriesConfig = {
+      attempts: webhook.retries?.attempts ?? webhook.retryAttempts ?? webhook.retryCount ?? 3,
+      delaySeconds: webhook.retries?.delaySeconds ?? webhook.retryDelay ?? 2,
+      policy: (webhook.retries?.policy ?? webhook.retryPolicy ?? 'linear') as RetryPolicy,
+    }
+    
+    // Use customHeaders directly from backend response (new schema)
+    // Already in array format from backend
+    let customHeaders: CustomHeader[] = webhook.customHeaders || []
+    
+    // Backward compatibility: if customHeaders is empty but headers exists (old format)
+    if (customHeaders.length === 0 && webhook.headers && typeof webhook.headers === 'object') {
+      const headers = webhook.headers as Record<string, string>
+      customHeaders = Object.entries(headers)
+        .filter(([key]) => !key.startsWith('__')) // Skip internal fields
+        .map(([name, value]) => ({ name, value: String(value) }))
+    }
+    
+    // Check if all events are selected - set to ['*'] for UI toggle
+    const allSelected = checkAllEventsSelected(webhook.events)
+    const formEvents = allSelected ? ['*'] : webhook.events
+    
     setForm({
       name: webhook.name,
       url: webhook.url,
-      events: webhook.events,
+      events: formEvents,
       secret: webhook.secret || '',
-      timeout: webhook.timeout || 30000,
-      retryCount: webhook.retryCount || 3,
-      retries: {
-        attempts: webhook.retryCount || 3,
-        delaySeconds: 2,
-        policy: 'linear',
-      },
-      customHeaders: [],
+      timeout: Math.round((webhook.timeout || 30000) / 1000), // Convert ms to seconds for UI
+      retryCount: retriesConfig.attempts,
+      retries: retriesConfig,
+      customHeaders,
     })
     setEditingId(webhook.id)
-    setShowAdvanced(false)
+    setShowAdvanced(customHeaders.length > 0 || !!webhook.secret)
     setEditOpen(true)
   }
 
@@ -159,8 +181,16 @@ export function WebhooksTab({
       url: form.url.trim(),
       events: form.events,
       secret: form.secret || undefined,
-      timeout: form.timeout,
+      timeout: form.timeout * 1000, // Convert seconds to ms for backend
       retryCount: form.retries.attempts,
+      // Send retries config for backend to store in headers
+      retries: {
+        attempts: form.retries.attempts,
+        delaySeconds: form.retries.delaySeconds,
+        policy: form.retries.policy,
+      },
+      // Send custom headers (filter out empty ones)
+      customHeaders: form.customHeaders.filter(h => h.name && h.value),
     })
     setCreateOpen(false)
     setForm(emptyWebhookForm)
@@ -174,8 +204,16 @@ export function WebhooksTab({
       url: form.url.trim(),
       events: form.events,
       secret: form.secret || undefined,
-      timeout: form.timeout,
+      timeout: form.timeout * 1000, // Convert seconds to ms for backend
       retryCount: form.retries.attempts,
+      // Send retries config for backend to store in headers
+      retries: {
+        attempts: form.retries.attempts,
+        delaySeconds: form.retries.delaySeconds,
+        policy: form.retries.policy,
+      },
+      // Send custom headers (filter out empty ones)
+      customHeaders: form.customHeaders.filter(h => h.name && h.value),
     })
     setEditOpen(false)
     setEditingId(null)
@@ -279,7 +317,7 @@ export function WebhooksTab({
                     </p>
                     
                     <div className="flex flex-wrap gap-1">
-                      {webhook.events.includes('*') ? (
+                      {checkAllEventsSelected(webhook.events) ? (
                         <Badge variant="outline" className="text-xs">All Events</Badge>
                       ) : (
                         <>
@@ -307,7 +345,7 @@ export function WebhooksTab({
                       )}
                       <span className="flex items-center gap-1">
                         <RefreshCw className="h-3 w-3" />
-                        {webhook.retryCount} retries
+                        {webhook.retries?.attempts ?? webhook.retryAttempts ?? webhook.retryCount ?? 3} retries
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -475,8 +513,7 @@ export function WebhooksTab({
                     <Key className="h-4 w-4" />
                     HMAC Secret
                   </Label>
-                  <Input
-                    type="password"
+                  <PasswordInput
                     placeholder="Secret key for signature verification"
                     value={form.secret}
                     onChange={(e) => setForm({ ...form, secret: e.target.value })}
@@ -549,15 +586,87 @@ export function WebhooksTab({
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    Request Timeout (ms)
+                    Request Timeout
                   </Label>
-                  <Input
-                    type="number"
-                    min={1000}
-                    max={60000}
-                    value={form.timeout}
-                    onChange={(e) => setForm({ ...form, timeout: parseInt(e.target.value) || 30000 })}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={form.timeout}
+                      onChange={(e) => setForm({ ...form, timeout: parseInt(e.target.value) || 30 })}
+                      className="w-24"
+                    />
+                    <span className="text-sm text-muted-foreground">seconds</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Maximum time to wait for a response (default: 30 seconds)
+                  </p>
+                </div>
+
+                <Separator />
+
+                {/* Custom Headers */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Custom Headers</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setForm({
+                        ...form,
+                        customHeaders: [...form.customHeaders, { name: '', value: '' }]
+                      })}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add Header
+                    </Button>
+                  </div>
+                  
+                  {form.customHeaders.length > 0 ? (
+                    <div className="space-y-2">
+                      {form.customHeaders.map((header, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Input
+                            placeholder="Header name"
+                            value={header.name}
+                            onChange={(e) => {
+                              const newHeaders = [...form.customHeaders]
+                              newHeaders[index] = { ...newHeaders[index], name: e.target.value }
+                              setForm({ ...form, customHeaders: newHeaders })
+                            }}
+                            className="flex-1"
+                          />
+                          <Input
+                            placeholder="Header value"
+                            value={header.value}
+                            onChange={(e) => {
+                              const newHeaders = [...form.customHeaders]
+                              newHeaders[index] = { ...newHeaders[index], value: e.target.value }
+                              setForm({ ...form, customHeaders: newHeaders })
+                            }}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const newHeaders = form.customHeaders.filter((_, i) => i !== index)
+                              setForm({ ...form, customHeaders: newHeaders })
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      No custom headers configured.
+                    </p>
+                  )}
                 </div>
               </CollapsibleContent>
             </Collapsible>

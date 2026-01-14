@@ -40,8 +40,15 @@ export interface WebhookDeliveryResult {
 export interface WebhookConfig {
   id: string;
   url: string;
-  headers: unknown;
+  customHeaders?: Record<string, string> | null;
   secret: string | null;
   timeout: number;
-  retryCount: number;
+  // New schema columns
+  retryAttempts: number;
+  retryDelay: number;
+  retryPolicy: string;
+  /** @deprecated Use retryAttempts instead */
+  retryCount?: number;
+  /** @deprecated Use customHeaders instead */
+  headers?: unknown;
 }
