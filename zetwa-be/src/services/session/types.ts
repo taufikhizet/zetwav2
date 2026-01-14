@@ -41,8 +41,10 @@ export type SessionStatus =
   | 'DISCONNECTED'
   | 'LOGGED_OUT';
 
-// Webhook event types (extended with WAHA events)
-export type WebhookEvent =
+// Webhook event types for INPUT (accepts dot notation like 'message.any')
+// Note: This is different from Prisma WebhookEvent enum which uses underscores
+// The normalizeEvents() function converts these to Prisma format
+export type WebhookEventInput =
   // Message events
   | 'message'
   | 'message.any'
@@ -71,6 +73,10 @@ export type WebhookEvent =
   | 'label.deleted'
   | 'label.chat.added'
   | 'label.chat.deleted'
+  // Contact events
+  | 'contact.update'
+  // Chat events
+  | 'chat.archive'
   // Legacy events (for backward compatibility)
   | 'MESSAGE_RECEIVED'
   | 'MESSAGE_SENT'
@@ -87,9 +93,12 @@ export type WebhookEvent =
   | 'GROUP_LEAVE'
   | 'GROUP_UPDATE'
   | 'CALL_RECEIVED'
-  // Wildcard
+  // Wildcard (expanded to all events by normalizeEvents)
   | 'ALL'
   | '*';
+
+// Re-export Prisma WebhookEvent for database operations
+export { WebhookEvent } from '@prisma/client';
 
 // Import comprehensive types
 import type { SessionConfig } from '../../types/session-config.js';
@@ -117,7 +126,7 @@ export interface UpdateSessionInput {
 export interface CreateWebhookInput {
   name: string;
   url: string;
-  events?: WebhookEvent[];
+  events?: WebhookEventInput[];
   headers?: Record<string, string>;
   secret?: string;
   retryCount?: number;

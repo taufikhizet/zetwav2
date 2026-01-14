@@ -33,6 +33,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { FieldHelp } from '@/components/ui/field-help'
+import { SESSION_HELP } from '@/lib/field-help-content'
 
 import type { Session, SessionConfig, UpdateSessionInput } from '@/api/session.api'
 
@@ -220,6 +222,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
           <div className="space-y-2">
             <Label htmlFor="name" className="flex items-center gap-2">
               Session Name
+              <FieldHelp content={SESSION_HELP.sessionName} />
               <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Required</Badge>
             </Label>
             <Input
@@ -235,7 +238,10 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" className="flex items-center gap-1">
+              Description
+              <FieldHelp content={SESSION_HELP.description} />
+            </Label>
             <Textarea
               id="description"
               value={description}
@@ -258,6 +264,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
               <div className="space-y-1">
                 <Label htmlFor="debugMode" className="cursor-pointer flex items-center gap-2">
                   Debug Mode
+                  <FieldHelp content={SESSION_HELP.debugMode} />
                   <Badge variant="outline" className="text-[10px] border-orange-300 text-orange-600">Developer</Badge>
                 </Label>
                 <p className="text-xs text-muted-foreground">
@@ -298,7 +305,10 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 pl-[52px]">
                   <div className="space-y-2">
-                    <Label>Device Name</Label>
+                    <Label className="flex items-center gap-1">
+                      Device Name
+                      <FieldHelp content={SESSION_HELP.deviceName} />
+                    </Label>
                     <Input
                       placeholder="e.g., Windows, macOS"
                       value={deviceName}
@@ -306,7 +316,10 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Browser Name</Label>
+                    <Label className="flex items-center gap-1">
+                      Browser Name
+                      <FieldHelp content={SESSION_HELP.browserName} />
+                    </Label>
                     <Input
                       placeholder="e.g., Chrome, Firefox"
                       value={browserName}
@@ -344,6 +357,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2">
                           Proxy Server URL
+                          <FieldHelp content={SESSION_HELP.proxyServer} />
                           <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Required</Badge>
                         </Label>
                         <Input
@@ -355,7 +369,10 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                       </div>
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
-                          <Label>Username</Label>
+                          <Label className="flex items-center gap-1">
+                            Username
+                            <FieldHelp content={SESSION_HELP.proxyUsername} />
+                          </Label>
                           <Input
                             placeholder="Optional"
                             value={proxyUsername}
@@ -363,7 +380,10 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Password</Label>
+                          <Label className="flex items-center gap-1">
+                            Password
+                            <FieldHelp content={SESSION_HELP.proxyPassword} />
+                          </Label>
                           <PasswordInput
                             placeholder="Optional"
                             value={proxyPassword}
@@ -385,7 +405,24 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                     <Filter className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-medium">Event Filters</h3>
+                    <h3 className="font-medium flex items-center gap-1">
+                      Event Filters
+                      <FieldHelp content={{
+                        title: 'Event Filters',
+                        description: 'Filter untuk mengabaikan pesan dari jenis chat tertentu',
+                        details: {
+                          whatItDoes: 'Event filters memungkinkan Anda mengabaikan pesan dari jenis chat tertentu sehingga tidak dikirim ke webhook dan tidak diproses oleh sistem.',
+                          whenToUse: 'Gunakan filter ini untuk mengurangi noise dari pesan yang tidak relevan dengan use case Anda.',
+                          examples: [
+                            'Aktifkan "Status" untuk mengabaikan story/status WhatsApp',
+                            'Aktifkan "Groups" untuk fokus hanya pada chat pribadi',
+                            'Aktifkan "Channels" untuk mengabaikan channel/newsletter',
+                            'Aktifkan "Broadcast" untuk mengabaikan pesan broadcast',
+                          ],
+                          notes: ['Pesan yang difilter tidak akan dikirim ke webhook. Gunakan dengan bijak.'],
+                        },
+                      }} />
+                    </h3>
                     <p className="text-xs text-muted-foreground">
                       Choose which message types to ignore
                     </p>
@@ -448,7 +485,27 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                     <Database className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-medium">Engine Configuration</h3>
+                    <h3 className="font-medium flex items-center gap-1">
+                      Engine Configuration
+                      <FieldHelp content={{
+                        title: 'Engine Configuration',
+                        description: 'Konfigurasi lanjutan untuk WhatsApp engine (NOWEB)',
+                        details: {
+                          whatItDoes: 'Mengatur perilaku engine WhatsApp untuk menyimpan data, sinkronisasi, dan status online.',
+                          whenToUse: 'Sesuaikan pengaturan ini berdasarkan kebutuhan performa dan privasi.',
+                          examples: [
+                            'Store: Menyimpan pesan dan chat ke database lokal',
+                            'Full Sync: Sinkronisasi semua chat saat login (lambat tapi lengkap)',
+                            'Mark Online: Menampilkan status online saat terhubung',
+                          ],
+                          tips: [
+                            'Nonaktifkan Store jika hanya butuh webhook tanpa menyimpan history',
+                            'Full Sync berguna untuk mendapatkan semua chat, tapi memperlambat startup',
+                            'Nonaktifkan Mark Online untuk mode stealth/ghost',
+                          ],
+                        },
+                      }} />
+                    </h3>
                     <p className="text-xs text-muted-foreground">
                       Advanced settings for WhatsApp engine
                     </p>
@@ -500,7 +557,10 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                     <Code className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-medium">Custom Metadata</h3>
+                    <h3 className="font-medium flex items-center gap-1">
+                      Custom Metadata
+                      <FieldHelp content={SESSION_HELP.metadata} />
+                    </h3>
                     <p className="text-xs text-muted-foreground">
                       Key-value pairs included in webhook payloads
                     </p>

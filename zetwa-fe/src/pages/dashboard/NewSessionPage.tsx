@@ -36,6 +36,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { FieldHelp } from '@/components/ui/field-help'
+import { SESSION_HELP } from '@/lib/field-help-content'
 import { sessionApi, type CreateSessionInput, type SessionConfig, type InlineWebhookConfig } from '@/api/session.api'
 import { WebhookList } from '@/components/webhook'
 
@@ -287,6 +289,7 @@ export default function NewSessionPage() {
                 <Label htmlFor="name" className="text-sm font-medium flex items-center gap-2">
                   Session Name
                   <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Required</Badge>
+                  <FieldHelp content={SESSION_HELP.sessionName} />
                 </Label>
                 <Input
                   id="name"
@@ -315,6 +318,7 @@ export default function NewSessionPage() {
                 <Label htmlFor="description" className="text-sm font-medium flex items-center gap-2">
                   Description
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Optional</Badge>
+                  <FieldHelp content={SESSION_HELP.description} />
                 </Label>
                 <Textarea
                   id="description"
@@ -339,8 +343,9 @@ export default function NewSessionPage() {
                     <Zap className="h-5 w-5" />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="autoStart" className="text-sm font-medium cursor-pointer">
+                    <Label htmlFor="autoStart" className="text-sm font-medium cursor-pointer flex items-center gap-2">
                       Start Session Immediately
+                      <FieldHelp content={SESSION_HELP.autoStart} />
                     </Label>
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       When enabled, WhatsApp initialization will begin right after creation. 
@@ -405,6 +410,7 @@ export default function NewSessionPage() {
                           <Badge variant="outline" className="text-[10px] border-orange-300 text-orange-600 dark:border-orange-700 dark:text-orange-400">
                             Developer
                           </Badge>
+                          <FieldHelp content={SESSION_HELP.debugMode} />
                         </Label>
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           Enable detailed logging for troubleshooting connection issues. 
@@ -438,7 +444,10 @@ export default function NewSessionPage() {
                     
                     <div className="grid gap-4 sm:grid-cols-2 pl-[52px]">
                       <div className="space-y-2">
-                        <Label htmlFor="deviceName" className="text-sm">Device Name</Label>
+                        <Label htmlFor="deviceName" className="text-sm flex items-center gap-2">
+                          Device Name
+                          <FieldHelp content={SESSION_HELP.deviceName} />
+                        </Label>
                         <Input
                           id="deviceName"
                           placeholder="e.g., Windows, macOS, Linux"
@@ -451,7 +460,10 @@ export default function NewSessionPage() {
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="browserName" className="text-sm">Browser Name</Label>
+                        <Label htmlFor="browserName" className="text-sm flex items-center gap-2">
+                          Browser Name
+                          <FieldHelp content={SESSION_HELP.browserName} />
+                        </Label>
                         <Input
                           id="browserName"
                           placeholder="e.g., Chrome, Firefox, Safari"
@@ -479,6 +491,7 @@ export default function NewSessionPage() {
                           <h3 className="font-medium flex items-center gap-2">
                             Proxy Configuration
                             <Shield className="h-4 w-4 text-muted-foreground" />
+                            <FieldHelp content={SESSION_HELP.useProxy} />
                           </h3>
                           <p className="text-xs text-muted-foreground">
                             Route WhatsApp traffic through a proxy server for enhanced privacy or to bypass restrictions
@@ -500,6 +513,7 @@ export default function NewSessionPage() {
                             <Label htmlFor="proxyServer" className="text-sm flex items-center gap-2">
                               Proxy Server URL
                               <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Required</Badge>
+                              <FieldHelp content={SESSION_HELP.proxyServer} />
                             </Label>
                             <Input
                               id="proxyServer"
@@ -515,7 +529,10 @@ export default function NewSessionPage() {
                           </div>
                           <div className="grid gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
-                              <Label htmlFor="proxyUsername" className="text-sm">Username</Label>
+                              <Label htmlFor="proxyUsername" className="text-sm flex items-center gap-2">
+                                Username
+                                <FieldHelp content={SESSION_HELP.proxyUsername} />
+                              </Label>
                               <Input
                                 id="proxyUsername"
                                 placeholder="Optional"
@@ -525,7 +542,10 @@ export default function NewSessionPage() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="proxyPassword" className="text-sm">Password</Label>
+                              <Label htmlFor="proxyPassword" className="text-sm flex items-center gap-2">
+                                Password
+                                <FieldHelp content={SESSION_HELP.proxyPassword} />
+                              </Label>
                               <PasswordInput
                                 id="proxyPassword"
                                 placeholder="Optional"
@@ -563,9 +583,9 @@ export default function NewSessionPage() {
                           <div className="flex items-center justify-center w-8 h-8 rounded-md bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400">
                             <Radio className="h-4 w-4" />
                           </div>
-                          <div>
+                          <div className="flex items-center gap-1">
                             <Label htmlFor="ignoreStatus" className="text-sm cursor-pointer">Status</Label>
-                            <p className="text-[10px] text-muted-foreground">Stories</p>
+                            <FieldHelp content={SESSION_HELP.ignoreStatus} />
                           </div>
                         </div>
                         <Switch
@@ -582,9 +602,9 @@ export default function NewSessionPage() {
                           <div className="flex items-center justify-center w-8 h-8 rounded-md bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                             <Users className="h-4 w-4" />
                           </div>
-                          <div>
+                          <div className="flex items-center gap-1">
                             <Label htmlFor="ignoreGroups" className="text-sm cursor-pointer">Groups</Label>
-                            <p className="text-[10px] text-muted-foreground">Group msgs</p>
+                            <FieldHelp content={SESSION_HELP.ignoreGroups} />
                           </div>
                         </div>
                         <Switch
@@ -601,9 +621,9 @@ export default function NewSessionPage() {
                           <div className="flex items-center justify-center w-8 h-8 rounded-md bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
                             <Tv className="h-4 w-4" />
                           </div>
-                          <div>
+                          <div className="flex items-center gap-1">
                             <Label htmlFor="ignoreChannels" className="text-sm cursor-pointer">Channels</Label>
-                            <p className="text-[10px] text-muted-foreground">WA Channels</p>
+                            <FieldHelp content={SESSION_HELP.ignoreChannels} />
                           </div>
                         </div>
                         <Switch
@@ -620,9 +640,9 @@ export default function NewSessionPage() {
                           <div className="flex items-center justify-center w-8 h-8 rounded-md bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400">
                             <MessageSquare className="h-4 w-4" />
                           </div>
-                          <div>
+                          <div className="flex items-center gap-1">
                             <Label htmlFor="ignoreBroadcast" className="text-sm cursor-pointer">Broadcast</Label>
-                            <p className="text-[10px] text-muted-foreground">Broadcast</p>
+                            <FieldHelp content={SESSION_HELP.ignoreBroadcast} />
                           </div>
                         </div>
                         <Switch
@@ -658,9 +678,9 @@ export default function NewSessionPage() {
                           <div className="flex items-center justify-center w-8 h-8 rounded-md bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
                             <Database className="h-4 w-4" />
                           </div>
-                          <div>
+                          <div className="flex items-center gap-1">
                             <Label htmlFor="nowebStoreEnabled" className="text-sm cursor-pointer">Store</Label>
-                            <p className="text-[10px] text-muted-foreground">Save data</p>
+                            <FieldHelp content={SESSION_HELP.nowebStoreEnabled} />
                           </div>
                         </div>
                         <Switch
@@ -677,9 +697,9 @@ export default function NewSessionPage() {
                           <div className="flex items-center justify-center w-8 h-8 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
                             <Loader2 className="h-4 w-4" />
                           </div>
-                          <div>
+                          <div className="flex items-center gap-1">
                             <Label htmlFor="nowebFullSync" className="text-sm cursor-pointer">Full Sync</Label>
-                            <p className="text-[10px] text-muted-foreground">Sync all</p>
+                            <FieldHelp content={SESSION_HELP.nowebFullSync} />
                           </div>
                         </div>
                         <Switch
@@ -696,9 +716,9 @@ export default function NewSessionPage() {
                           <div className="flex items-center justify-center w-8 h-8 rounded-md bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
                             <Wifi className="h-4 w-4" />
                           </div>
-                          <div>
+                          <div className="flex items-center gap-1">
                             <Label htmlFor="nowebMarkOnline" className="text-sm cursor-pointer">Online</Label>
-                            <p className="text-[10px] text-muted-foreground">Show online</p>
+                            <FieldHelp content={SESSION_HELP.nowebMarkOnline} />
                           </div>
                         </div>
                         <Switch
@@ -720,7 +740,10 @@ export default function NewSessionPage() {
                         <Code className="h-5 w-5" />
                       </div>
                       <div>
-                        <h3 className="font-medium">Custom Metadata</h3>
+                        <h3 className="font-medium flex items-center gap-2">
+                          Custom Metadata
+                          <FieldHelp content={SESSION_HELP.metadata} />
+                        </h3>
                         <p className="text-xs text-muted-foreground">
                           Add custom key-value pairs that will be included in all webhook payloads
                         </p>

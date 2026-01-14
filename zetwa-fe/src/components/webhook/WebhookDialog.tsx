@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { FieldHelp } from '@/components/ui/field-help'
+import { WEBHOOK_HELP } from '@/lib/field-help-content'
 import { WebhookForm, emptyWebhookConfig } from './WebhookForm'
 import type { InlineWebhookConfig, WebhookConfig } from '@/types/webhook.types'
 
@@ -125,7 +127,10 @@ export function WebhookDialog({
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           {/* Webhook Name */}
           <div className="space-y-2">
-            <Label htmlFor="webhook-name">Name</Label>
+            <Label htmlFor="webhook-name" className="flex items-center gap-1">
+              Name
+              <FieldHelp content={WEBHOOK_HELP.webhookName} />
+            </Label>
             <Input
               id="webhook-name"
               placeholder="e.g., My Notification Service"
@@ -150,7 +155,10 @@ export function WebhookDialog({
           {mode === 'edit' && (
             <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
               <div>
-                <Label htmlFor="webhook-active" className="cursor-pointer">Active</Label>
+                <Label htmlFor="webhook-active" className="cursor-pointer flex items-center gap-1">
+                  Active
+                  <FieldHelp content={WEBHOOK_HELP.webhookIsActive} />
+                </Label>
                 <p className="text-xs text-muted-foreground">
                   Disable to pause webhook notifications
                 </p>

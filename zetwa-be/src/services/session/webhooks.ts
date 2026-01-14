@@ -1,100 +1,26 @@
 /**
  * Session Webhook Management
+ * CRUD operations for webhook configuration
  */
 
-import { WebhookEvent, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { NotFoundError } from '../../utils/errors.js';
 import { logger } from '../../utils/logger.js';
-import { getById } from './crud.js';
+import { getById } from './operations/read.js';
+import { normalizeEvents, headersToObject } from './utils.js';
+import { transformWebhookResponse, type WebhookResponse } from './transformers.js';
+import { DEFAULT_WEBHOOK_TIMEOUT, DEFAULT_RETRY_CONFIG } from './constants.js';
 import type { CreateWebhookInput, UpdateWebhookInput } from './types.js';
-
-/**
- * All WAHA-style events (preferred modern format)
- * When user selects "*" (all events), we expand to these individual events
- * This prevents storing "ALL" in database which causes display issues
- */
-const ALL_WAHA_EVENTS: WebhookEvent[] = [
-  WebhookEvent.message,
-  WebhookEvent.message_any,
-  WebhookEvent.message_ack,
-  WebhookEvent.message_reaction,
-  WebhookEvent.message_revoked,
-  WebhookEvent.message_edited,
-  WebhookEvent.message_waiting,
-  WebhookEvent.session_status,
-  WebhookEvent.group_join,
-  WebhookEvent.group_leave,
-  WebhookEvent.group_update,
-  WebhookEvent.presence_update,
-  WebhookEvent.poll_vote,
-  WebhookEvent.poll_vote_failed,
-  WebhookEvent.call_received,
-  WebhookEvent.call_accepted,
-  WebhookEvent.call_rejected,
-  WebhookEvent.label_upsert,
-  WebhookEvent.label_deleted,
-  WebhookEvent.label_chat_added,
-  WebhookEvent.label_chat_deleted,
-  WebhookEvent.contact_update,
-  WebhookEvent.chat_archive,
-];
-
-/**
- * Normalize events from WAHA-style (dot) to database format (underscore)
- * When '*' or 'ALL' is received, expand to all individual events
- */
-function normalizeEvents(events: string[]): WebhookEvent[] {
-  // Check if wildcard is present - expand to all WAHA events
-  if (events.some(e => e === '*' || e === 'ALL')) {
-    return ALL_WAHA_EVENTS;
-  }
-
-  const result: WebhookEvent[] = [];
-  
-  for (const event of events) {
-    // Keep legacy uppercase events as-is
-    if (event.toUpperCase() === event && event in WebhookEvent) {
-      result.push(event as WebhookEvent);
-      continue;
-    }
-    
-    // Convert dot to underscore (e.g., message.any -> message_any)
-    const normalized = event.replace(/\./g, '_');
-    
-    // Check if it's a valid WebhookEvent
-    if (normalized in WebhookEvent) {
-      result.push(normalized as WebhookEvent);
-    }
-    // Skip unknown events instead of defaulting to ALL
-  }
-  
-  // Return unique events, or all events if result is empty
-  return result.length > 0 ? [...new Set(result)] : ALL_WAHA_EVENTS;
-}
-
-/**
- * Build custom headers JSON from array format
- */
-function buildCustomHeaders(customHeaders?: Array<{ name: string; value: string }> | null): Prisma.InputJsonObject | null {
-  if (!customHeaders || customHeaders.length === 0) {
-    return null;
-  }
-  
-  const headers: Record<string, string> = {};
-  for (const h of customHeaders) {
-    if (h.name && h.value) {
-      headers[h.name] = h.value;
-    }
-  }
-  
-  return Object.keys(headers).length > 0 ? headers : null;
-}
 
 /**
  * Create webhook for session
  */
-export async function createWebhook(userId: string, sessionId: string, input: CreateWebhookInput) {
+export async function createWebhook(
+  userId: string, 
+  sessionId: string, 
+  input: CreateWebhookInput
+): Promise<WebhookResponse> {
   // Verify session ownership
   await getById(userId, sessionId);
 
@@ -103,7 +29,7 @@ export async function createWebhook(userId: string, sessionId: string, input: Cr
   const normalizedEvents = normalizeEvents(input.events || ['*']);
 
   // Build custom headers (no longer mixing with internal config)
-  const customHeaders = buildCustomHeaders(input.customHeaders);
+  const customHeaders = headersToObject(input.customHeaders);
 
   const webhook = await prisma.webhook.create({
     data: {
@@ -114,22 +40,31 @@ export async function createWebhook(userId: string, sessionId: string, input: Cr
       customHeaders: customHeaders ?? undefined,
       secret: input.secret || null,
       // Retry configuration - dedicated columns
-      retryAttempts: input.retries?.attempts ?? input.retryCount ?? 3,
-      retryDelay: input.retries?.delaySeconds ?? 2,
-      retryPolicy: input.retries?.policy ?? 'linear',
-      timeout: input.timeout ?? 30000,
+      retryAttempts: input.retries?.attempts ?? input.retryCount ?? DEFAULT_RETRY_CONFIG.attempts,
+      retryDelay: input.retries?.delaySeconds ?? DEFAULT_RETRY_CONFIG.delaySeconds,
+      retryPolicy: input.retries?.policy ?? DEFAULT_RETRY_CONFIG.policy,
+      timeout: input.timeout ?? DEFAULT_WEBHOOK_TIMEOUT,
+    },
+    include: {
+      _count: {
+        select: { logs: true },
+      },
     },
   });
 
-  logger.info({ webhookId: webhook.id, sessionId }, 'Webhook created');
+  logger.info({ webhookId: webhook.id, sessionId, url: input.url }, 'Webhook created');
 
-  return webhook;
+  // Return consistent response format
+  return transformWebhookResponse(webhook);
 }
 
 /**
- * Get webhooks for session
+ * Get all webhooks for session
  */
-export async function getWebhooks(userId: string, sessionId: string) {
+export async function getWebhooks(
+  userId: string, 
+  sessionId: string
+): Promise<WebhookResponse[]> {
   // Verify session ownership
   await getById(userId, sessionId);
 
@@ -143,35 +78,35 @@ export async function getWebhooks(userId: string, sessionId: string) {
     orderBy: { createdAt: 'desc' },
   });
 
-  // Transform webhooks to response format with WAHA-style events
-  return webhooks.map((webhook) => ({
-    ...webhook,
-    // Convert underscore format to dot format for WAHA compatibility
-    events: webhook.events.map((event) => {
-      // Keep legacy uppercase events as-is (e.g., MESSAGE_RECEIVED)
-      if (event.toUpperCase() === event) {
-        return event;
-      }
-      // Convert underscore to dot (e.g., message_any -> message.any)
-      return event.replace(/_/g, '.');
-    }),
-    // Transform customHeaders JSON back to array format for frontend
-    customHeaders: transformHeadersToArray(webhook.customHeaders as Record<string, string> | null),
-    // Map new columns to frontend expected format
-    retries: {
-      attempts: webhook.retryAttempts,
-      delaySeconds: webhook.retryDelay,
-      policy: webhook.retryPolicy,
-    },
-  }));
+  // Transform all webhooks to consistent response format
+  return webhooks.map(transformWebhookResponse);
 }
 
 /**
- * Transform headers JSON object to array format
+ * Get single webhook by ID
  */
-function transformHeadersToArray(headers: Record<string, string> | null): Array<{ name: string; value: string }> {
-  if (!headers) return [];
-  return Object.entries(headers).map(([name, value]) => ({ name, value }));
+export async function getWebhookById(
+  userId: string,
+  sessionId: string,
+  webhookId: string
+): Promise<WebhookResponse> {
+  // Verify session ownership
+  await getById(userId, sessionId);
+
+  const webhook = await prisma.webhook.findUnique({
+    where: { id: webhookId },
+    include: {
+      _count: {
+        select: { logs: true },
+      },
+    },
+  });
+
+  if (!webhook || webhook.sessionId !== sessionId) {
+    throw new NotFoundError('Webhook not found');
+  }
+
+  return transformWebhookResponse(webhook);
 }
 
 /**
@@ -182,7 +117,7 @@ export async function updateWebhook(
   sessionId: string,
   webhookId: string,
   data: UpdateWebhookInput
-) {
+): Promise<WebhookResponse> {
   // Verify session ownership
   await getById(userId, sessionId);
 
@@ -211,7 +146,7 @@ export async function updateWebhook(
   
   // Handle custom headers (completely separate from retry config now)
   if (data.customHeaders !== undefined) {
-    updateData.customHeaders = buildCustomHeaders(data.customHeaders) ?? Prisma.DbNull;
+    updateData.customHeaders = headersToObject(data.customHeaders) ?? Prisma.DbNull;
   }
   
   // Handle retry configuration - each field is a dedicated column
@@ -232,16 +167,30 @@ export async function updateWebhook(
     updateData.retryAttempts = data.retryCount;
   }
 
-  return prisma.webhook.update({
+  const updatedWebhook = await prisma.webhook.update({
     where: { id: webhookId },
     data: updateData,
+    include: {
+      _count: {
+        select: { logs: true },
+      },
+    },
   });
+
+  logger.info({ webhookId, sessionId, updates: Object.keys(updateData) }, 'Webhook updated');
+
+  // Return consistent response format
+  return transformWebhookResponse(updatedWebhook);
 }
 
 /**
  * Delete webhook
  */
-export async function deleteWebhook(userId: string, sessionId: string, webhookId: string) {
+export async function deleteWebhook(
+  userId: string, 
+  sessionId: string, 
+  webhookId: string
+): Promise<void> {
   // Verify session ownership
   await getById(userId, sessionId);
 
@@ -258,6 +207,40 @@ export async function deleteWebhook(userId: string, sessionId: string, webhookId
   });
 
   logger.info({ webhookId, sessionId }, 'Webhook deleted');
+}
+
+/**
+ * Toggle webhook active status
+ */
+export async function toggleWebhookActive(
+  userId: string,
+  sessionId: string,
+  webhookId: string
+): Promise<WebhookResponse> {
+  // Verify session ownership
+  await getById(userId, sessionId);
+
+  const webhook = await prisma.webhook.findUnique({
+    where: { id: webhookId },
+  });
+
+  if (!webhook || webhook.sessionId !== sessionId) {
+    throw new NotFoundError('Webhook not found');
+  }
+
+  const updatedWebhook = await prisma.webhook.update({
+    where: { id: webhookId },
+    data: { isActive: !webhook.isActive },
+    include: {
+      _count: {
+        select: { logs: true },
+      },
+    },
+  });
+
+  logger.info({ webhookId, sessionId, isActive: updatedWebhook.isActive }, 'Webhook status toggled');
+
+  return transformWebhookResponse(updatedWebhook);
 }
 
 /**

@@ -26,6 +26,8 @@ import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Separator } from '@/components/ui/separator'
 import { PasswordInput } from '@/components/ui/password-input'
+import { FieldHelp } from '@/components/ui/field-help'
+import { WEBHOOK_HELP } from '@/lib/field-help-content'
 import {
   Select,
   SelectContent,
@@ -122,6 +124,7 @@ export function WebhookForm({
           <Tag className="h-4 w-4" />
           Webhook Name
           <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Optional</Badge>
+          <FieldHelp content={WEBHOOK_HELP.webhookName} />
         </Label>
         <Input
           placeholder="e.g., My Backend Server"
@@ -140,6 +143,7 @@ export function WebhookForm({
           <Globe className="h-4 w-4" />
           Webhook URL
           <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Required</Badge>
+          <FieldHelp content={WEBHOOK_HELP.webhookUrl} />
         </Label>
         <Input
           placeholder="https://your-server.com/webhook"
@@ -162,6 +166,7 @@ export function WebhookForm({
           <Label className="flex items-center gap-2">
             <ListChecks className="h-4 w-4" />
             Events
+            <FieldHelp content={WEBHOOK_HELP.webhookEvents} />
           </Label>
           <Badge variant="secondary" className="text-xs">
             {isAllSelected ? 'All Events' : `${selectedEventsCount} selected`}
@@ -245,6 +250,7 @@ export function WebhookForm({
             <Label className="flex items-center gap-2">
               <Key className="h-4 w-4" />
               HMAC Secret
+              <FieldHelp content={WEBHOOK_HELP.hmacSecret} />
             </Label>
             <PasswordInput
               placeholder="Your secret key for signature verification"
@@ -270,7 +276,10 @@ export function WebhookForm({
 
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Attempts</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Attempts
+                  <FieldHelp content={WEBHOOK_HELP.retryAttempts} />
+                </Label>
                 <Input
                   type="number"
                   min={0}
@@ -287,7 +296,10 @@ export function WebhookForm({
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Delay (sec)</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Delay (sec)
+                  <FieldHelp content={WEBHOOK_HELP.retryDelay} />
+                </Label>
                 <Input
                   type="number"
                   min={1}
@@ -304,7 +316,10 @@ export function WebhookForm({
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Policy</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Policy
+                  <FieldHelp content={WEBHOOK_HELP.retryPolicy} />
+                </Label>
                 <Select
                   value={value.retries?.policy || ''}
                   onValueChange={(v) =>
@@ -335,6 +350,7 @@ export function WebhookForm({
             <Label className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Request Timeout
+              <FieldHelp content={WEBHOOK_HELP.webhookTimeout} />
             </Label>
             <div className="flex items-center gap-2">
               <Input
@@ -361,7 +377,10 @@ export function WebhookForm({
           {/* Custom Headers */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Custom Headers</Label>
+              <Label className="flex items-center gap-1">
+                Custom Headers
+                <FieldHelp content={WEBHOOK_HELP.customHeaders} />
+              </Label>
               <Button
                 type="button"
                 variant="outline"

@@ -162,6 +162,8 @@ export const webhookEventEnum = z.enum([
   'label.deleted',
   'label.chat.added',
   'label.chat.deleted',
+  'contact.update',
+  'chat.archive',
   // Legacy events (for backward compatibility)
   'MESSAGE_RECEIVED',
   'MESSAGE_SENT',

@@ -7,6 +7,7 @@ export { sessionService } from './session/index.js';
 export type {
   SessionStatus,
   WebhookEvent,
+  WebhookEventInput,
   CreateSessionInput,
   UpdateSessionInput,
   CreateWebhookInput,

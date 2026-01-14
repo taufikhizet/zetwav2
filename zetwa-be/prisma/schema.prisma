@@ -212,7 +212,7 @@ model Webhook {
   name            String
   url             String
   sessionId       String
-  events          WebhookEvent[] @default([ALL])
+  events          WebhookEvent[] // No default - will be expanded to all events by service layer
   
   // Security
   secret          String?        // HMAC secret for signature verification

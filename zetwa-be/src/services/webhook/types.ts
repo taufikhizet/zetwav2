@@ -2,24 +2,9 @@
  * Webhook Service Types
  */
 
-// Webhook event types matching Prisma schema
-export type WebhookEvent =
-  | 'MESSAGE_RECEIVED'
-  | 'MESSAGE_SENT'
-  | 'MESSAGE_ACK'
-  | 'MESSAGE_REVOKED'
-  | 'QR_RECEIVED'
-  | 'AUTHENTICATED'
-  | 'AUTH_FAILURE'
-  | 'READY'
-  | 'DISCONNECTED'
-  | 'STATE_CHANGE'
-  | 'CONTACT_CHANGED'
-  | 'GROUP_JOIN'
-  | 'GROUP_LEAVE'
-  | 'GROUP_UPDATE'
-  | 'CALL_RECEIVED'
-  | 'ALL';
+// Re-export WebhookEvent from Prisma to ensure consistency
+import { WebhookEvent } from '@prisma/client';
+export { WebhookEvent };
 
 export interface WebhookPayload {
   event: string;
