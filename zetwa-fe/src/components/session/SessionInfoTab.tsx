@@ -14,11 +14,15 @@ import {
   Key,
   Hash,
   Database,
+  Radio,
+  Users,
+  Tv,
+  MessageSquare,
+  Loader2,
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { cn, formatRelativeTime, formatDate } from '@/lib/utils'
 
 import type { Session } from '@/api/session.api'
@@ -158,11 +162,77 @@ export function SessionInfoTab({ session }: SessionInfoTabProps) {
               value={session.config.client?.deviceName || 'Default'}
             />
             <InfoRow 
+              icon={Smartphone} 
+              label="Browser Name" 
+              value={session.config.client?.browserName || 'Default'}
+            />
+            <InfoRow 
               icon={Key} 
               label="Debug Mode" 
               value={session.config.debug ? 'Enabled' : 'Disabled'}
               badge={session.config.debug ? { label: 'On', variant: 'destructive' } : undefined}
             />
+            {/* Ignore settings */}
+            {session.config.ignore && (
+              <>
+                {session.config.ignore.status && (
+                  <InfoRow 
+                    icon={Radio} 
+                    label="Ignore Status" 
+                    value="Enabled"
+                    badge={{ label: 'Filtered', variant: 'secondary' }}
+                  />
+                )}
+                {session.config.ignore.groups && (
+                  <InfoRow 
+                    icon={Users} 
+                    label="Ignore Groups" 
+                    value="Enabled"
+                    badge={{ label: 'Filtered', variant: 'secondary' }}
+                  />
+                )}
+                {session.config.ignore.channels && (
+                  <InfoRow 
+                    icon={Tv} 
+                    label="Ignore Channels" 
+                    value="Enabled"
+                    badge={{ label: 'Filtered', variant: 'secondary' }}
+                  />
+                )}
+                {session.config.ignore.broadcast && (
+                  <InfoRow 
+                    icon={MessageSquare} 
+                    label="Ignore Broadcast" 
+                    value="Enabled"
+                    badge={{ label: 'Filtered', variant: 'secondary' }}
+                  />
+                )}
+              </>
+            )}
+            
+            {/* NOWEB Engine Config */}
+            {session.config.noweb && (
+              <>
+                <InfoRow 
+                  icon={Database} 
+                  label="Store Enabled" 
+                  value={session.config.noweb.store?.enabled ? 'Yes' : 'No'}
+                  badge={session.config.noweb.store?.enabled ? { label: 'On', variant: 'success' } : undefined}
+                />
+                <InfoRow 
+                  icon={Loader2} 
+                  label="Full Sync" 
+                  value={session.config.noweb.store?.fullSync ? 'Yes' : 'No'}
+                  badge={session.config.noweb.store?.fullSync ? { label: 'On', variant: 'success' } : undefined}
+                />
+                <InfoRow 
+                  icon={Wifi} 
+                  label="Mark Online" 
+                  value={session.config.noweb.markOnline ? 'Yes' : 'No'}
+                  badge={session.config.noweb.markOnline ? { label: 'On', variant: 'success' } : undefined}
+                />
+              </>
+            )}
           </CardContent>
         </Card>
       )}

@@ -108,7 +108,37 @@ model WaSession {
   connectedAt     DateTime?
   disconnectedAt  DateTime?
   isActive        Boolean       @default(true)
-  metadata        Json?         // Store additional session data
+  
+  // ========================================
+  // Session Configuration (previously nested in metadata.config)
+  // ========================================
+  
+  // Debug mode
+  debug           Boolean       @default(false)
+  
+  // Client configuration - how session appears in WhatsApp
+  deviceName      String?       // e.g., "Windows", "macOS", "Ubuntu"
+  browserName     String?       // e.g., "Chrome", "Firefox", "Safari"
+  
+  // Proxy configuration
+  proxyServer     String?       // Proxy server address (e.g., "http://proxy:8080")
+  proxyUsername   String?       // Proxy authentication username
+  proxyPassword   String?       // Proxy authentication password
+  
+  // Event ignore configuration
+  ignoreStatus    Boolean       @default(false)  // Ignore status@broadcast (stories)
+  ignoreGroups    Boolean       @default(false)  // Ignore group events
+  ignoreChannels  Boolean       @default(false)  // Ignore channel events
+  ignoreBroadcast Boolean       @default(false)  // Ignore broadcast events
+  
+  // NOWEB engine configuration
+  nowebStoreEnabled   Boolean   @default(true)   // Enable store for contacts, chats, messages
+  nowebFullSync       Boolean   @default(false)  // Full sync on session initialization
+  nowebMarkOnline     Boolean   @default(true)   // Mark as online when connected
+  
+  // User custom metadata (key-value pairs included in webhooks)
+  metadata        Json?         // Only for user-defined custom data
+  
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 

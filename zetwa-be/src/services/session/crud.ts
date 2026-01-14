@@ -98,20 +98,39 @@ export async function create(userId: string, input: CreateSessionInput) {
     throw new ConflictError(`Session with name "${name}" already exists`);
   }
 
-  // Prepare metadata to store config and other session data
-  const metadata: Record<string, unknown> = {};
-  if (config) {
-    metadata.config = config;
-  }
-
-  // Create session in database
+  // Create session in database with dedicated config columns
   const session = await prisma.waSession.create({
     data: {
       name,
       description,
       userId,
       status: start ? 'INITIALIZING' : 'FAILED', // Use FAILED as "STOPPED" equivalent
-      metadata: Object.keys(metadata).length > 0 ? JSON.parse(JSON.stringify(metadata)) : undefined,
+      
+      // Debug mode
+      debug: config?.debug ?? false,
+      
+      // Client configuration
+      deviceName: config?.client?.deviceName,
+      browserName: config?.client?.browserName,
+      
+      // Proxy configuration
+      proxyServer: config?.proxy?.server,
+      proxyUsername: config?.proxy?.username,
+      proxyPassword: config?.proxy?.password,
+      
+      // Event ignore configuration
+      ignoreStatus: config?.ignore?.status ?? false,
+      ignoreGroups: config?.ignore?.groups ?? false,
+      ignoreChannels: config?.ignore?.channels ?? false,
+      ignoreBroadcast: config?.ignore?.broadcast ?? false,
+      
+      // NOWEB engine configuration
+      nowebStoreEnabled: config?.noweb?.store?.enabled ?? true,
+      nowebFullSync: config?.noweb?.store?.fullSync ?? false,
+      nowebMarkOnline: config?.noweb?.markOnline ?? true,
+      
+      // User custom metadata only (not config)
+      metadata: config?.metadata ? JSON.parse(JSON.stringify(config.metadata)) : undefined,
     },
   });
 
@@ -242,8 +261,79 @@ export async function getById(userId: string, sessionId: string) {
 
   const isFailedOrDisconnected = ['FAILED', 'DISCONNECTED', 'LOGGED_OUT'].includes(liveStatus);
 
+  // Build config object from dedicated columns (new structure)
+  const inlineWebhooks = session.webhooks.map((webhook) => ({
+    url: webhook.url,
+    // Convert underscore format to dot format for WAHA compatibility
+    events: webhook.events.map((event) => {
+      if (event === 'ALL' || event.toUpperCase() === event) {
+        return event;
+      }
+      return event.replace(/_/g, '.');
+    }),
+  }));
+  
+  // Build config object from dedicated columns for frontend compatibility (WAHA-style)
+  const config: Record<string, unknown> = {};
+  
+  // Debug mode
+  if (session.debug) {
+    config.debug = true;
+  }
+  
+  // Client configuration
+  if (session.deviceName || session.browserName) {
+    config.client = {
+      ...(session.deviceName && { deviceName: session.deviceName }),
+      ...(session.browserName && { browserName: session.browserName }),
+    };
+  }
+  
+  // Proxy configuration
+  if (session.proxyServer) {
+    config.proxy = {
+      server: session.proxyServer,
+      ...(session.proxyUsername && { username: session.proxyUsername }),
+      ...(session.proxyPassword && { password: session.proxyPassword }),
+    };
+  }
+  
+  // Ignore configuration
+  if (session.ignoreStatus || session.ignoreGroups || session.ignoreChannels || session.ignoreBroadcast) {
+    config.ignore = {
+      ...(session.ignoreStatus && { status: true }),
+      ...(session.ignoreGroups && { groups: true }),
+      ...(session.ignoreChannels && { channels: true }),
+      ...(session.ignoreBroadcast && { broadcast: true }),
+    };
+  }
+  
+  // NOWEB engine configuration (only if non-default values)
+  if (!session.nowebStoreEnabled || session.nowebFullSync || !session.nowebMarkOnline) {
+    config.noweb = {
+      store: {
+        enabled: session.nowebStoreEnabled,
+        ...(session.nowebFullSync && { fullSync: true }),
+      },
+      ...(session.nowebMarkOnline === false && { markOnline: false }),
+    };
+  }
+  
+  // User custom metadata (from metadata column - now only stores user data, not config)
+  const userMetadata = session.metadata as Record<string, string> | null;
+  if (userMetadata && Object.keys(userMetadata).length > 0) {
+    config.metadata = userMetadata;
+  }
+  
+  // Add webhooks to config
+  if (inlineWebhooks.length > 0) {
+    config.webhooks = inlineWebhooks;
+  }
+
   return {
     ...session,
+    // Extract config to top level for frontend compatibility (WAHA-style)
+    config: Object.keys(config).length > 0 ? config : undefined,
     liveStatus,
     isOnline: whatsappService.isConnected(sessionId),
     qrCode: isFailedOrDisconnected ? null : whatsappService.getQRCode(sessionId),
@@ -272,10 +362,92 @@ export async function update(userId: string, sessionId: string, input: UpdateSes
     }
   }
 
-  return prisma.waSession.update({
+  // Build update data
+  const updateData: Record<string, unknown> = {};
+  
+  if (input.name !== undefined) {
+    updateData.name = input.name;
+  }
+  
+  if (input.description !== undefined) {
+    updateData.description = input.description;
+  }
+  
+  // Handle config update - update dedicated columns
+  if (input.config !== undefined) {
+    const cfg = input.config;
+    
+    // Debug mode
+    if (cfg.debug !== undefined) {
+      updateData.debug = cfg.debug;
+    }
+    
+    // Client configuration
+    if (cfg.client !== undefined) {
+      if (cfg.client.deviceName !== undefined) {
+        updateData.deviceName = cfg.client.deviceName || null;
+      }
+      if (cfg.client.browserName !== undefined) {
+        updateData.browserName = cfg.client.browserName || null;
+      }
+    }
+    
+    // Proxy configuration
+    if (cfg.proxy !== undefined) {
+      updateData.proxyServer = cfg.proxy.server || null;
+      updateData.proxyUsername = cfg.proxy.username || null;
+      updateData.proxyPassword = cfg.proxy.password || null;
+    }
+    
+    // Ignore configuration
+    if (cfg.ignore !== undefined) {
+      if (cfg.ignore.status !== undefined) {
+        updateData.ignoreStatus = cfg.ignore.status;
+      }
+      if (cfg.ignore.groups !== undefined) {
+        updateData.ignoreGroups = cfg.ignore.groups;
+      }
+      if (cfg.ignore.channels !== undefined) {
+        updateData.ignoreChannels = cfg.ignore.channels;
+      }
+      if (cfg.ignore.broadcast !== undefined) {
+        updateData.ignoreBroadcast = cfg.ignore.broadcast;
+      }
+    }
+    
+    // NOWEB engine configuration
+    if (cfg.noweb !== undefined) {
+      if (cfg.noweb.store !== undefined) {
+        if (cfg.noweb.store.enabled !== undefined) {
+          updateData.nowebStoreEnabled = cfg.noweb.store.enabled;
+        }
+        if (cfg.noweb.store.fullSync !== undefined) {
+          updateData.nowebFullSync = cfg.noweb.store.fullSync;
+        }
+      }
+      if (cfg.noweb.markOnline !== undefined) {
+        updateData.nowebMarkOnline = cfg.noweb.markOnline;
+      }
+    }
+    
+    // User custom metadata (only user-defined key-value pairs)
+    if (cfg.metadata !== undefined) {
+      updateData.metadata = cfg.metadata && Object.keys(cfg.metadata).length > 0 
+        ? JSON.parse(JSON.stringify(cfg.metadata)) 
+        : null;
+    }
+    
+    logger.info({ sessionId, configUpdates: Object.keys(updateData).filter(k => !['name', 'description'].includes(k)) }, 'Updating session config');
+  }
+
+  const updatedSession = await prisma.waSession.update({
     where: { id: sessionId },
-    data: input,
+    data: updateData,
   });
+
+  logger.info({ sessionId, userId }, 'Session updated');
+
+  return updatedSession;
 }
 
 /**

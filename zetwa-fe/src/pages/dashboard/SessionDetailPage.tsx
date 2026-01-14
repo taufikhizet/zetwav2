@@ -42,6 +42,43 @@ import {
 import { connectSocket, subscribeToSession, unsubscribeFromSession } from '@/lib/socket'
 import { formatRelativeTime } from '@/lib/utils'
 
+/**
+ * Extract error message from API error response
+ */
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object') {
+    const axiosError = error as { 
+      response?: { 
+        data?: { 
+          error?: { 
+            message?: string
+            details?: Array<{ field: string; message: string }> 
+          } 
+        } 
+      }
+      message?: string 
+    }
+    const apiError = axiosError.response?.data?.error
+    
+    if (apiError) {
+      if (apiError.details && Array.isArray(apiError.details) && apiError.details.length > 0) {
+        const detail = apiError.details[0]
+        return `${detail.message}${detail.field ? ` (${detail.field})` : ''}`
+      }
+      if (apiError.message) {
+        return apiError.message
+      }
+    }
+    if (axiosError.message) {
+      return axiosError.message
+    }
+  }
+  if (error instanceof Error) {
+    return error.message
+  }
+  return fallback
+}
+
 export default function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
@@ -194,7 +231,7 @@ export default function SessionDetailPage() {
       toast.success('Session deleted')
       navigate('/dashboard/sessions')
     },
-    onError: () => toast.error('Failed to delete session'),
+    onError: (error) => toast.error(extractErrorMessage(error, 'Failed to delete session')),
   })
 
   const updateMutation = useMutation({
@@ -203,7 +240,7 @@ export default function SessionDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
       toast.success('Session updated successfully')
     },
-    onError: () => toast.error('Failed to update session'),
+    onError: (error) => toast.error(extractErrorMessage(error, 'Failed to update session')),
   })
 
   const pairingCodeMutation = useMutation({
@@ -212,7 +249,7 @@ export default function SessionDetailPage() {
       setPairingCode(data.code)
       toast.success('Pairing code generated')
     },
-    onError: (error: Error) => toast.error(error.message || 'Failed to get pairing code'),
+    onError: (error) => toast.error(extractErrorMessage(error, 'Failed to get pairing code')),
   })
 
   const sendMessageMutation = useMutation({
@@ -222,7 +259,7 @@ export default function SessionDetailPage() {
       setSendOpen(false)
       setMessageForm({ to: '', message: '' })
     },
-    onError: () => toast.error('Failed to send message'),
+    onError: (error) => toast.error(extractErrorMessage(error, 'Failed to send message')),
   })
 
   // Webhook mutations
@@ -233,7 +270,7 @@ export default function SessionDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['webhooks', sessionId] })
       toast.success('Webhook created')
     },
-    onError: () => toast.error('Failed to create webhook'),
+    onError: (error) => toast.error(extractErrorMessage(error, 'Failed to create webhook')),
   })
 
   const updateWebhookMutation = useMutation({
@@ -243,7 +280,7 @@ export default function SessionDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['webhooks', sessionId] })
       toast.success('Webhook updated')
     },
-    onError: () => toast.error('Failed to update webhook'),
+    onError: (error) => toast.error(extractErrorMessage(error, 'Failed to update webhook')),
   })
 
   const deleteWebhookMutation = useMutation({
@@ -252,7 +289,7 @@ export default function SessionDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['webhooks', sessionId] })
       toast.success('Webhook deleted')
     },
-    onError: () => toast.error('Failed to delete webhook'),
+    onError: (error) => toast.error(extractErrorMessage(error, 'Failed to delete webhook')),
   })
 
   const testWebhookMutation = useMutation({

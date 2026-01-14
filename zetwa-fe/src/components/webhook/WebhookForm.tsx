@@ -23,6 +23,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Separator } from '@/components/ui/separator'
+import { PasswordInput } from '@/components/ui/password-input'
 import {
   Select,
   SelectContent,
@@ -225,8 +226,7 @@ export function WebhookForm({
               <Key className="h-4 w-4" />
               HMAC Secret
             </Label>
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="Your secret key for signature verification"
               value={value.hmac?.key || ''}
               onChange={(e) =>

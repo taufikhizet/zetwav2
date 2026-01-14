@@ -17,6 +17,9 @@ import {
   MessageSquare,
   Shield,
   Settings2,
+  Tv,
+  Database,
+  Wifi,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -25,6 +28,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -59,7 +63,13 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
   // Ignore config
   const [ignoreStatus, setIgnoreStatus] = useState(session.config?.ignore?.status || false)
   const [ignoreGroups, setIgnoreGroups] = useState(session.config?.ignore?.groups || false)
+  const [ignoreChannels, setIgnoreChannels] = useState(session.config?.ignore?.channels || false)
   const [ignoreBroadcast, setIgnoreBroadcast] = useState(session.config?.ignore?.broadcast || false)
+  
+  // NOWEB engine config
+  const [nowebStoreEnabled, setNowebStoreEnabled] = useState(session.config?.noweb?.store?.enabled ?? true)
+  const [nowebFullSync, setNowebFullSync] = useState(session.config?.noweb?.store?.fullSync || false)
+  const [nowebMarkOnline, setNowebMarkOnline] = useState(session.config?.noweb?.markOnline ?? true)
   
   // Metadata
   const [metadataJson, setMetadataJson] = useState(
@@ -71,6 +81,28 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
   
   // Advanced section open
   const [showAdvanced, setShowAdvanced] = useState(false)
+
+  // Reset state when session changes (e.g., after refetch)
+  useEffect(() => {
+    setName(session.name)
+    setDescription(session.description || '')
+    setDebugMode(session.config?.debug || false)
+    setDeviceName(session.config?.client?.deviceName || '')
+    setBrowserName(session.config?.client?.browserName || '')
+    setUseProxy(!!session.config?.proxy?.server)
+    setProxyServer(session.config?.proxy?.server || '')
+    setProxyUsername(session.config?.proxy?.username || '')
+    setProxyPassword(session.config?.proxy?.password || '')
+    setIgnoreStatus(session.config?.ignore?.status || false)
+    setIgnoreGroups(session.config?.ignore?.groups || false)
+    setIgnoreChannels(session.config?.ignore?.channels || false)
+    setIgnoreBroadcast(session.config?.ignore?.broadcast || false)
+    setNowebStoreEnabled(session.config?.noweb?.store?.enabled ?? true)
+    setNowebFullSync(session.config?.noweb?.store?.fullSync || false)
+    setNowebMarkOnline(session.config?.noweb?.markOnline ?? true)
+    setMetadataJson(session.config?.metadata ? JSON.stringify(session.config.metadata, null, 2) : '')
+    setHasChanges(false)
+  }, [session.id]) // Only reset when session ID changes
 
   // Validation
   const isNameValid = /^[a-zA-Z0-9_-]+$/.test(name) || name === ''
@@ -86,7 +118,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
     const configChanged = JSON.stringify(currentConfig) !== JSON.stringify(originalConfig)
     
     setHasChanges(nameChanged || descChanged || configChanged)
-  }, [name, description, debugMode, deviceName, browserName, useProxy, proxyServer, proxyUsername, proxyPassword, ignoreStatus, ignoreGroups, ignoreBroadcast, metadataJson])
+  }, [name, description, debugMode, deviceName, browserName, useProxy, proxyServer, proxyUsername, proxyPassword, ignoreStatus, ignoreGroups, ignoreChannels, ignoreBroadcast, nowebStoreEnabled, nowebFullSync, nowebMarkOnline, metadataJson])
 
   const buildConfig = (): SessionConfig => {
     const config: SessionConfig = {}
@@ -107,11 +139,23 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
       }
     }
     
-    if (ignoreStatus || ignoreGroups || ignoreBroadcast) {
+    if (ignoreStatus || ignoreGroups || ignoreChannels || ignoreBroadcast) {
       config.ignore = {
         ...(ignoreStatus && { status: true }),
         ...(ignoreGroups && { groups: true }),
+        ...(ignoreChannels && { channels: true }),
         ...(ignoreBroadcast && { broadcast: true }),
+      }
+    }
+    
+    // NOWEB engine config (only if non-default values)
+    if (!nowebStoreEnabled || nowebFullSync || !nowebMarkOnline) {
+      config.noweb = {
+        store: {
+          enabled: nowebStoreEnabled,
+          ...(nowebFullSync && { fullSync: true }),
+        },
+        ...(nowebMarkOnline === false && { markOnline: false }),
       }
     }
     
@@ -318,8 +362,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                         </div>
                         <div className="space-y-2">
                           <Label>Password</Label>
-                          <Input
-                            type="password"
+                          <PasswordInput
                             placeholder="Optional"
                             value={proxyPassword}
                             onChange={(e) => setProxyPassword(e.target.value)}
@@ -347,7 +390,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                   </div>
                 </div>
                 
-                <div className="grid gap-3 sm:grid-cols-3 pl-[52px]">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 pl-[52px]">
                   <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${ignoreStatus ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
                     <div className="flex items-center gap-2">
                       <Radio className="h-4 w-4 text-pink-500" />
@@ -370,15 +413,78 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                     <Switch id="ignoreGroups" checked={ignoreGroups} onCheckedChange={setIgnoreGroups} />
                   </div>
                   
+                  <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${ignoreChannels ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
+                    <div className="flex items-center gap-2">
+                      <Tv className="h-4 w-4 text-violet-500" />
+                      <div>
+                        <Label htmlFor="ignoreChannels" className="text-sm cursor-pointer">Channels</Label>
+                        <p className="text-[10px] text-muted-foreground">WA Channels</p>
+                      </div>
+                    </div>
+                    <Switch id="ignoreChannels" checked={ignoreChannels} onCheckedChange={setIgnoreChannels} />
+                  </div>
+                  
                   <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${ignoreBroadcast ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-4 w-4 text-cyan-500" />
                       <div>
                         <Label htmlFor="ignoreBroadcast" className="text-sm cursor-pointer">Broadcast</Label>
-                        <p className="text-[10px] text-muted-foreground">Broadcast lists</p>
+                        <p className="text-[10px] text-muted-foreground">Broadcast</p>
                       </div>
                     </div>
                     <Switch id="ignoreBroadcast" checked={ignoreBroadcast} onCheckedChange={setIgnoreBroadcast} />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* NOWEB Engine Configuration */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">
+                    <Database className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Engine Configuration</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Advanced settings for WhatsApp engine
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid gap-3 sm:grid-cols-3 pl-[52px]">
+                  <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${nowebStoreEnabled ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
+                    <div className="flex items-center gap-2">
+                      <Database className="h-4 w-4 text-teal-500" />
+                      <div>
+                        <Label htmlFor="nowebStoreEnabled" className="text-sm cursor-pointer">Store</Label>
+                        <p className="text-[10px] text-muted-foreground">Save data</p>
+                      </div>
+                    </div>
+                    <Switch id="nowebStoreEnabled" checked={nowebStoreEnabled} onCheckedChange={setNowebStoreEnabled} />
+                  </div>
+                  
+                  <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${nowebFullSync ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 text-orange-500" />
+                      <div>
+                        <Label htmlFor="nowebFullSync" className="text-sm cursor-pointer">Full Sync</Label>
+                        <p className="text-[10px] text-muted-foreground">Sync all</p>
+                      </div>
+                    </div>
+                    <Switch id="nowebFullSync" checked={nowebFullSync} onCheckedChange={setNowebFullSync} />
+                  </div>
+                  
+                  <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${nowebMarkOnline ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
+                    <div className="flex items-center gap-2">
+                      <Wifi className="h-4 w-4 text-green-500" />
+                      <div>
+                        <Label htmlFor="nowebMarkOnline" className="text-sm cursor-pointer">Online</Label>
+                        <p className="text-[10px] text-muted-foreground">Show online</p>
+                      </div>
+                    </div>
+                    <Switch id="nowebMarkOnline" checked={nowebMarkOnline} onCheckedChange={setNowebMarkOnline} />
                   </div>
                 </div>
               </div>

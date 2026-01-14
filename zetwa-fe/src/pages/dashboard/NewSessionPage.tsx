@@ -20,6 +20,9 @@ import {
   Users,
   Radio,
   Webhook,
+  Tv,
+  Database,
+  Wifi,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -28,6 +31,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Badge } from '@/components/ui/badge'
@@ -61,7 +65,13 @@ export default function NewSessionPage() {
   // Ignore config
   const [ignoreStatus, setIgnoreStatus] = useState(false)
   const [ignoreGroups, setIgnoreGroups] = useState(false)
+  const [ignoreChannels, setIgnoreChannels] = useState(false)
   const [ignoreBroadcast, setIgnoreBroadcast] = useState(false)
+  
+  // NOWEB engine config
+  const [nowebStoreEnabled, setNowebStoreEnabled] = useState(true)
+  const [nowebFullSync, setNowebFullSync] = useState(false)
+  const [nowebMarkOnline, setNowebMarkOnline] = useState(true)
   
   // Metadata
   const [metadataJson, setMetadataJson] = useState('')
@@ -81,8 +91,28 @@ export default function NewSessionPage() {
       toast.success('Session created successfully! 🎉')
       navigate(`/dashboard/sessions/${session.id}`)
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create session')
+    onError: (error: unknown) => {
+      // Extract error message from API response
+      let errorMessage = 'Failed to create session'
+      
+      if (error && typeof error === 'object') {
+        const axiosError = error as { response?: { data?: { error?: { message?: string; details?: Array<{ field: string; message: string }> } } } }
+        const apiError = axiosError.response?.data?.error
+        
+        if (apiError) {
+          if (apiError.details && Array.isArray(apiError.details) && apiError.details.length > 0) {
+            // Show validation errors with field info
+            const detail = apiError.details[0]
+            errorMessage = `${detail.message}${detail.field ? ` (${detail.field})` : ''}`
+          } else if (apiError.message) {
+            errorMessage = apiError.message
+          }
+        } else if (error instanceof Error) {
+          errorMessage = error.message
+        }
+      }
+      
+      toast.error(errorMessage)
     },
   })
 
@@ -128,11 +158,23 @@ export default function NewSessionPage() {
     }
     
     // Ignore config
-    if (ignoreStatus || ignoreGroups || ignoreBroadcast) {
+    if (ignoreStatus || ignoreGroups || ignoreChannels || ignoreBroadcast) {
       config.ignore = {
         ...(ignoreStatus && { status: true }),
         ...(ignoreGroups && { groups: true }),
+        ...(ignoreChannels && { channels: true }),
         ...(ignoreBroadcast && { broadcast: true }),
+      }
+    }
+    
+    // NOWEB engine config (only if non-default values)
+    if (!nowebStoreEnabled || nowebFullSync || !nowebMarkOnline) {
+      config.noweb = {
+        store: {
+          enabled: nowebStoreEnabled,
+          ...(nowebFullSync && { fullSync: true }),
+        },
+        ...(nowebMarkOnline === false && { markOnline: false }),
       }
     }
     
@@ -146,8 +188,42 @@ export default function NewSessionPage() {
       }
     }
     
-    // Webhooks - filter out invalid ones and add to config
-    const validWebhooks = webhooks.filter(w => w.url && w.url.trim() !== '' && w.events && w.events.length > 0)
+    // Webhooks - validate and filter
+    const invalidWebhooks: number[] = []
+    const validWebhooks = webhooks.filter((w, index) => {
+      // Skip completely empty webhooks
+      if (!w.url || w.url.trim() === '') {
+        // Only flag as invalid if user started filling it but left URL empty
+        if (w.events && w.events.length > 0 && !w.events.includes('*')) {
+          invalidWebhooks.push(index + 1)
+        }
+        return false
+      }
+      // Validate URL format
+      try {
+        const url = new URL(w.url)
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          invalidWebhooks.push(index + 1)
+          return false
+        }
+      } catch {
+        invalidWebhooks.push(index + 1)
+        return false
+      }
+      // Must have events
+      if (!w.events || w.events.length === 0) {
+        invalidWebhooks.push(index + 1)
+        return false
+      }
+      return true
+    })
+    
+    // Show error if any webhooks are invalid
+    if (invalidWebhooks.length > 0) {
+      toast.error(`Invalid webhook URL at position ${invalidWebhooks.join(', ')}. Please enter a valid URL (http:// or https://).`)
+      return
+    }
+    
     if (validWebhooks.length > 0) {
       config.webhooks = validWebhooks
     }
@@ -450,9 +526,8 @@ export default function NewSessionPage() {
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="proxyPassword" className="text-sm">Password</Label>
-                              <Input
+                              <PasswordInput
                                 id="proxyPassword"
-                                type="password"
                                 placeholder="Optional"
                                 value={proxyPassword}
                                 onChange={(e) => setProxyPassword(e.target.value)}
@@ -481,7 +556,7 @@ export default function NewSessionPage() {
                       </div>
                     </div>
                     
-                    <div className="grid gap-3 sm:grid-cols-3 pl-[52px]">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 pl-[52px]">
                       {/* Ignore Status */}
                       <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${ignoreStatus ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
                         <div className="flex items-center gap-2">
@@ -490,7 +565,7 @@ export default function NewSessionPage() {
                           </div>
                           <div>
                             <Label htmlFor="ignoreStatus" className="text-sm cursor-pointer">Status</Label>
-                            <p className="text-[10px] text-muted-foreground">Stories & updates</p>
+                            <p className="text-[10px] text-muted-foreground">Stories</p>
                           </div>
                         </div>
                         <Switch
@@ -509,13 +584,32 @@ export default function NewSessionPage() {
                           </div>
                           <div>
                             <Label htmlFor="ignoreGroups" className="text-sm cursor-pointer">Groups</Label>
-                            <p className="text-[10px] text-muted-foreground">Group messages</p>
+                            <p className="text-[10px] text-muted-foreground">Group msgs</p>
                           </div>
                         </div>
                         <Switch
                           id="ignoreGroups"
                           checked={ignoreGroups}
                           onCheckedChange={setIgnoreGroups}
+                          disabled={createMutation.isPending}
+                        />
+                      </div>
+
+                      {/* Ignore Channels */}
+                      <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${ignoreChannels ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+                            <Tv className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <Label htmlFor="ignoreChannels" className="text-sm cursor-pointer">Channels</Label>
+                            <p className="text-[10px] text-muted-foreground">WA Channels</p>
+                          </div>
+                        </div>
+                        <Switch
+                          id="ignoreChannels"
+                          checked={ignoreChannels}
+                          onCheckedChange={setIgnoreChannels}
                           disabled={createMutation.isPending}
                         />
                       </div>
@@ -528,13 +622,89 @@ export default function NewSessionPage() {
                           </div>
                           <div>
                             <Label htmlFor="ignoreBroadcast" className="text-sm cursor-pointer">Broadcast</Label>
-                            <p className="text-[10px] text-muted-foreground">Broadcast lists</p>
+                            <p className="text-[10px] text-muted-foreground">Broadcast</p>
                           </div>
                         </div>
                         <Switch
                           id="ignoreBroadcast"
                           checked={ignoreBroadcast}
                           onCheckedChange={setIgnoreBroadcast}
+                          disabled={createMutation.isPending}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* NOWEB Engine Configuration */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 shrink-0">
+                        <Database className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Engine Configuration</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Advanced settings for the WhatsApp engine behavior
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid gap-3 sm:grid-cols-3 pl-[52px]">
+                      {/* Store Enabled */}
+                      <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${nowebStoreEnabled ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
+                            <Database className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <Label htmlFor="nowebStoreEnabled" className="text-sm cursor-pointer">Store</Label>
+                            <p className="text-[10px] text-muted-foreground">Save data</p>
+                          </div>
+                        </div>
+                        <Switch
+                          id="nowebStoreEnabled"
+                          checked={nowebStoreEnabled}
+                          onCheckedChange={setNowebStoreEnabled}
+                          disabled={createMutation.isPending}
+                        />
+                      </div>
+
+                      {/* Full Sync */}
+                      <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${nowebFullSync ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                            <Loader2 className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <Label htmlFor="nowebFullSync" className="text-sm cursor-pointer">Full Sync</Label>
+                            <p className="text-[10px] text-muted-foreground">Sync all</p>
+                          </div>
+                        </div>
+                        <Switch
+                          id="nowebFullSync"
+                          checked={nowebFullSync}
+                          onCheckedChange={setNowebFullSync}
+                          disabled={createMutation.isPending}
+                        />
+                      </div>
+
+                      {/* Mark Online */}
+                      <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${nowebMarkOnline ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                            <Wifi className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <Label htmlFor="nowebMarkOnline" className="text-sm cursor-pointer">Online</Label>
+                            <p className="text-[10px] text-muted-foreground">Show online</p>
+                          </div>
+                        </div>
+                        <Switch
+                          id="nowebMarkOnline"
+                          checked={nowebMarkOnline}
+                          onCheckedChange={setNowebMarkOnline}
                           disabled={createMutation.isPending}
                         />
                       </div>
