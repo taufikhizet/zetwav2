@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken, type TokenPayload } from '../services/jwt.service.js';
-import { apiKeyService } from '../services/api-key.service.js';
+import { verifyAccessToken } from '../services/jwt.service.js';
+import { apiKeyService } from '../services/api-key/index.js';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -12,10 +12,22 @@ declare global {
       userEmail?: string;
       apiKeyId?: string;
       authType?: 'jwt' | 'apikey';
-      permissions?: string[];
+      scopes?: string[];
     }
   }
 }
+
+/**
+ * Get client IP address from request
+ */
+const getClientIp = (req: Request): string | undefined => {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    const ips = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0];
+    return ips?.trim();
+  }
+  return req.ip || req.socket?.remoteAddress;
+};
 
 /**
  * JWT Authentication middleware
@@ -51,18 +63,20 @@ export const authenticate = async (
       req.userId = payload.userId;
       req.userEmail = payload.email;
       req.authType = 'jwt';
-      req.permissions = ['read', 'write', 'admin'];
+      // JWT users get all scopes (admin level)
+      req.scopes = ['*'];
 
       return next();
     }
 
-    // Check for API Key
+    // Check for API Key in Authorization header
     if (authHeader.startsWith('ApiKey ') || authHeader.startsWith('X-API-Key ')) {
       const apiKey = authHeader.startsWith('ApiKey ') 
         ? authHeader.slice(7) 
         : authHeader.slice(10);
       
-      const result = await apiKeyService.validateKey(apiKey);
+      const ipAddress = getClientIp(req);
+      const result = await apiKeyService.validateKey(apiKey, ipAddress);
 
       if (!result) {
         throw new UnauthorizedError('Invalid API key');
@@ -71,7 +85,7 @@ export const authenticate = async (
       req.userId = result.userId;
       req.apiKeyId = result.apiKeyId;
       req.authType = 'apikey';
-      req.permissions = result.permissions;
+      req.scopes = result.scopes;
 
       return next();
     }
@@ -98,7 +112,8 @@ export const authenticateApiKey = async (
       throw new UnauthorizedError('No API key provided');
     }
 
-    const result = await apiKeyService.validateKey(apiKey);
+    const ipAddress = getClientIp(req);
+    const result = await apiKeyService.validateKey(apiKey, ipAddress);
 
     if (!result) {
       throw new UnauthorizedError('Invalid API key');
@@ -107,7 +122,7 @@ export const authenticateApiKey = async (
     req.userId = result.userId;
     req.apiKeyId = result.apiKeyId;
     req.authType = 'apikey';
-    req.permissions = result.permissions;
+    req.scopes = result.scopes;
 
     next();
   } catch (error) {
@@ -142,15 +157,65 @@ export const authenticateAny = async (
 };
 
 /**
- * Permission check middleware factory
+ * Scope check middleware factory
+ * Validates that the request has the required scope(s)
+ */
+export const requireScope = (...requiredScopes: string[]) => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const userScopes = req.scopes || [];
+
+    // Check if user has wildcard (admin level)
+    if (userScopes.includes('*')) {
+      return next();
+    }
+
+    const hasAllScopes = requiredScopes.every((scope) => {
+      // Check exact match
+      if (userScopes.includes(scope)) {
+        return true;
+      }
+
+      // Check resource wildcard (e.g., 'sessions:*' matches 'sessions:read')
+      const [resource] = scope.split(':');
+      if (userScopes.includes(`${resource}:*`)) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (!hasAllScopes) {
+      return next(new ForbiddenError(`Missing required scope(s): ${requiredScopes.join(', ')}`));
+    }
+
+    next();
+  };
+};
+
+/**
+ * Legacy permission check middleware (for backward compatibility)
+ * @deprecated Use requireScope instead
  */
 export const requirePermission = (...requiredPermissions: string[]) => {
   return (req: Request, _res: Response, next: NextFunction): void => {
-    const userPermissions = req.permissions || [];
+    const userScopes = req.scopes || [];
 
-    const hasPermission = requiredPermissions.every(
-      (perm) => userPermissions.includes(perm) || userPermissions.includes('admin')
-    );
+    // Check if user has wildcard (admin level)
+    if (userScopes.includes('*')) {
+      return next();
+    }
+
+    // Map old permissions to new scopes
+    const scopeMap: Record<string, string[]> = {
+      read: ['sessions:read', 'messages:read', 'contacts:read', 'groups:read', 'media:read', 'webhooks:read'],
+      write: ['sessions:write', 'messages:send', 'contacts:write', 'groups:write', 'media:write', 'webhooks:write'],
+      admin: ['*'],
+    };
+
+    const hasPermission = requiredPermissions.every((perm) => {
+      const requiredScopes = scopeMap[perm] || [];
+      return requiredScopes.some((scope) => userScopes.includes(scope));
+    });
 
     if (!hasPermission) {
       return next(new ForbiddenError('Insufficient permissions'));

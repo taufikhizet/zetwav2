@@ -58,25 +58,35 @@ model RefreshToken {
 // ============================================
 
 model ApiKey {
-  id          String    @id @default(cuid())
-  name        String
-  key         String    @unique
-  keyHash     String    // Hashed version for security
-  userId      String
-  permissions String[]  @default(["read", "write"])
-  isActive    Boolean   @default(true)
-  lastUsedAt  DateTime?
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  name          String                          // Human readable name
+  description   String?                         // Optional description
+  keyPrefix     String                          // First 12 chars for display (zetwa_xxxx...)
+  keyHash       String    @unique               // SHA256 hash for validation
+  keySuffix     String                          // Last 4 chars for identification
+  userId        String
+  
+  // Granular scopes for fine-grained access control
+  scopes        String[]  @default(["sessions:read", "sessions:write", "messages:send"])
+  
+  // Status and tracking
+  isActive      Boolean   @default(true)
+  usageCount    Int       @default(0)           // Track API calls
+  lastUsedAt    DateTime?
+  lastIpAddress String?                         // Last IP that used this key
+  expiresAt     DateTime?
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([key])
   @@index([keyHash])
   @@index([userId])
   @@index([isActive])
+  @@index([expiresAt])
   @@map("api_keys")
 }
 

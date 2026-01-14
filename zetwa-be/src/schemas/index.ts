@@ -232,16 +232,68 @@ export const sendMediaSchema = z.object({
   'Either mediaUrl or mediaBase64 is required'
 );
 
-// API Key schemas
+// ============================================
+// API KEY SCHEMAS
+// ============================================
+
+/**
+ * Valid API key scopes for granular access control
+ */
+export const API_KEY_SCOPE_VALUES = [
+  'sessions:read',
+  'sessions:write',
+  'messages:send',
+  'messages:read',
+  'contacts:read',
+  'contacts:write',
+  'groups:read',
+  'groups:write',
+  'media:read',
+  'media:write',
+  'webhooks:read',
+  'webhooks:write',
+] as const;
+
+export const apiKeyScopeSchema = z.enum(API_KEY_SCOPE_VALUES);
+
 export const createApiKeySchema = z.object({
-  name: z.string().min(1, 'API key name is required').max(100),
-  permissions: z.array(z.enum(['read', 'write'])).default(['read', 'write']),
+  name: z
+    .string()
+    .min(3, 'API key name must be at least 3 characters')
+    .max(100, 'API key name cannot exceed 100 characters')
+    .trim(),
+  description: z
+    .string()
+    .max(500, 'Description cannot exceed 500 characters')
+    .trim()
+    .optional(),
+  scopes: z
+    .array(apiKeyScopeSchema)
+    .min(1, 'At least one scope is required')
+    .default(['sessions:read', 'sessions:write', 'messages:send']),
   expiresAt: z.string().datetime().optional(),
 });
 
 export const updateApiKeySchema = z.object({
-  name: z.string().min(1).max(100).optional(),
+  name: z
+    .string()
+    .min(3, 'API key name must be at least 3 characters')
+    .max(100, 'API key name cannot exceed 100 characters')
+    .trim()
+    .optional(),
+  description: z
+    .string()
+    .max(500, 'Description cannot exceed 500 characters')
+    .trim()
+    .nullable()
+    .optional(),
   isActive: z.boolean().optional(),
+});
+
+export const updateApiKeyScopesSchema = z.object({
+  scopes: z
+    .array(apiKeyScopeSchema)
+    .min(1, 'At least one scope is required'),
 });
 
 // Query schemas
@@ -274,5 +326,7 @@ export type SendMessageInput = z.infer<typeof sendMessageSchema>;
 export type SendMediaInput = z.infer<typeof sendMediaSchema>;
 export type CreateApiKeyInput = z.infer<typeof createApiKeySchema>;
 export type UpdateApiKeyInput = z.infer<typeof updateApiKeySchema>;
+export type UpdateApiKeyScopesInput = z.infer<typeof updateApiKeyScopesSchema>;
+export type ApiKeyScope = z.infer<typeof apiKeyScopeSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;
 export type MessageQueryInput = z.infer<typeof messageQuerySchema>;

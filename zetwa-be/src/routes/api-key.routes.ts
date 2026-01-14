@@ -1,9 +1,9 @@
 import { Router, type Response, type NextFunction } from 'express';
 import type { Request, ParamsDictionary } from 'express-serve-static-core';
-import { apiKeyService } from '../services/api-key.service.js';
+import { apiKeyService, API_KEY_SCOPES, SCOPE_DESCRIPTIONS, SCOPE_CATEGORIES } from '../services/api-key/index.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { validateBody } from '../middleware/validate.middleware.js';
-import { createApiKeySchema, updateApiKeySchema } from '../schemas/index.js';
+import { createApiKeySchema, updateApiKeySchema, updateApiKeyScopesSchema } from '../schemas/index.js';
 
 interface KeyParams extends ParamsDictionary {
   keyId: string;
@@ -32,6 +32,38 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 /**
+ * @route GET /api/api-keys/scopes
+ * @desc Get all available API key scopes
+ */
+router.get('/scopes', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: {
+      scopes: API_KEY_SCOPES,
+      descriptions: SCOPE_DESCRIPTIONS,
+      categories: SCOPE_CATEGORIES,
+    },
+  });
+});
+
+/**
+ * @route GET /api/api-keys/stats
+ * @desc Get API key statistics for current user
+ */
+router.get('/stats', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const stats = await apiKeyService.getStats(req.userId!);
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * @route POST /api/api-keys
  * @desc Create a new API key
  */
@@ -40,11 +72,12 @@ router.post(
   validateBody(createApiKeySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { name, permissions, expiresAt } = req.body;
+      const { name, description, scopes, expiresAt } = req.body;
 
       const apiKey = await apiKeyService.create(req.userId!, {
         name,
-        permissions,
+        description,
+        scopes,
         expiresAt: expiresAt ? new Date(expiresAt) : undefined,
       });
 
@@ -99,6 +132,29 @@ router.patch(
 );
 
 /**
+ * @route PATCH /api/api-keys/:keyId/scopes
+ * @desc Update API key scopes
+ */
+router.patch(
+  '/:keyId/scopes',
+  validateBody(updateApiKeyScopesSchema),
+  async (req: Request<KeyParams>, res: Response, next: NextFunction) => {
+    try {
+      const { scopes } = req.body;
+      const apiKey = await apiKeyService.updateScopes(req.userId!, req.params.keyId, scopes);
+
+      res.json({
+        success: true,
+        message: 'API key scopes updated',
+        data: apiKey,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
  * @route DELETE /api/api-keys/:keyId
  * @desc Delete API key
  */
@@ -127,6 +183,24 @@ router.post('/:keyId/regenerate', async (req: Request<KeyParams>, res: Response,
       success: true,
       message: 'API key regenerated. Save the new key now, it will not be shown again.',
       data: apiKey,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route POST /api/api-keys/revoke-all
+ * @desc Revoke all API keys for current user
+ */
+router.post('/revoke-all', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await apiKeyService.revokeAll(req.userId!);
+
+    res.json({
+      success: true,
+      message: `${result.revokedCount} API key(s) revoked`,
+      data: result,
     });
   } catch (error) {
     next(error);

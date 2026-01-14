@@ -1,7 +1,7 @@
 import { Server as SocketServer, type Socket } from 'socket.io';
 import { type Server } from 'http';
 import { verifyAccessToken } from '../services/jwt.service.js';
-import { apiKeyService } from '../services/api-key.service.js';
+import { apiKeyService } from '../services/api-key/index.js';
 import { whatsappService } from '../services/whatsapp.service.js';
 import { config } from '../config/index.js';
 import { createLogger } from '../utils/logger.js';
