@@ -9,6 +9,7 @@ import { NotFoundError, ForbiddenError } from '../../../utils/errors.js';
 import { logger } from '../../../utils/logger.js';
 import { transformToInlineConfig } from '../transformers.js';
 import { FAILED_STATUSES, STALE_STATUSES } from '../constants.js';
+import { convertQRToImage } from '../../../utils/qrcode.js';
 
 /**
  * Get all sessions for a user
@@ -177,13 +178,25 @@ export async function getById(userId: string, sessionId: string) {
     config.webhooks = inlineWebhooks;
   }
 
+  // Get QR code from memory and convert to image if available
+  const rawQRCode = isFailedOrDisconnected ? null : whatsappService.getQRCode(sessionId);
+  let qrCodeImage: string | null = null;
+  
+  if (rawQRCode) {
+    try {
+      qrCodeImage = await convertQRToImage(rawQRCode);
+    } catch (err) {
+      logger.error({ sessionId, error: err }, 'Failed to convert QR code to image');
+    }
+  }
+
   return {
     ...session,
     // Extract config to top level for frontend compatibility (WAHA-style)
     config: Object.keys(config).length > 0 ? config : undefined,
     liveStatus,
     isOnline: whatsappService.isConnected(sessionId),
-    qrCode: isFailedOrDisconnected ? null : whatsappService.getQRCode(sessionId),
+    qrCode: qrCodeImage,
     lastQrAt: session.lastQrAt,
   };
 }

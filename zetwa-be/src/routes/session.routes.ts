@@ -141,15 +141,54 @@ router.get('/:sessionId/qr', async (req: Request<SessionParams>, res: Response, 
 
 /**
  * @route GET /api/sessions/:sessionId/auth/qr
- * @desc Get QR code for pairing WhatsApp (WAHA-compatible endpoint)
+ * @desc Get QR code for session authentication
+ * 
+ * This is the RECOMMENDED endpoint for getting QR codes.
+ * Design follows industry best practices from WAHA, wwebjs-api, and open-wa.
+ * 
+ * Query Parameters:
+ * - format: 'image' (default) or 'raw' - Output format for QR code
+ * - wait: 'true' to briefly wait (max 5s) if session is initializing
+ * - timeout: number (ms) - Wait timeout (default: 5000, max: 10000)
+ * 
+ * Response Status:
+ * - WORKING: Session already connected (no QR needed)
+ * - AUTHENTICATING: QR scanned, waiting for auth
+ * - SCAN_QR_CODE: QR available for scanning
+ * - INITIALIZING/STARTING: Session starting up
+ * - FAILED/DISCONNECTED/LOGGED_OUT: Needs restart (use POST /restart)
+ * 
+ * Best Practices:
+ * - Use WebSocket for realtime QR updates (primary method)
+ * - Use this endpoint for polling fallback or simple integrations
+ * - For restart, explicitly call POST /sessions/:id/restart
+ * 
+ * @example
+ * // Basic - get current QR state
+ * GET /sessions/:id/auth/qr
+ * 
+ * @example
+ * // With brief wait for session to initialize
+ * GET /sessions/:id/auth/qr?wait=true
+ * 
+ * @example
+ * // Raw QR for custom rendering
+ * GET /sessions/:id/auth/qr?format=raw
  */
 router.get('/:sessionId/auth/qr', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     const format = (req.query.format as 'image' | 'raw') || 'image';
-    const result = await sessionService.getQRCodeWithFormat(req.userId!, req.params.sessionId, format);
+    const wait = req.query.wait === 'true';
+    const timeout = req.query.timeout ? parseInt(req.query.timeout as string, 10) : undefined;
+    
+    const result = await sessionService.getQRCodeSmart(
+      req.userId!, 
+      req.params.sessionId, 
+      { format, wait, timeout }
+    );
 
     res.json({
-      success: true,
+      success: result.success,
       data: result,
     });
   } catch (error) {

@@ -90,7 +90,6 @@ export default function SessionDetailPage() {
   
   // QR/Auth state
   const [qrCode, setQrCode] = useState<string | null>(null)
-  const [isQrExpired, setIsQrExpired] = useState(false)
   const [isRestarting, setIsRestarting] = useState(false)
   const [pairingCode, setPairingCode] = useState<string | null>(null)
   
@@ -125,7 +124,6 @@ export default function SessionDetailPage() {
 
   const handleNewQR = useCallback((qr: string) => {
     setQrCode(qr)
-    setIsQrExpired(false)
     setIsRestarting(false)
   }, [])
 
@@ -158,16 +156,16 @@ export default function SessionDetailPage() {
 
     socket.on('session:qr_timeout', (data: { sessionId: string }) => {
       if (data.sessionId === sessionId) {
-        setIsQrExpired(true)
         setQrCode(null)
-        toast.error('QR code expired. Please restart the session.')
+        queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+        toast.error('QR code expired. The session will try to get a new one.')
       }
     })
 
     socket.on('session:auth_failure', (data: { sessionId: string }) => {
       if (data.sessionId === sessionId) {
-        setIsQrExpired(true)
         setQrCode(null)
+        queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
         toast.error('Authentication failed')
       }
     })
@@ -177,21 +175,21 @@ export default function SessionDetailPage() {
     }
   }, [sessionId, queryClient, handleNewQR])
 
-  // Sync QR from session data
+  // Sync QR from session data (initial load)
   useEffect(() => {
     if (isRestarting) return
     
     const status = session?.liveStatus || session?.status
-    if (['FAILED', 'DISCONNECTED'].includes(status || '')) {
-      setIsQrExpired(true)
+    if (['FAILED', 'DISCONNECTED', 'LOGGED_OUT'].includes(status || '')) {
       setQrCode(null)
       return
     }
 
-    if (session?.qrCode && !qrCode && !isQrExpired) {
+    // If session has QR code and we don't have one yet, use it
+    if (session?.qrCode && !qrCode) {
       handleNewQR(session.qrCode)
     }
-  }, [session?.qrCode, session?.liveStatus, session?.status, qrCode, isQrExpired, isRestarting, handleNewQR])
+  }, [session?.qrCode, session?.liveStatus, session?.status, qrCode, isRestarting, handleNewQR])
 
   // ============================================
   // MUTATIONS
@@ -201,12 +199,12 @@ export default function SessionDetailPage() {
     mutationFn: () => sessionApi.restart(sessionId!),
     onMutate: () => {
       setIsRestarting(true)
-      setIsQrExpired(false)
       setQrCode(null)
       setPairingCode(null)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+      queryClient.invalidateQueries({ queryKey: ['session-qr', sessionId] })
       toast.success('Session restarting...')
     },
     onError: () => {
@@ -312,11 +310,8 @@ export default function SessionDetailPage() {
   // DERIVED STATE
   // ============================================
 
-  const status = session.liveStatus || session.status
+  const status = (session.liveStatus || session.status) as string
   const isConnected = session.isOnline || status === 'CONNECTED' || status === 'WORKING'
-  const showQRCard = ['QR_READY', 'SCAN_QR_CODE', 'INITIALIZING'].includes(status) && !isQrExpired
-  const isSessionFailed = ['FAILED', 'QR_TIMEOUT'].includes(status) || isQrExpired
-  const isSessionLoggedOut = status === 'LOGGED_OUT'
 
   // ============================================
   // RENDER
@@ -336,14 +331,15 @@ export default function SessionDetailPage() {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* QR/Auth Section - Show when not connected */}
-        {(showQRCard || isRestarting || isSessionFailed || isSessionLoggedOut) && !isConnected && (
+        {/* QR/Auth Section - Always show when not connected */}
+        {!isConnected && (
           <QRCodeSection
-            qrCode={qrCode}
-            isQrExpired={isQrExpired}
+            sessionId={sessionId!}
+            status={status as any}
+            socketQR={qrCode}
+            sessionQR={session?.qrCode}
+            isConnected={isConnected}
             isRestarting={isRestarting}
-            isSessionFailed={isSessionFailed}
-            isSessionLoggedOut={isSessionLoggedOut}
             onRestart={() => restartMutation.mutate()}
             isRestartPending={restartMutation.isPending}
             onRequestPairingCode={(phone) => pairingCodeMutation.mutate(phone)}

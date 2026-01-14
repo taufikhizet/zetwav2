@@ -5,6 +5,7 @@ import { apiKeyService } from '../services/api-key.service.js';
 import { whatsappService } from '../services/whatsapp.service.js';
 import { config } from '../config/index.js';
 import { createLogger } from '../utils/logger.js';
+import { convertQRToImage } from '../utils/qrcode.js';
 
 const logger = createLogger('socket');
 
@@ -87,20 +88,27 @@ export const setupSocketIO = (server: Server): SocketServer => {
 };
 
 const setupWhatsAppEventForwarding = (io: SocketServer): void => {
-  // QR Code event
-  whatsappService.on('qr', (data: { sessionId: string; userId?: string; qr: string }) => {
-    io.to(`session:${data.sessionId}`).emit('session:qr', {
-      sessionId: data.sessionId,
-      qr: data.qr,
-      timestamp: new Date().toISOString(),
-    });
-
-    if (data.userId) {
-      io.to(`user:${data.userId}`).emit('session:qr', {
+  // QR Code event - convert raw QR to image before sending
+  whatsappService.on('qr', async (data: { sessionId: string; userId?: string; qr: string }) => {
+    try {
+      // Convert raw QR string to base64 image
+      const qrImage = await convertQRToImage(data.qr);
+      
+      io.to(`session:${data.sessionId}`).emit('session:qr', {
         sessionId: data.sessionId,
-        qr: data.qr,
+        qr: qrImage,
         timestamp: new Date().toISOString(),
       });
+
+      if (data.userId) {
+        io.to(`user:${data.userId}`).emit('session:qr', {
+          sessionId: data.sessionId,
+          qr: qrImage,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      logger.error({ error, sessionId: data.sessionId }, 'Failed to convert QR code');
     }
   });
 

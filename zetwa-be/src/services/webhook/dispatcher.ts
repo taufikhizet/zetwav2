@@ -16,6 +16,7 @@ import type { WebhookPayload } from './types.js';
 const EVENT_MAPPINGS: Record<string, WebhookEvent[]> = {
   // Session events
   'session.qr': [WebhookEvent.session_status, WebhookEvent.QR_RECEIVED],
+  'session.qr_timeout': [WebhookEvent.session_status, WebhookEvent.AUTH_FAILURE], // QR expired
   'session.authenticated': [WebhookEvent.session_status, WebhookEvent.AUTHENTICATED],
   'session.ready': [WebhookEvent.session_status, WebhookEvent.READY],
   'session.disconnected': [WebhookEvent.session_status, WebhookEvent.DISCONNECTED],

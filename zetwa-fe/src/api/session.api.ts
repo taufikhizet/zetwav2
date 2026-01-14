@@ -116,13 +116,51 @@ export interface UpdateSessionInput {
   config?: SessionConfig
 }
 
-/** QR code response with format support */
+/** QR code response with format support (legacy) */
 export interface QRCodeResponse {
   status: string
   value?: string | null
   qrCode?: string | null
   message?: string
   canRetry?: boolean
+  /** Action to take when session needs intervention (e.g., 'restart') */
+  action?: 'restart' | null
+  /** API endpoint to call for the action */
+  endpoint?: string
+}
+
+/** Smart QR code response - unified response format */
+export interface SmartQRResponse {
+  /** Whether the operation was successful */
+  success: boolean
+  /** Current session status */
+  status: 'WORKING' | 'AUTHENTICATING' | 'SCAN_QR_CODE' | 'INITIALIZING' | 'STARTING' | 
+          'FAILED' | 'DISCONNECTED' | 'LOGGED_OUT' | 'ERROR' | 'UNKNOWN' | string
+  /** QR code (base64 image or raw string depending on format) */
+  qr: string | null
+  /** Output format used */
+  format?: 'image' | 'raw'
+  /** Human-readable message */
+  message: string
+  /** Suggested action if restart needed */
+  action?: 'restart'
+  /** API endpoint for the action */
+  endpoint?: string
+  /** Helpful hint for next steps */
+  hint?: string
+}
+
+/** Options for QR request - SIMPLIFIED following industry best practices */
+export interface SmartQROptions {
+  /** Output format: 'image' (base64) or 'raw' (QR string) */
+  format?: 'image' | 'raw'
+  /** 
+   * Wait briefly (max 5s) if session is initializing
+   * For realtime updates, use WebSocket instead
+   */
+  wait?: boolean
+  /** Max timeout in ms (default: 5000, max: 10000) */
+  timeout?: number
 }
 
 /** Pairing code response */
@@ -241,11 +279,37 @@ export const sessionApi = {
     return response.data.data
   },
 
-  /** Get QR code from auth endpoint (WAHA-compatible) */
-  getAuthQR: async (sessionId: string, format: 'image' | 'raw' = 'image'): Promise<QRCodeResponse> => {
-    const response = await api.get<ApiResponse<QRCodeResponse>>(
+  /** Get QR code from auth endpoint - SIMPLIFIED version
+   * 
+   * This is the recommended endpoint for getting QR codes.
+   * Design follows best practices from WAHA, wwebjs-api, and open-wa.
+   * 
+   * IMPORTANT FOR FRONTEND:
+   * - Primary: Use WebSocket for realtime QR updates
+   * - Fallback: Use this endpoint with polling
+   * - For restart: Call sessionApi.restart() explicitly
+   * 
+   * @param sessionId - Session ID
+   * @param options - QR options
+   * @returns QR response with status and QR code (if available)
+   * 
+   * @example
+   * // Basic - get current state
+   * const result = await sessionApi.getAuthQR(sessionId)
+   * 
+   * @example
+   * // With brief wait for session to initialize
+   * const result = await sessionApi.getAuthQR(sessionId, { wait: true })
+   */
+  getAuthQR: async (sessionId: string, options?: SmartQROptions): Promise<SmartQRResponse> => {
+    const params: Record<string, string> = {}
+    if (options?.format) params.format = options.format
+    if (options?.wait) params.wait = 'true'
+    if (options?.timeout) params.timeout = String(options.timeout)
+    
+    const response = await api.get<ApiResponse<SmartQRResponse>>(
       `/sessions/${sessionId}/auth/qr`,
-      { params: { format } }
+      { params }
     )
     return response.data.data
   },

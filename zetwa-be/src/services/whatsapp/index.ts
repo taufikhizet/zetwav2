@@ -11,6 +11,7 @@ import { config } from '../../config/index.js';
 import { SessionNotFoundError, SessionNotConnectedError } from '../../utils/errors.js';
 import { logger } from '../../utils/logger.js';
 import { webhookService } from '../webhook.service.js';
+import { clearSessionQRCache } from '../../utils/qrcode.js';
 
 // Import session config types
 import type { SessionConfig, ClientConfig, ProxyConfig } from '../../types/session-config.js';
@@ -57,6 +58,9 @@ interface ExtendedWASession extends WASession {
 export class WhatsAppService {
   private sessions: Map<string, ExtendedWASession> = new Map();
   private events: TypedEventEmitter = new EventEmitterClass();
+  
+  /** Lock to prevent race conditions during session creation */
+  private sessionCreationLocks: Set<string> = new Set();
 
   constructor() {
     this.initializeStoredSessions();
@@ -87,6 +91,7 @@ export class WhatsAppService {
     try {
       const storedSessions = await prisma.waSession.findMany({
         where: {
+          isActive: true, // Only initialize active sessions
           status: {
             in: ['CONNECTED', 'AUTHENTICATING', 'QR_READY'],
           },
@@ -158,89 +163,114 @@ export class WhatsAppService {
 
   /**
    * Create a new WhatsApp session with optional config
+   * Thread-safe with lock to prevent duplicate creation
    */
   async createSession(
     sessionId: string, 
     userId: string, 
     sessionConfig?: SessionConfig
   ): Promise<ExtendedWASession> {
+    // Return existing session immediately
     if (this.sessions.has(sessionId)) {
       return this.sessions.get(sessionId)!;
     }
-
-    logger.info({ sessionId, hasConfig: !!sessionConfig, hasProxy: !!sessionConfig?.proxy?.server }, 'Creating WhatsApp session');
-
-    // Build client options
-    const puppeteerArgs = this.getPuppeteerArgs(sessionConfig);
-    const clientInfo = this.getClientInfo(sessionConfig?.client);
-
-    const client = new Client({
-      authStrategy: new LocalAuth({
-        clientId: sessionId,
-        dataPath: config.whatsapp.sessionPath,
-      }),
-      puppeteer: {
-        headless: true,
-        args: puppeteerArgs,
-        timeout: 60000, // 60 second timeout for puppeteer operations
-      },
-      qrMaxRetries: 5,
-      ...clientInfo,
-    });
-
-    const session: ExtendedWASession = {
-      sessionId,
-      userId,
-      client,
-      status: 'INITIALIZING',
-      config: sessionConfig,
-    };
-
-    this.sessions.set(sessionId, session);
-
-    // Setup event handlers
-    setupEventHandlers(
-      client,
-      sessionId,
-      this.sessions,
-      this.events,
-      this.updateSessionStatus.bind(this)
-    );
-
-    // Initialize client with better error handling
-    try {
-      await client.initialize();
-    } catch (error: any) {
-      logger.error({ sessionId, error: error?.message || error }, 'Failed to initialize client');
-      this.sessions.delete(sessionId);
-      
-      // Provide more helpful error messages
-      const errorMessage = error?.message || String(error);
-      if (errorMessage.includes('ERR_CONNECTION_RESET') || errorMessage.includes('ERR_CONNECTION_REFUSED')) {
-        throw new Error(
-          'Failed to connect to WhatsApp Web. This could be due to: ' +
-          '(1) Network connectivity issues, ' +
-          '(2) WhatsApp Web is temporarily unavailable, ' +
-          '(3) Invalid proxy configuration, or ' +
-          '(4) Firewall blocking the connection. ' +
-          'Please check your network and try again.'
-        );
+    
+    // Check if session creation is already in progress
+    if (this.sessionCreationLocks.has(sessionId)) {
+      // Wait a bit and check again
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (this.sessions.has(sessionId)) {
+        return this.sessions.get(sessionId)!;
       }
-      if (errorMessage.includes('ERR_PROXY')) {
-        throw new Error(
-          'Proxy connection failed. Please verify your proxy server address and credentials are correct.'
-        );
-      }
-      if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
-        throw new Error(
-          'Connection timed out while connecting to WhatsApp Web. Please check your internet connection and try again.'
-        );
-      }
-      
-      throw error;
+      throw new Error('Session creation already in progress');
     }
+    
+    // Acquire lock
+    this.sessionCreationLocks.add(sessionId);
 
-    return session;
+    try {
+      // Double-check after acquiring lock
+      if (this.sessions.has(sessionId)) {
+        return this.sessions.get(sessionId)!;
+      }
+      
+      logger.info({ sessionId, hasConfig: !!sessionConfig, hasProxy: !!sessionConfig?.proxy?.server }, 'Creating WhatsApp session');
+
+      // Build client options
+      const puppeteerArgs = this.getPuppeteerArgs(sessionConfig);
+      const clientInfo = this.getClientInfo(sessionConfig?.client);
+
+      const client = new Client({
+        authStrategy: new LocalAuth({
+          clientId: sessionId,
+          dataPath: config.whatsapp.sessionPath,
+        }),
+        puppeteer: {
+          headless: true,
+          args: puppeteerArgs,
+          timeout: 60000, // 60 second timeout for puppeteer operations
+        },
+        qrMaxRetries: 5,
+        ...clientInfo,
+      });
+
+      const session: ExtendedWASession = {
+        sessionId,
+        userId,
+        client,
+        status: 'INITIALIZING',
+        config: sessionConfig,
+      };
+
+      this.sessions.set(sessionId, session);
+
+      // Setup event handlers
+      setupEventHandlers(
+        client,
+        sessionId,
+        this.sessions,
+        this.events,
+        this.updateSessionStatus.bind(this)
+      );
+
+      // Initialize client with better error handling
+      try {
+        await client.initialize();
+      } catch (error: any) {
+        logger.error({ sessionId, error: error?.message || error }, 'Failed to initialize client');
+        this.sessions.delete(sessionId);
+        
+        // Provide more helpful error messages
+        const errorMessage = error?.message || String(error);
+        if (errorMessage.includes('ERR_CONNECTION_RESET') || errorMessage.includes('ERR_CONNECTION_REFUSED')) {
+          throw new Error(
+            'Failed to connect to WhatsApp Web. This could be due to: ' +
+            '(1) Network connectivity issues, ' +
+            '(2) WhatsApp Web is temporarily unavailable, ' +
+            '(3) Invalid proxy configuration, or ' +
+            '(4) Firewall blocking the connection. ' +
+            'Please check your network and try again.'
+          );
+        }
+        if (errorMessage.includes('ERR_PROXY')) {
+          throw new Error(
+            'Proxy connection failed. Please verify your proxy server address and credentials are correct.'
+          );
+        }
+        if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+          throw new Error(
+            'Connection timed out while connecting to WhatsApp Web. Please check your internet connection and try again.'
+          );
+        }
+        
+        throw error;
+      }
+
+      return session;
+    } finally {
+      // Release lock
+      this.sessionCreationLocks.delete(sessionId);
+    }
   }
 
   /**
@@ -404,6 +434,9 @@ export class WhatsAppService {
   async destroySession(sessionId: string): Promise<void> {
     const session = this.sessions.get(sessionId);
 
+    // Clear QR cache for this session first
+    clearSessionQRCache(sessionId);
+
     if (session) {
       try {
         await session.client.logout();
@@ -451,6 +484,9 @@ export class WhatsAppService {
     if (!dbSession) {
       throw new SessionNotFoundError(sessionId);
     }
+
+    // Clear QR cache for this session
+    clearSessionQRCache(sessionId);
 
     const existingSession = this.sessions.get(sessionId);
     if (existingSession) {

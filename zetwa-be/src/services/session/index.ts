@@ -61,6 +61,7 @@ class SessionService {
   delete = operations.remove;
   getQRCode = operations.getQRCode;
   getQRCodeWithFormat = operations.getQRCodeWithFormat;
+  getQRCodeSmart = operations.getQRCodeSmart;
   restart = operations.restart;
   logout = operations.logout;
   getStatus = operations.getStatus;

@@ -180,13 +180,19 @@ export function setupEventHandlers(
     webhookService.emit(sessionId, 'session.disconnected', { reason });
   });
 
-  // Auth failure event
+  // Auth failure event - can be caused by QR timeout (qrMaxRetries exceeded)
   client.on('auth_failure', async (error) => {
-    logger.error({ sessionId, error }, 'Authentication failed');
+    const errorMessage = String(error);
+    const isQRTimeout = errorMessage.toLowerCase().includes('timeout') || 
+                        errorMessage.toLowerCase().includes('retry') ||
+                        errorMessage.toLowerCase().includes('qr');
+    
+    logger.error({ sessionId, error, isQRTimeout }, 'Authentication failed');
 
     const session = sessions.get(sessionId);
     if (session) {
       session.status = 'FAILED';
+      session.qrCode = undefined; // Clear stale QR
     }
 
     updateSessionStatus(sessionId, 'FAILED');
@@ -199,8 +205,21 @@ export function setupEventHandlers(
       },
     });
 
-    events.emit('auth_failure', { sessionId, userId: session?.userId, message: String(error) });
-    webhookService.emit(sessionId, 'session.failed', { error: String(error) });
+    // Emit both auth_failure and qr_timeout (for backwards compat)
+    events.emit('auth_failure', { sessionId, userId: session?.userId, message: errorMessage });
+    webhookService.emit(sessionId, 'session.failed', { error: errorMessage });
+    
+    // If this looks like QR timeout, also emit qr_timeout event
+    if (isQRTimeout) {
+      events.emit('qr_timeout', { 
+        sessionId, 
+        userId: session?.userId, 
+        reason: 'QR code was not scanned in time' 
+      });
+      webhookService.emit(sessionId, 'session.qr_timeout', { 
+        reason: 'QR code expired after max retries' 
+      });
+    }
   });
 
   // State change event
