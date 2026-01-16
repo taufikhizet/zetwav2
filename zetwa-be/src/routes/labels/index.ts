@@ -2,7 +2,7 @@ import { Router, type Response, type NextFunction } from 'express';
 import type { Request, ParamsDictionary } from 'express-serve-static-core';
 import { whatsappService } from '../../services/whatsapp.service.js';
 import { sessionService } from '../../services/session.service.js';
-import { authenticateAny } from '../../middleware/auth.middleware.js';
+import { authenticateAny, requireScope } from '../../middleware/auth.middleware.js';
 import { validateBody } from '../../middleware/validate.middleware.js';
 import { createLabelSchema, updateLabelSchema, assignLabelSchema } from '../../schemas/labels.schema.js';
 
@@ -22,8 +22,9 @@ router.use(authenticateAny);
 /**
  * @route GET /api/sessions/:sessionId/labels
  * @desc Get all labels (WhatsApp Business only)
+ * @scope labels:read
  */
-router.get('/', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/', requireScope('labels:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -41,9 +42,11 @@ router.get('/', async (req: Request<SessionParams>, res: Response, next: NextFun
 /**
  * @route POST /api/sessions/:sessionId/labels
  * @desc Create a new label (WhatsApp Business only)
+ * @scope labels:write
  */
 router.post(
   '/',
+  requireScope('labels:write'),
   validateBody(createLabelSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -69,8 +72,9 @@ router.post(
 /**
  * @route GET /api/sessions/:sessionId/labels/:labelId
  * @desc Get label by ID
+ * @scope labels:read
  */
-router.get('/:labelId', async (req: Request<LabelParams>, res: Response, next: NextFunction) => {
+router.get('/:labelId', requireScope('labels:read'), async (req: Request<LabelParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -91,9 +95,11 @@ router.get('/:labelId', async (req: Request<LabelParams>, res: Response, next: N
 /**
  * @route PATCH /api/sessions/:sessionId/labels/:labelId
  * @desc Update a label
+ * @scope labels:write
  */
 router.patch(
   '/:labelId',
+  requireScope('labels:write'),
   validateBody(updateLabelSchema),
   async (req: Request<LabelParams>, res: Response, next: NextFunction) => {
     try {
@@ -119,8 +125,9 @@ router.patch(
 /**
  * @route DELETE /api/sessions/:sessionId/labels/:labelId
  * @desc Delete a label
+ * @scope labels:write
  */
-router.delete('/:labelId', async (req: Request<LabelParams>, res: Response, next: NextFunction) => {
+router.delete('/:labelId', requireScope('labels:write'), async (req: Request<LabelParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -141,8 +148,9 @@ router.delete('/:labelId', async (req: Request<LabelParams>, res: Response, next
 /**
  * @route GET /api/sessions/:sessionId/labels/:labelId/chats
  * @desc Get all chats with a specific label
+ * @scope labels:read
  */
-router.get('/:labelId/chats', async (req: Request<LabelParams>, res: Response, next: NextFunction) => {
+router.get('/:labelId/chats', requireScope('labels:read'), async (req: Request<LabelParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -163,9 +171,11 @@ router.get('/:labelId/chats', async (req: Request<LabelParams>, res: Response, n
 /**
  * @route POST /api/sessions/:sessionId/labels/assign
  * @desc Assign a label to a chat
+ * @scope labels:write
  */
 router.post(
   '/assign',
+  requireScope('labels:write'),
   validateBody(assignLabelSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -190,9 +200,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/labels/unassign
  * @desc Remove a label from a chat
+ * @scope labels:write
  */
 router.post(
   '/unassign',
+  requireScope('labels:write'),
   validateBody(assignLabelSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {

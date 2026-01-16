@@ -43,6 +43,8 @@ export interface WebhookSubmitData {
   events: string[]
   secret?: string
   isActive?: boolean
+  /** Timeout in seconds */
+  timeout?: number
   retries?: {
     delaySeconds?: number
     attempts?: number
@@ -79,6 +81,7 @@ export function WebhookDialog({
           hmac: webhook.hmac,
           retries: webhook.retries,
           customHeaders: webhook.customHeaders,
+          timeout: webhook.timeout, // Already in seconds from webhookToConfig
         })
         setIsActive(webhook.isActive)
       } else {
@@ -102,6 +105,7 @@ export function WebhookDialog({
       events: config.events,
       secret: config.hmac?.key,
       isActive,
+      timeout: config.timeout,
       retries: config.retries,
       customHeaders: config.customHeaders,
     })

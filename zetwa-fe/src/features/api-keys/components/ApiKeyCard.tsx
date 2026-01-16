@@ -2,13 +2,8 @@
  * API Key Card Component
  */
 
-import { useState } from 'react'
 import {
   Key,
-  Copy,
-  Check,
-  Eye,
-  EyeOff,
   Calendar,
   Activity,
   AlertTriangle,
@@ -39,7 +34,7 @@ import {
 } from '@/components/ui/tooltip'
 
 import type { ApiKey } from '../types'
-import { isExpired, formatRelativeDate, copyToClipboard, getScopeBadgeVariant, formatUsageCount } from '../utils'
+import { isExpired, formatRelativeDate, formatExpirationDate, getScopeBadgeVariant, formatUsageCount } from '../utils'
 
 interface ApiKeyCardProps {
   apiKey: ApiKey
@@ -58,19 +53,8 @@ export function ApiKeyCard({
   onDelete,
   isUpdating,
 }: ApiKeyCardProps) {
-  const [isVisible, setIsVisible] = useState(false)
-  const [copied, setCopied] = useState(false)
-
   const expired = isExpired(apiKey.expiresAt)
   const isDisabled = !apiKey.isActive || expired
-
-  const handleCopy = async () => {
-    const success = await copyToClipboard(apiKey.keyPreview, 'Key preview copied')
-    if (success) {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
 
   const getStatusBadge = () => {
     if (expired) {
@@ -159,47 +143,11 @@ export function ApiKeyCard({
               </div>
             </div>
 
-            {/* Key Display */}
-            <div className="flex items-center gap-2">
+            {/* Key Display - Masked preview only */}
+            <div className="flex items-center">
               <code className="flex-1 bg-muted/50 px-3 py-2 rounded-lg font-mono text-sm truncate border">
-                {isVisible
-                  ? apiKey.keyPreview.replace('...', '••••••••••••••••••••••••')
-                  : apiKey.keyPreview}
+                {apiKey.keyPreview.replace('...', '••••••••••••••••••••••••')}
               </code>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 flex-shrink-0"
-                      onClick={() => setIsVisible(!isVisible)}
-                    >
-                      {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{isVisible ? 'Hide' : 'Show'}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 flex-shrink-0"
-                      onClick={handleCopy}
-                    >
-                      {copied ? (
-                        <Check className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Copy preview</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
 
             {/* Scopes */}
@@ -226,7 +174,7 @@ export function ApiKeyCard({
               {apiKey.expiresAt && (
                 <span className="flex items-center gap-1.5">
                   <Activity className="h-3.5 w-3.5" />
-                  {expired ? 'Expired' : 'Expires'} {formatRelativeDate(apiKey.expiresAt)}
+                  {expired ? 'Expired' : 'Expires'} {expired ? formatRelativeDate(apiKey.expiresAt) : formatExpirationDate(apiKey.expiresAt)}
                 </span>
               )}
 

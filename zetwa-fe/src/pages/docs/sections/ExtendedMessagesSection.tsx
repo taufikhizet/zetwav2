@@ -40,6 +40,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Send Reaction"
         description="Kirim reaksi emoji ke pesan"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -66,6 +67,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Remove Reaction"
         description="Hapus reaksi dari pesan"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -90,6 +92,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Send Location"
         description="Kirim pesan lokasi"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -126,6 +129,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Send Contact/vCard"
         description="Kirim kartu kontak"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -166,6 +170,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Send Poll"
         description="Kirim polling/survey"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -201,6 +206,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Send Buttons"
         description="Kirim pesan dengan tombol (mungkin tidak didukung di beberapa versi WA)"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -241,6 +247,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Send List Message"
         description="Kirim pesan dengan daftar pilihan"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -288,6 +295,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Forward Message"
         description="Teruskan pesan ke chat lain"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -314,6 +322,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Delete Message"
         description="Hapus pesan (untuk saya atau untuk semua)"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'messageId', type: 'string', required: true, description: 'ID pesan' },
@@ -335,6 +344,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Edit Message"
         description="Edit isi pesan yang sudah terkirim"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'messageId', type: 'string', required: true, description: 'ID pesan' },
@@ -360,6 +370,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Star Message"
         description="Beri bintang atau hapus bintang dari pesan"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'messageId', type: 'string', required: true, description: 'ID pesan' },
@@ -385,6 +396,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Get Starred Messages"
         description="Ambil semua pesan yang diberi bintang"
         auth="Both"
+        scope="messages:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -409,6 +421,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Download Media"
         description="Download media dari pesan (gambar, video, dokumen, dll)"
         auth="Both"
+        scope="media:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'messageId', type: 'string', required: true, description: 'ID pesan yang mengandung media' },
@@ -431,6 +444,7 @@ export function ExtendedMessagesSection({ baseUrl }: ExtendedMessagesSectionProp
         title="Get Message Info"
         description="Ambil info pesan (siapa yang baca, delivered, dll)"
         auth="Both"
+        scope="messages:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'messageId', type: 'string', required: true, description: 'ID pesan' },

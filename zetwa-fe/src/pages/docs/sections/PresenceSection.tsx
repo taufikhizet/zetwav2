@@ -36,6 +36,7 @@ export function PresenceSection({ baseUrl }: PresenceSectionProps) {
         title="Set Presence"
         description="Set status kehadiran (online/offline)"
         auth="Both"
+        scope="presence:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -61,6 +62,7 @@ export function PresenceSection({ baseUrl }: PresenceSectionProps) {
         title="Subscribe to Presence"
         description="Subscribe ke update kehadiran kontak tertentu"
         auth="Both"
+        scope="presence:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -85,6 +87,7 @@ export function PresenceSection({ baseUrl }: PresenceSectionProps) {
         title="Get Presence"
         description="Ambil status kehadiran kontak"
         auth="Both"
+        scope="presence:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'contactId', type: 'string', required: true, description: 'ID kontak' },
@@ -107,6 +110,7 @@ export function PresenceSection({ baseUrl }: PresenceSectionProps) {
         title="Send Typing Indicator"
         description="Kirim indikator sedang mengetik"
         auth="Both"
+        scope="presence:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'chatId', type: 'string', required: true, description: 'ID chat tujuan' },
@@ -125,6 +129,7 @@ export function PresenceSection({ baseUrl }: PresenceSectionProps) {
         title="Stop Typing Indicator"
         description="Hentikan indikator sedang mengetik"
         auth="Both"
+        scope="presence:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'chatId', type: 'string', required: true, description: 'ID chat' },
@@ -143,6 +148,7 @@ export function PresenceSection({ baseUrl }: PresenceSectionProps) {
         title="Send Recording Indicator"
         description="Kirim indikator sedang merekam audio"
         auth="Both"
+        scope="presence:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'chatId', type: 'string', required: true, description: 'ID chat tujuan' },
@@ -161,6 +167,7 @@ export function PresenceSection({ baseUrl }: PresenceSectionProps) {
         title="Stop Recording Indicator"
         description="Hentikan indikator sedang merekam"
         auth="Both"
+        scope="presence:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'chatId', type: 'string', required: true, description: 'ID chat' },
@@ -179,6 +186,7 @@ export function PresenceSection({ baseUrl }: PresenceSectionProps) {
         title="Mark as Seen"
         description="Tandai pesan di chat sebagai sudah dibaca"
         auth="Both"
+        scope="presence:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'chatId', type: 'string', required: true, description: 'ID chat' },

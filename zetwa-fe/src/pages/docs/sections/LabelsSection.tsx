@@ -52,6 +52,7 @@ export function LabelsSection({ baseUrl }: LabelsSectionProps) {
         title="List Labels"
         description="Ambil semua label"
         auth="Both"
+        scope="labels:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -82,6 +83,7 @@ export function LabelsSection({ baseUrl }: LabelsSectionProps) {
         title="Create Label"
         description="Buat label baru"
         auth="Both"
+        scope="labels:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -113,6 +115,7 @@ export function LabelsSection({ baseUrl }: LabelsSectionProps) {
         title="Get Label"
         description="Ambil detail label berdasarkan ID"
         auth="Both"
+        scope="labels:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'labelId', type: 'string', required: true, description: 'ID label' },
@@ -135,6 +138,7 @@ export function LabelsSection({ baseUrl }: LabelsSectionProps) {
         title="Update Label"
         description="Update nama atau warna label"
         auth="Both"
+        scope="labels:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'labelId', type: 'string', required: true, description: 'ID label' },
@@ -167,6 +171,7 @@ export function LabelsSection({ baseUrl }: LabelsSectionProps) {
         title="Delete Label"
         description="Hapus label"
         auth="Both"
+        scope="labels:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'labelId', type: 'string', required: true, description: 'ID label' },
@@ -185,6 +190,7 @@ export function LabelsSection({ baseUrl }: LabelsSectionProps) {
         title="Get Chats by Label"
         description="Ambil semua chat yang memiliki label tertentu"
         auth="Both"
+        scope="labels:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'labelId', type: 'string', required: true, description: 'ID label' },
@@ -214,6 +220,7 @@ export function LabelsSection({ baseUrl }: LabelsSectionProps) {
         title="Assign Label to Chat"
         description="Berikan label ke chat tertentu"
         auth="Both"
+        scope="labels:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -240,6 +247,7 @@ export function LabelsSection({ baseUrl }: LabelsSectionProps) {
         title="Remove Label from Chat"
         description="Hapus label dari chat tertentu"
         auth="Both"
+        scope="labels:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}

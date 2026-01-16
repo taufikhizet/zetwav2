@@ -20,6 +20,7 @@ export function ProfileSection({ baseUrl }: ProfileSectionProps) {
         title="Get Profile"
         description="Ambil informasi profil WhatsApp"
         auth="Both"
+        scope="profile:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -43,6 +44,7 @@ export function ProfileSection({ baseUrl }: ProfileSectionProps) {
         title="Update Display Name"
         description="Update nama tampilan WhatsApp"
         auth="Both"
+        scope="profile:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -67,6 +69,7 @@ export function ProfileSection({ baseUrl }: ProfileSectionProps) {
         title="Update About"
         description="Update status/about WhatsApp"
         auth="Both"
+        scope="profile:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -91,6 +94,7 @@ export function ProfileSection({ baseUrl }: ProfileSectionProps) {
         title="Update Profile Picture"
         description="Update foto profil WhatsApp"
         auth="Both"
+        scope="profile:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -116,6 +120,7 @@ export function ProfileSection({ baseUrl }: ProfileSectionProps) {
         title="Remove Profile Picture"
         description="Hapus foto profil WhatsApp"
         auth="Both"
+        scope="profile:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -133,6 +138,7 @@ export function ProfileSection({ baseUrl }: ProfileSectionProps) {
         title="Get Business Profile"
         description="Ambil profil bisnis WhatsApp (khusus akun Business)"
         auth="Both"
+        scope="profile:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}

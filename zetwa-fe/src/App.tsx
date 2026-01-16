@@ -16,7 +16,8 @@ import SessionsPage from '@/pages/dashboard/SessionsPage'
 import NewSessionPage from '@/pages/dashboard/NewSessionPage'
 import SessionDetailPage from '@/pages/dashboard/SessionDetailPage'
 import ApiKeysPage from '@/pages/dashboard/ApiKeysPage'
-import DocumentationPage from '@/pages/dashboard/docs'
+import { NewApiKeyPage } from '@/features/api-keys'
+import DocumentationPage from '@/pages/docs'
 import SettingsPage from '@/pages/dashboard/SettingsPage'
 
 // Create query client
@@ -105,9 +106,19 @@ function App() {
             <Route path="sessions/new" element={<NewSessionPage />} />
             <Route path="sessions/:sessionId" element={<SessionDetailPage />} />
             <Route path="api-keys" element={<ApiKeysPage />} />
-            <Route path="docs" element={<DocumentationPage />} />
+            <Route path="api-keys/new" element={<NewApiKeyPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
+
+          {/* Documentation - Standalone Route */}
+          <Route
+            path="/docs"
+            element={
+              <ProtectedRoute>
+                <DocumentationPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Redirects */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

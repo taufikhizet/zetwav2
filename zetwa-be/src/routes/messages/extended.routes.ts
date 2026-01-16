@@ -2,7 +2,7 @@ import { Router, type Response, type NextFunction } from 'express';
 import type { Request, ParamsDictionary } from 'express-serve-static-core';
 import { whatsappService } from '../../services/whatsapp.service.js';
 import { sessionService } from '../../services/session.service.js';
-import { authenticateAny } from '../../middleware/auth.middleware.js';
+import { authenticateAny, requireScope } from '../../middleware/auth.middleware.js';
 import { validateBody } from '../../middleware/validate.middleware.js';
 import { messageLimiter } from '../../middleware/rate-limit.middleware.js';
 import {
@@ -34,9 +34,11 @@ router.use(authenticateAny);
 /**
  * @route POST /api/sessions/:sessionId/messages/reaction
  * @desc Send a reaction to a message
+ * @scope messages:send
  */
 router.post(
   '/reaction',
+  requireScope('messages:send'),
   messageLimiter,
   validateBody(sendReactionSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
@@ -63,9 +65,11 @@ router.post(
 /**
  * @route DELETE /api/sessions/:sessionId/messages/reaction
  * @desc Remove a reaction from a message
+ * @scope messages:send
  */
 router.delete(
   '/reaction',
+  requireScope('messages:send'),
   validateBody(messageActionSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -89,9 +93,11 @@ router.delete(
 /**
  * @route POST /api/sessions/:sessionId/messages/send-location
  * @desc Send a location message
+ * @scope messages:send
  */
 router.post(
   '/send-location',
+  requireScope('messages:send'),
   messageLimiter,
   validateBody(sendLocationSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
@@ -125,9 +131,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/messages/send-contact
  * @desc Send a contact/vCard message
+ * @scope messages:send
  */
 router.post(
   '/send-contact',
+  requireScope('messages:send'),
   messageLimiter,
   validateBody(sendContactSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
@@ -158,9 +166,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/messages/send-poll
  * @desc Send a poll message
+ * @scope messages:send
  */
 router.post(
   '/send-poll',
+  requireScope('messages:send'),
   messageLimiter,
   validateBody(sendPollSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
@@ -193,9 +203,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/messages/send-buttons
  * @desc Send a message with buttons (may not work due to WhatsApp restrictions)
+ * @scope messages:send
  */
 router.post(
   '/send-buttons',
+  requireScope('messages:send'),
   messageLimiter,
   validateBody(sendButtonsSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
@@ -229,9 +241,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/messages/send-list
  * @desc Send a list message (may not work due to WhatsApp restrictions)
+ * @scope messages:send
  */
 router.post(
   '/send-list',
+  requireScope('messages:send'),
   messageLimiter,
   validateBody(sendListSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
@@ -266,9 +280,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/messages/forward
  * @desc Forward a message to another chat
+ * @scope messages:send
  */
 router.post(
   '/forward',
+  requireScope('messages:send'),
   messageLimiter,
   validateBody(forwardMessageSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
@@ -295,8 +311,9 @@ router.post(
 /**
  * @route DELETE /api/sessions/:sessionId/messages/:messageId
  * @desc Delete a message (for everyone or just for me)
+ * @scope messages:send
  */
-router.delete('/:messageId', async (req: Request<MessageParams>, res: Response, next: NextFunction) => {
+router.delete('/:messageId', requireScope('messages:send'), async (req: Request<MessageParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -320,9 +337,11 @@ router.delete('/:messageId', async (req: Request<MessageParams>, res: Response, 
 /**
  * @route PATCH /api/sessions/:sessionId/messages/:messageId
  * @desc Edit a sent message
+ * @scope messages:send
  */
 router.patch(
   '/:messageId',
+  requireScope('messages:send'),
   validateBody(editMessageSchema.pick({ newContent: true })),
   async (req: Request<MessageParams>, res: Response, next: NextFunction) => {
     try {
@@ -347,8 +366,9 @@ router.patch(
 /**
  * @route POST /api/sessions/:sessionId/messages/:messageId/star
  * @desc Star or unstar a message
+ * @scope messages:send
  */
-router.post('/:messageId/star', async (req: Request<MessageParams>, res: Response, next: NextFunction) => {
+router.post('/:messageId/star', requireScope('messages:send'), async (req: Request<MessageParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -372,8 +392,9 @@ router.post('/:messageId/star', async (req: Request<MessageParams>, res: Respons
 /**
  * @route GET /api/sessions/:sessionId/messages/starred
  * @desc Get all starred messages
+ * @scope messages:read
  */
-router.get('/starred', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/starred', requireScope('messages:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -391,8 +412,9 @@ router.get('/starred', async (req: Request<SessionParams>, res: Response, next: 
 /**
  * @route GET /api/sessions/:sessionId/messages/:messageId/download
  * @desc Download media from a message
+ * @scope media:read
  */
-router.get('/:messageId/download', async (req: Request<MessageParams>, res: Response, next: NextFunction) => {
+router.get('/:messageId/download', requireScope('media:read'), async (req: Request<MessageParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -413,8 +435,9 @@ router.get('/:messageId/download', async (req: Request<MessageParams>, res: Resp
 /**
  * @route GET /api/sessions/:sessionId/messages/:messageId/info
  * @desc Get message info (read by, delivered to, etc.)
+ * @scope messages:read
  */
-router.get('/:messageId/info', async (req: Request<MessageParams>, res: Response, next: NextFunction) => {
+router.get('/:messageId/info', requireScope('messages:read'), async (req: Request<MessageParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 

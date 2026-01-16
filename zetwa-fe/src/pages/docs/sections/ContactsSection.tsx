@@ -20,6 +20,7 @@ export function ContactsSection({ baseUrl }: ContactsSectionProps) {
         title="Get Contacts (Database)"
         description="Ambil daftar kontak yang tersimpan di database"
         auth="Both"
+        scope="contacts:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -48,6 +49,7 @@ export function ContactsSection({ baseUrl }: ContactsSectionProps) {
         title="Get Contacts (Live)"
         description="Ambil daftar kontak langsung dari WhatsApp (real-time)"
         auth="Both"
+        scope="contacts:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -82,6 +84,7 @@ export function ContactsSection({ baseUrl }: ContactsSectionProps) {
         title="Get Chats (Database)"
         description="Ambil daftar chat yang tersimpan di database"
         auth="Both"
+        scope="messages:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -109,6 +112,7 @@ export function ContactsSection({ baseUrl }: ContactsSectionProps) {
         title="Get Chats (Live)"
         description="Ambil daftar chat langsung dari WhatsApp (real-time)"
         auth="Both"
+        scope="messages:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -143,6 +147,7 @@ export function ContactsSection({ baseUrl }: ContactsSectionProps) {
         title="Check WhatsApp Number"
         description="Cek apakah nomor telepon terdaftar di WhatsApp"
         auth="Both"
+        scope="contacts:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'number', type: 'string', required: true, description: 'Nomor telepon yang ingin dicek (dengan kode negara)' },
@@ -164,6 +169,7 @@ export function ContactsSection({ baseUrl }: ContactsSectionProps) {
         title="Get Profile Picture"
         description="Ambil URL foto profil kontak"
         auth="Both"
+        scope="contacts:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'contactId', type: 'string', required: true, description: 'ID kontak (format: 628xxx@c.us)' },

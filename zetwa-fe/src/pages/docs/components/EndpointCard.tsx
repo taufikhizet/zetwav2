@@ -20,6 +20,7 @@ interface EndpointCardProps {
   title: string
   description: string
   auth?: 'JWT' | 'API Key' | 'Both'
+  scope?: string
   pathParams?: Parameter[]
   queryParams?: Parameter[]
   bodyParams?: Parameter[]
@@ -49,6 +50,7 @@ export function EndpointCard({
   title,
   description,
   auth = 'API Key',
+  scope,
   pathParams,
   queryParams,
   bodyParams,
@@ -87,12 +89,22 @@ export function EndpointCard({
           <p className="hidden sm:block text-sm text-muted-foreground mb-4 pt-2">{description}</p>
 
           <div className="space-y-4">
-            {/* Authentication */}
-            <div>
-              <h4 className="font-semibold text-sm mb-2">Autentikasi</h4>
-              <Badge variant="outline" className="text-xs">
-                {auth === 'Both' ? 'JWT Token atau API Key' : auth === 'JWT' ? 'JWT Token' : 'API Key (X-API-Key header)'}
-              </Badge>
+            {/* Authentication & Scope */}
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Autentikasi</h4>
+                <Badge variant="outline" className="text-xs">
+                  {auth === 'Both' ? 'JWT Token atau API Key' : auth === 'JWT' ? 'JWT Token' : 'API Key (X-API-Key header)'}
+                </Badge>
+              </div>
+              {scope && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Required Scope</h4>
+                  <Badge variant="secondary" className="text-xs font-mono">
+                    {scope}
+                  </Badge>
+                </div>
+              )}
             </div>
 
             {/* Path Parameters */}

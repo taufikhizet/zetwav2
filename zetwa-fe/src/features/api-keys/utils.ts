@@ -25,7 +25,7 @@ export function getKeyStatus(
 }
 
 /**
- * Format a date for display
+ * Format a date for display (past dates)
  */
 export function formatRelativeDate(dateString: string): string {
   const date = new Date(dateString)
@@ -45,6 +45,39 @@ export function formatRelativeDate(dateString: string): string {
     month: 'short',
     day: 'numeric',
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+  })
+}
+
+/**
+ * Format expiration date (future dates)
+ */
+export function formatExpirationDate(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = date.getTime() - now.getTime()
+  
+  // If already expired, use past format
+  if (diffMs < 0) {
+    return formatRelativeDate(dateString)
+  }
+  
+  const diffSecs = Math.floor(diffMs / 1000)
+  const diffMins = Math.floor(diffSecs / 60)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffSecs < 60) return 'in a moment'
+  if (diffMins < 60) return `in ${diffMins}m`
+  if (diffHours < 24) return `in ${diffHours}h`
+  if (diffDays === 1) return 'tomorrow'
+  if (diffDays < 7) return `in ${diffDays} days`
+  if (diffDays < 30) return `in ${Math.floor(diffDays / 7)} weeks`
+  if (diffDays < 365) return `in ${Math.floor(diffDays / 30)} months`
+  
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   })
 }
 

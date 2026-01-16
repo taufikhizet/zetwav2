@@ -30,7 +30,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Sessions', href: '/dashboard/sessions', icon: Smartphone },
   { name: 'API Keys', href: '/dashboard/api-keys', icon: Key },
-  { name: 'Documentation', href: '/dashboard/docs', icon: MessageSquare },
+  { name: 'Documentation', href: '/docs', icon: MessageSquare },
 ]
 
 export default function DashboardLayout() {

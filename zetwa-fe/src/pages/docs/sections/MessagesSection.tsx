@@ -63,6 +63,7 @@ export function MessagesSection({ baseUrl }: MessagesSectionProps) {
         title="Send Text Message"
         description="Kirim pesan teks ke nomor WhatsApp"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -72,9 +73,9 @@ export function MessagesSection({ baseUrl }: MessagesSectionProps) {
           { name: 'quotedMessageId', type: 'string', required: false, description: 'ID pesan yang ingin di-reply' },
           { name: 'mentions', type: 'string[]', required: false, description: 'Array nomor yang di-mention (untuk grup)' },
         ]}
-        curlExample={`curl -X POST "${baseUrl}/api/sessions/{sessionId}/messages/send" \\
+        curlExample={`curl -X POST "${baseUrl}/api/sessions/cmkd4b4pw00034jjvcm2msjs2/messages/send" \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "X-API-Key: zk_live_abc123xyz456def789" \\
   -d '{
     "to": "628123456789",
     "message": "Hello World!"
@@ -96,6 +97,7 @@ export function MessagesSection({ baseUrl }: MessagesSectionProps) {
         title="Send Reply Message"
         description="Kirim pesan sebagai reply ke pesan tertentu"
         auth="Both"
+        scope="messages:send"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -127,8 +129,9 @@ export function MessagesSection({ baseUrl }: MessagesSectionProps) {
         method="POST"
         path="/api/sessions/{sessionId}/messages/send-media"
         title="Send Media (Image/Video/Document)"
-        description="Kirim media (gambar, video, dokumen) via URL"
+        description="Kirim media (gambar, video, dokumen) via URL. Membutuhkan scope messages:send DAN media:write."
         auth="Both"
+        scope="messages:send, media:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -163,8 +166,9 @@ export function MessagesSection({ baseUrl }: MessagesSectionProps) {
         method="POST"
         path="/api/sessions/{sessionId}/messages/send-media"
         title="Send Document"
-        description="Kirim dokumen (PDF, Word, Excel, dll)"
+        description="Kirim dokumen (PDF, Word, Excel, dll). Membutuhkan scope messages:send DAN media:write."
         auth="Both"
+        scope="messages:send, media:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -196,8 +200,9 @@ export function MessagesSection({ baseUrl }: MessagesSectionProps) {
         method="POST"
         path="/api/sessions/{sessionId}/messages/send-media"
         title="Send Media with Base64"
-        description="Kirim media menggunakan Base64 encoded data"
+        description="Kirim media menggunakan Base64 encoded data. Membutuhkan scope messages:send DAN media:write."
         auth="Both"
+        scope="messages:send, media:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -234,6 +239,7 @@ export function MessagesSection({ baseUrl }: MessagesSectionProps) {
         title="Get Messages"
         description="Ambil riwayat pesan dengan filter dan pagination"
         auth="Both"
+        scope="messages:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}

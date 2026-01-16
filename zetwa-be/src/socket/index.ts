@@ -6,6 +6,7 @@ import { whatsappService } from '../services/whatsapp.service.js';
 import { config } from '../config/index.js';
 import { createLogger } from '../utils/logger.js';
 import { convertQRToImage } from '../utils/qrcode.js';
+import { prisma } from '../lib/prisma.js';
 
 const logger = createLogger('socket');
 
@@ -63,10 +64,34 @@ export const setupSocketIO = (server: Server): SocketServer => {
     }
 
     // Subscribe to session events
-    socket.on('subscribe:session', (sessionId: string) => {
-      // TODO: Verify user owns this session
-      socket.join(`session:${sessionId}`);
-      logger.debug({ socketId: socket.id, sessionId }, 'Subscribed to session');
+    socket.on('subscribe:session', async (sessionId: string) => {
+      // Verify user owns this session before allowing subscription
+      if (!socket.userId) {
+        socket.emit('error', { message: 'Not authenticated' });
+        return;
+      }
+
+      try {
+        const session = await prisma.waSession.findFirst({
+          where: {
+            id: sessionId,
+            userId: socket.userId,
+          },
+          select: { id: true },
+        });
+
+        if (!session) {
+          socket.emit('error', { message: 'Session not found or access denied' });
+          logger.warn({ socketId: socket.id, sessionId, userId: socket.userId }, 'Unauthorized session subscription attempt');
+          return;
+        }
+
+        socket.join(`session:${sessionId}`);
+        logger.debug({ socketId: socket.id, sessionId }, 'Subscribed to session');
+      } catch (error) {
+        logger.error({ error, socketId: socket.id, sessionId }, 'Failed to verify session ownership');
+        socket.emit('error', { message: 'Failed to subscribe to session' });
+      }
     });
 
     // Unsubscribe from session

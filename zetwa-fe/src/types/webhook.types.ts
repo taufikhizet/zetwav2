@@ -55,7 +55,7 @@ export interface WebhookConfig extends InlineWebhookConfig {
   name: string
   /** Is webhook active */
   isActive: boolean
-  /** Request timeout in milliseconds */
+  /** Request timeout in seconds (for UI display) */
   timeout: number
   /** Created timestamp */
   createdAt: string

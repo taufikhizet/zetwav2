@@ -2,7 +2,7 @@ import { Router, type Response, type NextFunction } from 'express';
 import type { Request, ParamsDictionary } from 'express-serve-static-core';
 import { whatsappService } from '../../services/whatsapp.service.js';
 import { sessionService } from '../../services/session.service.js';
-import { authenticateAny } from '../../middleware/auth.middleware.js';
+import { authenticateAny, requireScope } from '../../middleware/auth.middleware.js';
 import { validateBody } from '../../middleware/validate.middleware.js';
 import {
   updateWaNameSchema,
@@ -22,8 +22,9 @@ router.use(authenticateAny);
 /**
  * @route GET /api/sessions/:sessionId/profile
  * @desc Get WhatsApp profile info
+ * @scope profile:read
  */
-router.get('/', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/', requireScope('profile:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -41,9 +42,11 @@ router.get('/', async (req: Request<SessionParams>, res: Response, next: NextFun
 /**
  * @route PATCH /api/sessions/:sessionId/profile/name
  * @desc Update WhatsApp display name
+ * @scope profile:write
  */
 router.patch(
   '/name',
+  requireScope('profile:write'),
   validateBody(updateWaNameSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -67,9 +70,11 @@ router.patch(
 /**
  * @route PATCH /api/sessions/:sessionId/profile/about
  * @desc Update WhatsApp about/status
+ * @scope profile:write
  */
 router.patch(
   '/about',
+  requireScope('profile:write'),
   validateBody(updateWaAboutSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -93,9 +98,11 @@ router.patch(
 /**
  * @route PATCH /api/sessions/:sessionId/profile/picture
  * @desc Update WhatsApp profile picture
+ * @scope profile:write
  */
 router.patch(
   '/picture',
+  requireScope('profile:write'),
   validateBody(updateWaProfilePicSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -120,8 +127,9 @@ router.patch(
 /**
  * @route DELETE /api/sessions/:sessionId/profile/picture
  * @desc Remove WhatsApp profile picture
+ * @scope profile:write
  */
-router.delete('/picture', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.delete('/picture', requireScope('profile:write'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -139,8 +147,9 @@ router.delete('/picture', async (req: Request<SessionParams>, res: Response, nex
 /**
  * @route GET /api/sessions/:sessionId/profile/business
  * @desc Get WhatsApp Business profile info (Business accounts only)
+ * @scope profile:read
  */
-router.get('/business', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/business', requireScope('profile:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 

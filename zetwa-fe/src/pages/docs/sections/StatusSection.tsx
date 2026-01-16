@@ -34,6 +34,7 @@ export function StatusSection({ baseUrl }: StatusSectionProps) {
         title="Get My Statuses"
         description="Ambil status yang saya posting"
         auth="Both"
+        scope="status:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -60,6 +61,7 @@ export function StatusSection({ baseUrl }: StatusSectionProps) {
         title="Get Contact Statuses"
         description="Ambil status dari semua kontak"
         auth="Both"
+        scope="status:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -90,6 +92,7 @@ export function StatusSection({ baseUrl }: StatusSectionProps) {
         title="Get Specific Contact Status"
         description="Ambil status dari kontak tertentu"
         auth="Both"
+        scope="status:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'contactId', type: 'string', required: true, description: 'ID kontak' },
@@ -115,6 +118,7 @@ export function StatusSection({ baseUrl }: StatusSectionProps) {
         title="Post Text Status"
         description="Posting status teks"
         auth="Both"
+        scope="status:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -146,6 +150,7 @@ export function StatusSection({ baseUrl }: StatusSectionProps) {
         title="Post Media Status"
         description="Posting status gambar atau video"
         auth="Both"
+        scope="status:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -177,6 +182,7 @@ export function StatusSection({ baseUrl }: StatusSectionProps) {
         title="Delete Status"
         description="Hapus status"
         auth="Both"
+        scope="status:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'statusId', type: 'string', required: true, description: 'ID status yang akan dihapus' },
@@ -195,6 +201,7 @@ export function StatusSection({ baseUrl }: StatusSectionProps) {
         title="Mark Status as Seen"
         description="Tandai status kontak sebagai sudah dilihat"
         auth="Both"
+        scope="status:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'statusId', type: 'string', required: true, description: 'ID status' },

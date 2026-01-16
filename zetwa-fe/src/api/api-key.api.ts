@@ -6,20 +6,39 @@ import { api, type ApiResponse } from '@/lib/api'
 
 /**
  * Available API key scopes for granular access control
+ * Must match backend: src/services/api-key/api-key.types.ts
  */
 export const API_KEY_SCOPES = [
+  // Session management
   'sessions:read',
   'sessions:write',
+  // Messaging
   'messages:send',
   'messages:read',
+  // Contacts
   'contacts:read',
   'contacts:write',
+  // Groups
   'groups:read',
   'groups:write',
+  // Media handling
   'media:read',
   'media:write',
+  // Webhooks
   'webhooks:read',
   'webhooks:write',
+  // Presence & typing indicators
+  'presence:read',
+  'presence:write',
+  // Labels (WhatsApp Business)
+  'labels:read',
+  'labels:write',
+  // Status/Stories
+  'status:read',
+  'status:write',
+  // Profile management
+  'profile:read',
+  'profile:write',
 ] as const
 
 export type ApiKeyScope = (typeof API_KEY_SCOPES)[number]
@@ -40,6 +59,14 @@ export const SCOPE_DESCRIPTIONS: Record<ApiKeyScope, string> = {
   'media:write': 'Upload and send media files',
   'webhooks:read': 'Read webhook configuration',
   'webhooks:write': 'Configure and modify webhooks',
+  'presence:read': 'Read online/typing status of contacts',
+  'presence:write': 'Set online status and typing indicators',
+  'labels:read': 'Read labels (WhatsApp Business)',
+  'labels:write': 'Create, update, and manage labels',
+  'status:read': 'View status/stories from contacts',
+  'status:write': 'Post and manage status/stories',
+  'profile:read': 'Read WhatsApp profile information',
+  'profile:write': 'Update profile name, about, and picture',
 }
 
 /**
@@ -52,6 +79,10 @@ export const SCOPE_CATEGORIES = {
   Groups: ['groups:read', 'groups:write'],
   Media: ['media:read', 'media:write'],
   Webhooks: ['webhooks:read', 'webhooks:write'],
+  Presence: ['presence:read', 'presence:write'],
+  Labels: ['labels:read', 'labels:write'],
+  Status: ['status:read', 'status:write'],
+  Profile: ['profile:read', 'profile:write'],
 } as const
 
 export interface ApiKey {

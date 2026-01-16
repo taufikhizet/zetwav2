@@ -2,7 +2,7 @@ import { Router, type Response, type NextFunction } from 'express';
 import type { Request, ParamsDictionary } from 'express-serve-static-core';
 import { whatsappService } from '../../services/whatsapp.service.js';
 import { sessionService } from '../../services/session.service.js';
-import { authenticateAny } from '../../middleware/auth.middleware.js';
+import { authenticateAny, requireScope } from '../../middleware/auth.middleware.js';
 import { validateBody } from '../../middleware/validate.middleware.js';
 import { setPresenceSchema, subscribePresenceSchema } from '../../schemas/presence.schema.js';
 
@@ -22,9 +22,11 @@ router.use(authenticateAny);
 /**
  * @route POST /api/sessions/:sessionId/presence
  * @desc Set presence status (online, offline, typing, etc.)
+ * @scope presence:write
  */
 router.post(
   '/',
+  requireScope('presence:write'),
   validateBody(setPresenceSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -51,9 +53,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/presence/subscribe
  * @desc Subscribe to presence updates for a contact
+ * @scope presence:read
  */
 router.post(
   '/subscribe',
+  requireScope('presence:read'),
   validateBody(subscribePresenceSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -77,8 +81,9 @@ router.post(
 /**
  * @route GET /api/sessions/:sessionId/presence/:contactId
  * @desc Get presence status of a contact
+ * @scope presence:read
  */
-router.get('/:contactId', async (req: Request<ContactParams>, res: Response, next: NextFunction) => {
+router.get('/:contactId', requireScope('presence:read'), async (req: Request<ContactParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -99,8 +104,9 @@ router.get('/:contactId', async (req: Request<ContactParams>, res: Response, nex
 /**
  * @route POST /api/sessions/:sessionId/presence/typing
  * @desc Send typing indicator to a chat
+ * @scope presence:write
  */
-router.post('/typing/:chatId', async (req: Request<SessionParams & { chatId: string }>, res: Response, next: NextFunction) => {
+router.post('/typing/:chatId', requireScope('presence:write'), async (req: Request<SessionParams & { chatId: string }>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -122,8 +128,9 @@ router.post('/typing/:chatId', async (req: Request<SessionParams & { chatId: str
 /**
  * @route DELETE /api/sessions/:sessionId/presence/typing/:chatId
  * @desc Stop typing indicator
+ * @scope presence:write
  */
-router.delete('/typing/:chatId', async (req: Request<SessionParams & { chatId: string }>, res: Response, next: NextFunction) => {
+router.delete('/typing/:chatId', requireScope('presence:write'), async (req: Request<SessionParams & { chatId: string }>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -145,8 +152,9 @@ router.delete('/typing/:chatId', async (req: Request<SessionParams & { chatId: s
 /**
  * @route POST /api/sessions/:sessionId/presence/recording/:chatId
  * @desc Send recording audio indicator to a chat
+ * @scope presence:write
  */
-router.post('/recording/:chatId', async (req: Request<SessionParams & { chatId: string }>, res: Response, next: NextFunction) => {
+router.post('/recording/:chatId', requireScope('presence:write'), async (req: Request<SessionParams & { chatId: string }>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -168,8 +176,9 @@ router.post('/recording/:chatId', async (req: Request<SessionParams & { chatId: 
 /**
  * @route DELETE /api/sessions/:sessionId/presence/recording/:chatId
  * @desc Stop recording audio indicator
+ * @scope presence:write
  */
-router.delete('/recording/:chatId', async (req: Request<SessionParams & { chatId: string }>, res: Response, next: NextFunction) => {
+router.delete('/recording/:chatId', requireScope('presence:write'), async (req: Request<SessionParams & { chatId: string }>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -191,8 +200,9 @@ router.delete('/recording/:chatId', async (req: Request<SessionParams & { chatId
 /**
  * @route POST /api/sessions/:sessionId/presence/seen/:chatId
  * @desc Mark messages as seen in a chat
+ * @scope presence:write
  */
-router.post('/seen/:chatId', async (req: Request<SessionParams & { chatId: string }>, res: Response, next: NextFunction) => {
+router.post('/seen/:chatId', requireScope('presence:write'), async (req: Request<SessionParams & { chatId: string }>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 

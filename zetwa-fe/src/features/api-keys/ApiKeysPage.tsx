@@ -9,6 +9,7 @@
  */
 
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus, KeyRound, Info, Search, Filter, Loader2, RefreshCw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -23,13 +24,12 @@ import {
 } from '@/components/ui/select'
 
 import type { ApiKey } from './types'
-import { useApiKeys, useApiKeyStats } from './hooks'
+import { useApiKeys, useApiKeyStats, useUpdateApiKey } from './hooks'
 import { getKeyStatus } from './utils'
 import {
   ApiKeyStatsCards,
   ApiKeyCard,
   ApiKeyEmptyState,
-  CreateApiKeyDialog,
   EditScopesDialog,
   DeleteApiKeyDialog,
   RegenerateApiKeyDialog,
@@ -38,12 +38,16 @@ import {
 type FilterStatus = 'all' | 'active' | 'inactive' | 'expired'
 
 export function ApiKeysPage() {
+  const navigate = useNavigate()
+  
   // Data fetching
   const { data: apiKeys = [], isLoading, refetch, isRefetching } = useApiKeys()
   const { data: stats } = useApiKeyStats()
 
+  // Mutation for toggling active state
+  const updateApiKeyMutation = useUpdateApiKey()
+
   // Dialog states
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editScopesKey, setEditScopesKey] = useState<ApiKey | null>(null)
   const [deleteKey, setDeleteKey] = useState<ApiKey | null>(null)
   const [regenerateKey, setRegenerateKey] = useState<ApiKey | null>(null)
@@ -105,7 +109,7 @@ export function ApiKeysPage() {
           >
             <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
           </Button>
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <Button onClick={() => navigate('/dashboard/api-keys/new')}>
             <Plus className="mr-2 h-4 w-4" />
             Create API Key
           </Button>
@@ -152,7 +156,7 @@ export function ApiKeysPage() {
 
       {/* Main Content */}
       {apiKeys.length === 0 ? (
-        <ApiKeyEmptyState onCreateClick={() => setCreateDialogOpen(true)} />
+        <ApiKeyEmptyState onCreateClick={() => navigate('/dashboard/api-keys/new')} />
       ) : (
         <Card>
           <CardHeader>
@@ -209,9 +213,13 @@ export function ApiKeysPage() {
                   <ApiKeyCard
                     key={key.id}
                     apiKey={key}
+                    onToggleActive={(id, isActive) => {
+                      updateApiKeyMutation.mutate({ id, data: { isActive } })
+                    }}
                     onEditScopes={setEditScopesKey}
                     onDelete={setDeleteKey}
                     onRegenerate={setRegenerateKey}
+                    isUpdating={updateApiKeyMutation.isPending}
                   />
                 ))}
               </div>
@@ -221,8 +229,6 @@ export function ApiKeysPage() {
       )}
 
       {/* Dialogs */}
-      <CreateApiKeyDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
-
       <EditScopesDialog
         apiKey={editScopesKey}
         open={!!editScopesKey}

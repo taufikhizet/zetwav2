@@ -4,8 +4,9 @@
  * Re-exports all API key related functionality for clean imports
  */
 
-// Main page component
+// Page components
 export { ApiKeysPage } from './ApiKeysPage'
+export { NewApiKeyPage } from './NewApiKeyPage'
 
 // Types and constants
 export * from './types'
@@ -15,6 +16,9 @@ export * from './hooks'
 
 // Utility functions
 export * from './utils'
+
+// Help content
+export * from './help-content'
 
 // Components
 export * from './components'

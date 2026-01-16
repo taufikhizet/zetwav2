@@ -27,15 +27,27 @@ export const connectSocket = (): Socket => {
   })
 
   socket.on('connect', () => {
-    console.log('Socket connected:', socket?.id)
+    // Socket connected - production: use monitoring service
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log('Socket connected:', socket?.id)
+    }
   })
 
   socket.on('disconnect', (reason) => {
-    console.log('Socket disconnected:', reason)
+    // Socket disconnected - production: use monitoring service
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log('Socket disconnected:', reason)
+    }
   })
 
   socket.on('connect_error', (error) => {
-    console.error('Socket connection error:', error.message)
+    // Socket error - production: use monitoring service
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error('Socket connection error:', error.message)
+    }
   })
 
   return socket

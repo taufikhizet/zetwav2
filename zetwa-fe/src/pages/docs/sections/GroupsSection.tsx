@@ -20,6 +20,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="List Groups"
         description="Ambil semua grup yang diikuti"
         auth="Both"
+        scope="groups:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -47,6 +48,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Create Group"
         description="Buat grup WhatsApp baru"
         auth="Both"
+        scope="groups:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
         ]}
@@ -77,6 +79,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Get Group Info"
         description="Ambil detail informasi grup"
         auth="Both"
+        scope="groups:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup (format: xxx@g.us)' },
@@ -105,6 +108,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Update Group"
         description="Update nama atau deskripsi grup"
         auth="Both"
+        scope="groups:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup' },
@@ -132,6 +136,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Update Group Settings"
         description="Update pengaturan grup (announce mode, restrict)"
         auth="Both"
+        scope="groups:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup' },
@@ -159,6 +164,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Get Group Participants"
         description="Ambil daftar peserta grup"
         auth="Both"
+        scope="groups:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup' },
@@ -180,6 +186,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Add Participants"
         description="Tambah peserta ke grup"
         auth="Both"
+        scope="groups:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup' },
@@ -205,6 +212,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Remove Participants"
         description="Hapus peserta dari grup"
         auth="Both"
+        scope="groups:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup' },
@@ -230,6 +238,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Promote to Admin"
         description="Jadikan peserta sebagai admin grup"
         auth="Both"
+        scope="groups:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup' },
@@ -255,6 +264,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Demote from Admin"
         description="Hapus status admin dari peserta"
         auth="Both"
+        scope="groups:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup' },
@@ -280,6 +290,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Leave Group"
         description="Keluar dari grup"
         auth="Both"
+        scope="groups:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup' },
@@ -298,6 +309,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Get Invite Link"
         description="Ambil link undangan grup"
         auth="Both"
+        scope="groups:read"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup' },
@@ -319,6 +331,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Revoke Invite Link"
         description="Revoke dan generate link undangan baru"
         auth="Both"
+        scope="groups:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup' },
@@ -341,6 +354,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Join Group via Invite"
         description="Gabung ke grup menggunakan kode undangan"
         auth="Both"
+        scope="groups:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'inviteCode', type: 'string', required: true, description: 'Kode undangan (dari link whatsapp.com/xxx)' },
@@ -362,6 +376,7 @@ export function GroupsSection({ baseUrl }: GroupsSectionProps) {
         title="Update Group Picture"
         description="Update foto profil grup"
         auth="Both"
+        scope="groups:write"
         pathParams={[
           { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
           { name: 'groupId', type: 'string', required: true, description: 'ID grup' },

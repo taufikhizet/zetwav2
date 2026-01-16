@@ -1,5 +1,6 @@
 /**
  * Webhooks Tab Component - Comprehensive webhook management with CRUD operations
+ * Refactored to use WebhookDialog for consistent UX and proper field help
  */
 
 import { useState } from 'react'
@@ -19,19 +20,12 @@ import {
   XCircle,
   RefreshCw,
   Key,
-  ListChecks,
   Globe,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { PasswordInput } from '@/components/ui/password-input'
 import {
   Dialog,
   DialogContent,
@@ -47,23 +41,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Separator } from '@/components/ui/separator'
 
+import { WebhookDialog, type WebhookSubmitData } from '@/components/webhook'
 import type { Webhook as WebhookType, CreateWebhookInput } from '@/api/session.api'
 import {
-  WEBHOOK_EVENTS_BY_CATEGORY,
-  EVENT_CATEGORIES,
   isAllEventsSelected as checkAllEventsSelected,
-  type RetryPolicy,
-  type CustomHeader,
+  type WebhookConfig,
 } from '@/types/webhook.types'
 
 interface WebhooksTabProps {
@@ -78,20 +61,29 @@ interface WebhooksTabProps {
   isTesting: boolean
 }
 
-// Empty form state - timeout in SECONDS for UI consistency
-const emptyWebhookForm = {
-  name: '',
-  url: '',
-  events: ['*'] as string[],
-  secret: '',
-  timeout: 30, // in seconds
-  retryCount: 3,
-  retries: {
-    attempts: 3,
-    delaySeconds: 2,
-    policy: 'linear' as RetryPolicy,
-  },
-  customHeaders: [] as CustomHeader[],
+/**
+ * Convert API Webhook type to WebhookConfig for dialog
+ * Note: API stores timeout in milliseconds, UI uses seconds
+ */
+function webhookToConfig(webhook: WebhookType): WebhookConfig {
+  return {
+    id: webhook.id,
+    name: webhook.name,
+    url: webhook.url,
+    events: webhook.events,
+    isActive: webhook.isActive,
+    // Convert timeout from ms (API) to seconds (UI)
+    timeout: Math.round((webhook.timeout || 30000) / 1000),
+    createdAt: webhook.createdAt,
+    hmac: webhook.secret ? { key: webhook.secret } : undefined,
+    retries: {
+      attempts: webhook.retries?.attempts ?? webhook.retryAttempts ?? 3,
+      delaySeconds: webhook.retries?.delaySeconds ?? webhook.retryDelay ?? 2,
+      policy: (webhook.retries?.policy ?? webhook.retryPolicy ?? 'linear') as 'linear' | 'exponential' | 'constant',
+    },
+    customHeaders: webhook.customHeaders || [],
+    _count: webhook._count,
+  }
 }
 
 export function WebhooksTab({
@@ -110,122 +102,73 @@ export function WebhooksTab({
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   
-  // Form state
-  const [form, setForm] = useState(emptyWebhookForm)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [deletingWebhook, setDeletingWebhook] = useState<WebhookType | null>(null)
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  // Selected webhook for edit/delete
+  const [selectedWebhook, setSelectedWebhook] = useState<WebhookType | null>(null)
   
   // Test results
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; statusCode?: number; duration: number; error?: string }>>({})
 
   // Open create dialog
   const openCreate = () => {
-    setForm(emptyWebhookForm)
-    setShowAdvanced(false)
     setCreateOpen(true)
   }
 
   // Open edit dialog
   const openEdit = (webhook: WebhookType) => {
-    // Use retries object directly from backend response (new schema)
-    // Fallback to legacy fields for backward compatibility
-    const retriesConfig = {
-      attempts: webhook.retries?.attempts ?? webhook.retryAttempts ?? webhook.retryCount ?? 3,
-      delaySeconds: webhook.retries?.delaySeconds ?? webhook.retryDelay ?? 2,
-      policy: (webhook.retries?.policy ?? webhook.retryPolicy ?? 'linear') as RetryPolicy,
-    }
-    
-    // Use customHeaders directly from backend response (new schema)
-    // Already in array format from backend
-    let customHeaders: CustomHeader[] = webhook.customHeaders || []
-    
-    // Backward compatibility: if customHeaders is empty but headers exists (old format)
-    if (customHeaders.length === 0 && webhook.headers && typeof webhook.headers === 'object') {
-      const headers = webhook.headers as Record<string, string>
-      customHeaders = Object.entries(headers)
-        .filter(([key]) => !key.startsWith('__')) // Skip internal fields
-        .map(([name, value]) => ({ name, value: String(value) }))
-    }
-    
-    // Check if all events are selected - set to ['*'] for UI toggle
-    const allSelected = checkAllEventsSelected(webhook.events)
-    const formEvents = allSelected ? ['*'] : webhook.events
-    
-    setForm({
-      name: webhook.name,
-      url: webhook.url,
-      events: formEvents,
-      secret: webhook.secret || '',
-      timeout: Math.round((webhook.timeout || 30000) / 1000), // Convert ms to seconds for UI
-      retryCount: retriesConfig.attempts,
-      retries: retriesConfig,
-      customHeaders,
-    })
-    setEditingId(webhook.id)
-    setShowAdvanced(customHeaders.length > 0 || !!webhook.secret)
+    setSelectedWebhook(webhook)
     setEditOpen(true)
   }
 
   // Open delete dialog
   const openDelete = (webhook: WebhookType) => {
-    setDeletingWebhook(webhook)
+    setSelectedWebhook(webhook)
     setDeleteOpen(true)
   }
 
-  // Handle create
-  const handleCreate = async () => {
-    if (!form.name.trim() || !form.url.trim()) return
+  // Handle create webhook
+  const handleCreate = async (data: WebhookSubmitData) => {
+    // Convert timeout from seconds (UI) to milliseconds (API)
+    const timeoutMs = data.timeout ? data.timeout * 1000 : 30000
+    
     await onCreateWebhook({
-      name: form.name.trim(),
-      url: form.url.trim(),
-      events: form.events,
-      secret: form.secret || undefined,
-      timeout: form.timeout * 1000, // Convert seconds to ms for backend
-      retryCount: form.retries.attempts,
-      // Send retries config for backend to store in headers
-      retries: {
-        attempts: form.retries.attempts,
-        delaySeconds: form.retries.delaySeconds,
-        policy: form.retries.policy,
-      },
-      // Send custom headers (filter out empty ones)
-      customHeaders: form.customHeaders.filter(h => h.name && h.value),
+      name: data.name,
+      url: data.url,
+      events: data.events,
+      secret: data.secret,
+      timeout: timeoutMs,
+      retries: data.retries,
+      customHeaders: data.customHeaders,
     })
     setCreateOpen(false)
-    setForm(emptyWebhookForm)
   }
 
-  // Handle update
-  const handleUpdate = async () => {
-    if (!editingId || !form.name.trim() || !form.url.trim()) return
-    await onUpdateWebhook(editingId, {
-      name: form.name.trim(),
-      url: form.url.trim(),
-      events: form.events,
-      secret: form.secret || undefined,
-      timeout: form.timeout * 1000, // Convert seconds to ms for backend
-      retryCount: form.retries.attempts,
-      // Send retries config for backend to store in headers
-      retries: {
-        attempts: form.retries.attempts,
-        delaySeconds: form.retries.delaySeconds,
-        policy: form.retries.policy,
-      },
-      // Send custom headers (filter out empty ones)
-      customHeaders: form.customHeaders.filter(h => h.name && h.value),
+  // Handle update webhook
+  const handleUpdate = async (data: WebhookSubmitData) => {
+    if (!data.id) return
+    
+    // Convert timeout from seconds (UI) to milliseconds (API) if provided
+    const timeoutMs = data.timeout ? data.timeout * 1000 : undefined
+    
+    await onUpdateWebhook(data.id, {
+      name: data.name,
+      url: data.url,
+      events: data.events,
+      secret: data.secret,
+      isActive: data.isActive,
+      timeout: timeoutMs,
+      retries: data.retries,
+      customHeaders: data.customHeaders,
     })
     setEditOpen(false)
-    setEditingId(null)
-    setForm(emptyWebhookForm)
+    setSelectedWebhook(null)
   }
 
-  // Handle delete
+  // Handle delete webhook
   const handleDelete = async () => {
-    if (!deletingWebhook) return
-    await onDeleteWebhook(deletingWebhook.id)
+    if (!selectedWebhook) return
+    await onDeleteWebhook(selectedWebhook.id)
     setDeleteOpen(false)
-    setDeletingWebhook(null)
+    setSelectedWebhook(null)
   }
 
   // Handle toggle active
@@ -233,27 +176,11 @@ export function WebhooksTab({
     await onUpdateWebhook(webhook.id, { isActive: !webhook.isActive })
   }
 
-  // Handle test
+  // Handle test webhook
   const handleTest = async (webhookId: string) => {
     const result = await onTestWebhook(webhookId)
     setTestResults(prev => ({ ...prev, [webhookId]: result }))
   }
-
-  // Toggle event
-  const toggleEvent = (event: string) => {
-    const events = form.events || []
-    if (events.includes(event)) {
-      setForm({ ...form, events: events.filter((e) => e !== event) })
-    } else {
-      if (event === '*') {
-        setForm({ ...form, events: ['*'] })
-      } else {
-        setForm({ ...form, events: [...events.filter((e) => e !== '*'), event] })
-      }
-    }
-  }
-
-  const isAllEventsSelected = form.events?.includes('*')
 
   return (
     <div className="space-y-6">
@@ -345,11 +272,11 @@ export function WebhooksTab({
                       )}
                       <span className="flex items-center gap-1">
                         <RefreshCw className="h-3 w-3" />
-                        {webhook.retries?.attempts ?? webhook.retryAttempts ?? webhook.retryCount ?? 3} retries
+                        {webhook.retries?.attempts ?? webhook.retryAttempts ?? 3} retries
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {(webhook.timeout / 1000).toFixed(0)}s timeout
+                        {Math.round((webhook.timeout || 30000) / 1000)}s timeout
                       </span>
                     </div>
                   </div>
@@ -407,288 +334,27 @@ export function WebhooksTab({
         </div>
       )}
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={createOpen || editOpen} onOpenChange={(open) => {
-        if (!open) {
-          setCreateOpen(false)
-          setEditOpen(false)
-          setEditingId(null)
-          setForm(emptyWebhookForm)
-        }
-      }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editOpen ? 'Edit Webhook' : 'Create Webhook'}</DialogTitle>
-            <DialogDescription>
-              {editOpen ? 'Update webhook configuration' : 'Add a new webhook to receive event notifications'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            {/* Basic Info */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Name <Badge variant="destructive" className="text-[10px] ml-1">Required</Badge></Label>
-                <Input
-                  placeholder="My Webhook"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>URL <Badge variant="destructive" className="text-[10px] ml-1">Required</Badge></Label>
-                <Input
-                  placeholder="https://your-server.com/webhook"
-                  value={form.url}
-                  onChange={(e) => setForm({ ...form, url: e.target.value })}
-                />
-              </div>
-            </div>
+      {/* Create Dialog */}
+      <WebhookDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        mode="create"
+        isPending={isCreating}
+        onSubmit={handleCreate}
+      />
 
-            {/* Events */}
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2">
-                <ListChecks className="h-4 w-4" />
-                Events
-                <Badge variant="secondary" className="text-xs">
-                  {isAllEventsSelected ? 'All' : `${form.events.length} selected`}
-                </Badge>
-              </Label>
-              
-              {/* All events toggle */}
-              <div className="flex items-center justify-between p-3 rounded-lg border bg-primary/5">
-                <div>
-                  <span className="font-medium">Subscribe to all events</span>
-                  <Badge variant="outline" className="text-[10px] ml-2">Recommended</Badge>
-                </div>
-                <Switch
-                  checked={isAllEventsSelected}
-                  onCheckedChange={(checked) => setForm({ ...form, events: checked ? ['*'] : [] })}
-                />
-              </div>
-              
-              {/* Event categories */}
-              {!isAllEventsSelected && (
-                <div className="grid gap-2 max-h-48 overflow-y-auto pr-2">
-                  {EVENT_CATEGORIES.filter(cat => cat !== 'Special').map((category) => (
-                    <div key={category} className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{category}</p>
-                      <div className="grid grid-cols-2 gap-1">
-                        {WEBHOOK_EVENTS_BY_CATEGORY[category]?.map((event) => (
-                          <button
-                            key={event.value}
-                            type="button"
-                            onClick={() => toggleEvent(event.value)}
-                            className={`text-left p-2 rounded-md border text-xs transition-colors ${
-                              form.events?.includes(event.value)
-                                ? 'bg-primary/10 border-primary text-primary'
-                                : 'hover:bg-muted/50'
-                            }`}
-                          >
-                            {event.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Advanced Options */}
-            <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-              <CollapsibleTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className="w-full justify-between">
-                  <span className="flex items-center gap-2">
-                    Advanced Options
-                    <Badge variant="outline" className="text-[10px]">Optional</Badge>
-                  </span>
-                  {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-4 pt-4">
-                {/* HMAC Secret */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Key className="h-4 w-4" />
-                    HMAC Secret
-                  </Label>
-                  <PasswordInput
-                    placeholder="Secret key for signature verification"
-                    value={form.secret}
-                    onChange={(e) => setForm({ ...form, secret: e.target.value })}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Used to sign payloads. Verify via X-Webhook-Signature header.
-                  </p>
-                </div>
-
-                <Separator />
-
-                {/* Retry Config */}
-                <div className="space-y-3">
-                  <Label className="flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4" />
-                    Retry Configuration
-                  </Label>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Attempts</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={15}
-                        value={form.retries.attempts}
-                        onChange={(e) => setForm({
-                          ...form,
-                          retries: { ...form.retries, attempts: parseInt(e.target.value) || 0 }
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Delay (sec)</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={60}
-                        value={form.retries.delaySeconds}
-                        onChange={(e) => setForm({
-                          ...form,
-                          retries: { ...form.retries, delaySeconds: parseInt(e.target.value) || 2 }
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Policy</Label>
-                      <Select
-                        value={form.retries.policy}
-                        onValueChange={(v) => setForm({
-                          ...form,
-                          retries: { ...form.retries, policy: v as RetryPolicy }
-                        })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="linear">Linear</SelectItem>
-                          <SelectItem value="exponential">Exponential</SelectItem>
-                          <SelectItem value="constant">Constant</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Timeout */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Request Timeout
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={1}
-                      max={120}
-                      value={form.timeout}
-                      onChange={(e) => setForm({ ...form, timeout: parseInt(e.target.value) || 30 })}
-                      className="w-24"
-                    />
-                    <span className="text-sm text-muted-foreground">seconds</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Maximum time to wait for a response (default: 30 seconds)
-                  </p>
-                </div>
-
-                <Separator />
-
-                {/* Custom Headers */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label>Custom Headers</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setForm({
-                        ...form,
-                        customHeaders: [...form.customHeaders, { name: '', value: '' }]
-                      })}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add Header
-                    </Button>
-                  </div>
-                  
-                  {form.customHeaders.length > 0 ? (
-                    <div className="space-y-2">
-                      {form.customHeaders.map((header, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            placeholder="Header name"
-                            value={header.name}
-                            onChange={(e) => {
-                              const newHeaders = [...form.customHeaders]
-                              newHeaders[index] = { ...newHeaders[index], name: e.target.value }
-                              setForm({ ...form, customHeaders: newHeaders })
-                            }}
-                            className="flex-1"
-                          />
-                          <Input
-                            placeholder="Header value"
-                            value={header.value}
-                            onChange={(e) => {
-                              const newHeaders = [...form.customHeaders]
-                              newHeaders[index] = { ...newHeaders[index], value: e.target.value }
-                              setForm({ ...form, customHeaders: newHeaders })
-                            }}
-                            className="flex-1"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              const newHeaders = form.customHeaders.filter((_, i) => i !== index)
-                              setForm({ ...form, customHeaders: newHeaders })
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      No custom headers configured.
-                    </p>
-                  )}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setCreateOpen(false)
-              setEditOpen(false)
-            }}>
-              Cancel
-            </Button>
-            <Button
-              onClick={editOpen ? handleUpdate : handleCreate}
-              disabled={isCreating || isUpdating || !form.name.trim() || !form.url.trim()}
-            >
-              {(isCreating || isUpdating) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editOpen ? 'Save Changes' : 'Create Webhook'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Dialog */}
+      <WebhookDialog
+        open={editOpen}
+        onOpenChange={(open) => {
+          setEditOpen(open)
+          if (!open) setSelectedWebhook(null)
+        }}
+        mode="edit"
+        webhook={selectedWebhook ? webhookToConfig(selectedWebhook) : null}
+        isPending={isUpdating}
+        onSubmit={handleUpdate}
+      />
 
       {/* Delete Confirmation */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -696,7 +362,7 @@ export function WebhooksTab({
           <DialogHeader>
             <DialogTitle>Delete Webhook</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deletingWebhook?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{selectedWebhook?.name}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

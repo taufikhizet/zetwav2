@@ -2,7 +2,7 @@ import { Router, type Response, type NextFunction } from 'express';
 import type { Request, ParamsDictionary } from 'express-serve-static-core';
 import { sessionService } from '../services/session.service.js';
 import { webhookService } from '../services/webhook.service.js';
-import { authenticateAny } from '../middleware/auth.middleware.js';
+import { authenticateAny, requireScope } from '../middleware/auth.middleware.js';
 import { validateBody, validateQuery } from '../middleware/validate.middleware.js';
 import {
   createSessionSchema,
@@ -29,8 +29,9 @@ router.use(authenticateAny);
 /**
  * @route GET /api/sessions
  * @desc Get all sessions for current user
+ * @scope sessions:read
  */
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', requireScope('sessions:read'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sessions = await sessionService.list(req.userId!);
 
@@ -46,9 +47,11 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 /**
  * @route POST /api/sessions
  * @desc Create a new WhatsApp session
+ * @scope sessions:write
  */
 router.post(
   '/',
+  requireScope('sessions:write'),
   validateBody(createSessionSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -68,8 +71,9 @@ router.post(
 /**
  * @route GET /api/sessions/:sessionId
  * @desc Get session by ID
+ * @scope sessions:read
  */
-router.get('/:sessionId', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/:sessionId', requireScope('sessions:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     const session = await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -85,9 +89,11 @@ router.get('/:sessionId', async (req: Request<SessionParams>, res: Response, nex
 /**
  * @route PATCH /api/sessions/:sessionId
  * @desc Update session
+ * @scope sessions:write
  */
 router.patch(
   '/:sessionId',
+  requireScope('sessions:write'),
   validateBody(updateSessionSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -107,8 +113,9 @@ router.patch(
 /**
  * @route DELETE /api/sessions/:sessionId
  * @desc Delete session
+ * @scope sessions:write
  */
-router.delete('/:sessionId', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.delete('/:sessionId', requireScope('sessions:write'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.delete(req.userId!, req.params.sessionId);
 
@@ -124,8 +131,9 @@ router.delete('/:sessionId', async (req: Request<SessionParams>, res: Response, 
 /**
  * @route GET /api/sessions/:sessionId/qr
  * @desc Get QR code for session (supports format query: image or raw)
+ * @scope sessions:read
  */
-router.get('/:sessionId/qr', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/:sessionId/qr', requireScope('sessions:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     const format = (req.query.format as 'image' | 'raw') || 'image';
     const result = await sessionService.getQRCodeWithFormat(req.userId!, req.params.sessionId, format);
@@ -174,8 +182,9 @@ router.get('/:sessionId/qr', async (req: Request<SessionParams>, res: Response, 
  * @example
  * // Raw QR for custom rendering
  * GET /sessions/:id/auth/qr?format=raw
+ * @scope sessions:read
  */
-router.get('/:sessionId/auth/qr', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/:sessionId/auth/qr', requireScope('sessions:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     const format = (req.query.format as 'image' | 'raw') || 'image';
     const wait = req.query.wait === 'true';
@@ -199,9 +208,11 @@ router.get('/:sessionId/auth/qr', async (req: Request<SessionParams>, res: Respo
 /**
  * @route POST /api/sessions/:sessionId/auth/request-code
  * @desc Request pairing code for phone number authentication (alternative to QR)
+ * @scope sessions:write
  */
 router.post(
   '/:sessionId/auth/request-code',
+  requireScope('sessions:write'),
   validateBody(requestCodeSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -226,8 +237,9 @@ router.post(
 /**
  * @route GET /api/sessions/:sessionId/me
  * @desc Get authenticated user information
+ * @scope sessions:read
  */
-router.get('/:sessionId/me', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/:sessionId/me', requireScope('sessions:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     const meInfo = await sessionService.getMeInfo(req.userId!, req.params.sessionId);
 
@@ -243,8 +255,9 @@ router.get('/:sessionId/me', async (req: Request<SessionParams>, res: Response, 
 /**
  * @route GET /api/sessions/:sessionId/status
  * @desc Get session status
+ * @scope sessions:read
  */
-router.get('/:sessionId/status', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/:sessionId/status', requireScope('sessions:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     const status = await sessionService.getStatus(req.userId!, req.params.sessionId);
 
@@ -260,8 +273,9 @@ router.get('/:sessionId/status', async (req: Request<SessionParams>, res: Respon
 /**
  * @route POST /api/sessions/:sessionId/restart
  * @desc Restart session
+ * @scope sessions:write
  */
-router.post('/:sessionId/restart', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.post('/:sessionId/restart', requireScope('sessions:write'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     const result = await sessionService.restart(req.userId!, req.params.sessionId);
 
@@ -278,8 +292,9 @@ router.post('/:sessionId/restart', async (req: Request<SessionParams>, res: Resp
 /**
  * @route POST /api/sessions/:sessionId/logout
  * @desc Logout session (disconnect WhatsApp)
+ * @scope sessions:write
  */
-router.post('/:sessionId/logout', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.post('/:sessionId/logout', requireScope('sessions:write'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     const result = await sessionService.logout(req.userId!, req.params.sessionId);
 
@@ -300,8 +315,9 @@ router.post('/:sessionId/logout', async (req: Request<SessionParams>, res: Respo
 /**
  * @route GET /api/sessions/:sessionId/webhooks
  * @desc Get all webhooks for session
+ * @scope webhooks:read
  */
-router.get('/:sessionId/webhooks', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/:sessionId/webhooks', requireScope('webhooks:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     const webhooks = await sessionService.getWebhooks(req.userId!, req.params.sessionId);
 
@@ -317,9 +333,11 @@ router.get('/:sessionId/webhooks', async (req: Request<SessionParams>, res: Resp
 /**
  * @route POST /api/sessions/:sessionId/webhooks
  * @desc Create webhook for session
+ * @scope webhooks:write
  */
 router.post(
   '/:sessionId/webhooks',
+  requireScope('webhooks:write'),
   validateBody(createWebhookSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -343,9 +361,11 @@ router.post(
 /**
  * @route PATCH /api/sessions/:sessionId/webhooks/:webhookId
  * @desc Update webhook
+ * @scope webhooks:write
  */
 router.patch(
   '/:sessionId/webhooks/:webhookId',
+  requireScope('webhooks:write'),
   validateBody(updateWebhookSchema),
   async (req: Request<WebhookParams>, res: Response, next: NextFunction) => {
     try {
@@ -370,9 +390,11 @@ router.patch(
 /**
  * @route DELETE /api/sessions/:sessionId/webhooks/:webhookId
  * @desc Delete webhook
+ * @scope webhooks:write
  */
 router.delete(
   '/:sessionId/webhooks/:webhookId',
+  requireScope('webhooks:write'),
   async (req: Request<WebhookParams>, res: Response, next: NextFunction) => {
     try {
       await sessionService.deleteWebhook(
@@ -394,9 +416,11 @@ router.delete(
 /**
  * @route POST /api/sessions/:sessionId/webhooks/:webhookId/test
  * @desc Test webhook
+ * @scope webhooks:write
  */
 router.post(
   '/:sessionId/webhooks/:webhookId/test',
+  requireScope('webhooks:write'),
   async (req: Request<WebhookParams>, res: Response, next: NextFunction) => {
     try {
       // Verify ownership
@@ -418,9 +442,11 @@ router.post(
 /**
  * @route GET /api/sessions/:sessionId/webhooks/:webhookId/logs
  * @desc Get webhook logs
+ * @scope webhooks:read
  */
 router.get(
   '/:sessionId/webhooks/:webhookId/logs',
+  requireScope('webhooks:read'),
   async (req: Request<WebhookParams>, res: Response, next: NextFunction) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;

@@ -2,7 +2,7 @@ import { Router, type Response, type NextFunction } from 'express';
 import type { Request, ParamsDictionary } from 'express-serve-static-core';
 import { whatsappService } from '../../services/whatsapp.service.js';
 import { sessionService } from '../../services/session.service.js';
-import { authenticateAny } from '../../middleware/auth.middleware.js';
+import { authenticateAny, requireScope } from '../../middleware/auth.middleware.js';
 import { validateBody } from '../../middleware/validate.middleware.js';
 import {
   createGroupSchema,
@@ -27,9 +27,11 @@ router.use(authenticateAny);
 /**
  * @route POST /api/sessions/:sessionId/groups
  * @desc Create a new WhatsApp group
+ * @scope groups:write
  */
 router.post(
   '/',
+  requireScope('groups:write'),
   validateBody(createGroupSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -56,8 +58,9 @@ router.post(
 /**
  * @route GET /api/sessions/:sessionId/groups
  * @desc Get all groups for session
+ * @scope groups:read
  */
-router.get('/', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/', requireScope('groups:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -75,8 +78,9 @@ router.get('/', async (req: Request<SessionParams>, res: Response, next: NextFun
 /**
  * @route GET /api/sessions/:sessionId/groups/:groupId
  * @desc Get group info by ID
+ * @scope groups:read
  */
-router.get('/:groupId', async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
+router.get('/:groupId', requireScope('groups:read'), async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -97,9 +101,11 @@ router.get('/:groupId', async (req: Request<GroupParams>, res: Response, next: N
 /**
  * @route PATCH /api/sessions/:sessionId/groups/:groupId
  * @desc Update group info (name, description)
+ * @scope groups:write
  */
 router.patch(
   '/:groupId',
+  requireScope('groups:write'),
   validateBody(updateGroupSchema),
   async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
     try {
@@ -125,9 +131,11 @@ router.patch(
 /**
  * @route PATCH /api/sessions/:sessionId/groups/:groupId/settings
  * @desc Update group settings (announce, restrict)
+ * @scope groups:write
  */
 router.patch(
   '/:groupId/settings',
+  requireScope('groups:write'),
   validateBody(updateGroupSettingsSchema),
   async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
     try {
@@ -152,8 +160,9 @@ router.patch(
 /**
  * @route GET /api/sessions/:sessionId/groups/:groupId/participants
  * @desc Get group participants
+ * @scope groups:read
  */
-router.get('/:groupId/participants', async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
+router.get('/:groupId/participants', requireScope('groups:read'), async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -174,9 +183,11 @@ router.get('/:groupId/participants', async (req: Request<GroupParams>, res: Resp
 /**
  * @route POST /api/sessions/:sessionId/groups/:groupId/participants/add
  * @desc Add participants to group
+ * @scope groups:write
  */
 router.post(
   '/:groupId/participants/add',
+  requireScope('groups:write'),
   validateBody(manageParticipantsSchema),
   async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
     try {
@@ -202,9 +213,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/groups/:groupId/participants/remove
  * @desc Remove participants from group
+ * @scope groups:write
  */
 router.post(
   '/:groupId/participants/remove',
+  requireScope('groups:write'),
   validateBody(manageParticipantsSchema),
   async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
     try {
@@ -230,9 +243,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/groups/:groupId/participants/promote
  * @desc Promote participants to admin
+ * @scope groups:write
  */
 router.post(
   '/:groupId/participants/promote',
+  requireScope('groups:write'),
   validateBody(manageParticipantsSchema),
   async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
     try {
@@ -258,9 +273,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/groups/:groupId/participants/demote
  * @desc Demote participants from admin
+ * @scope groups:write
  */
 router.post(
   '/:groupId/participants/demote',
+  requireScope('groups:write'),
   validateBody(manageParticipantsSchema),
   async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
     try {
@@ -286,8 +303,9 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/groups/:groupId/leave
  * @desc Leave a group
+ * @scope groups:write
  */
-router.post('/:groupId/leave', async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
+router.post('/:groupId/leave', requireScope('groups:write'), async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -308,8 +326,9 @@ router.post('/:groupId/leave', async (req: Request<GroupParams>, res: Response, 
 /**
  * @route GET /api/sessions/:sessionId/groups/:groupId/invite-code
  * @desc Get group invite link
+ * @scope groups:read
  */
-router.get('/:groupId/invite-code', async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
+router.get('/:groupId/invite-code', requireScope('groups:read'), async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -333,8 +352,9 @@ router.get('/:groupId/invite-code', async (req: Request<GroupParams>, res: Respo
 /**
  * @route POST /api/sessions/:sessionId/groups/:groupId/revoke-invite
  * @desc Revoke and regenerate group invite link
+ * @scope groups:write
  */
-router.post('/:groupId/revoke-invite', async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
+router.post('/:groupId/revoke-invite', requireScope('groups:write'), async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -359,8 +379,9 @@ router.post('/:groupId/revoke-invite', async (req: Request<GroupParams>, res: Re
 /**
  * @route POST /api/sessions/:sessionId/groups/join
  * @desc Join a group via invite code
+ * @scope groups:write
  */
-router.post('/join/:inviteCode', async (req: Request<SessionParams & { inviteCode: string }>, res: Response, next: NextFunction) => {
+router.post('/join/:inviteCode', requireScope('groups:write'), async (req: Request<SessionParams & { inviteCode: string }>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -382,8 +403,9 @@ router.post('/join/:inviteCode', async (req: Request<SessionParams & { inviteCod
 /**
  * @route PATCH /api/sessions/:sessionId/groups/:groupId/picture
  * @desc Update group profile picture
+ * @scope groups:write
  */
-router.patch('/:groupId/picture', async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
+router.patch('/:groupId/picture', requireScope('groups:write'), async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 

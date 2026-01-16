@@ -5,7 +5,7 @@ import axios from 'axios';
 import { whatsappService } from '../services/whatsapp.service.js';
 import { sessionService } from '../services/session.service.js';
 import { prisma } from '../lib/prisma.js';
-import { authenticateAny } from '../middleware/auth.middleware.js';
+import { authenticateAny, requireScope } from '../middleware/auth.middleware.js';
 import { validateBody } from '../middleware/validate.middleware.js';
 import { messageLimiter } from '../middleware/rate-limit.middleware.js';
 import { sendMessageSchema, sendMediaSchema, messageQuerySchema } from '../schemas/index.js';
@@ -31,9 +31,11 @@ router.use(authenticateAny);
 /**
  * @route POST /api/sessions/:sessionId/messages/send
  * @desc Send a text message
+ * @scope messages:send
  */
 router.post(
   '/:sessionId/messages/send',
+  requireScope('messages:send'),
   messageLimiter,
   validateBody(sendMessageSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
@@ -68,9 +70,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/messages/send-media
  * @desc Send a media message
+ * @scope messages:send, media:write
  */
 router.post(
   '/:sessionId/messages/send-media',
+  requireScope('messages:send', 'media:write'),
   messageLimiter,
   validateBody(sendMediaSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
@@ -131,8 +135,9 @@ router.post(
 /**
  * @route GET /api/sessions/:sessionId/messages
  * @desc Get messages for session
+ * @scope messages:read
  */
-router.get('/:sessionId/messages', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/:sessionId/messages', requireScope('messages:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     // Verify session ownership
     await sessionService.getById(req.userId!, req.params.sessionId);
@@ -192,8 +197,9 @@ router.get('/:sessionId/messages', async (req: Request<SessionParams>, res: Resp
 /**
  * @route GET /api/sessions/:sessionId/chats
  * @desc Get chats for session
+ * @scope messages:read
  */
-router.get('/:sessionId/chats', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/:sessionId/chats', requireScope('messages:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     // Verify session ownership
     await sessionService.getById(req.userId!, req.params.sessionId);
@@ -216,8 +222,9 @@ router.get('/:sessionId/chats', async (req: Request<SessionParams>, res: Respons
 /**
  * @route GET /api/sessions/:sessionId/chats/live
  * @desc Get live chats from WhatsApp
+ * @scope messages:read
  */
-router.get('/:sessionId/chats/live', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/:sessionId/chats/live', requireScope('messages:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     // Verify session ownership
     await sessionService.getById(req.userId!, req.params.sessionId);
@@ -245,8 +252,9 @@ router.get('/:sessionId/chats/live', async (req: Request<SessionParams>, res: Re
 /**
  * @route GET /api/sessions/:sessionId/contacts
  * @desc Get contacts for session
+ * @scope contacts:read
  */
-router.get('/:sessionId/contacts', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/:sessionId/contacts', requireScope('contacts:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     // Verify session ownership
     await sessionService.getById(req.userId!, req.params.sessionId);
@@ -268,8 +276,9 @@ router.get('/:sessionId/contacts', async (req: Request<SessionParams>, res: Resp
 /**
  * @route GET /api/sessions/:sessionId/contacts/live
  * @desc Get live contacts from WhatsApp
+ * @scope contacts:read
  */
-router.get('/:sessionId/contacts/live', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/:sessionId/contacts/live', requireScope('contacts:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     // Verify session ownership
     await sessionService.getById(req.userId!, req.params.sessionId);
@@ -299,9 +308,11 @@ router.get('/:sessionId/contacts/live', async (req: Request<SessionParams>, res:
 /**
  * @route GET /api/sessions/:sessionId/check-number/:number
  * @desc Check if a number is registered on WhatsApp
+ * @scope contacts:read
  */
 router.get(
   '/:sessionId/check-number/:number',
+  requireScope('contacts:read'),
   async (req: Request<NumberParams>, res: Response, next: NextFunction) => {
     try {
       // Verify session ownership
@@ -328,9 +339,11 @@ router.get(
 /**
  * @route GET /api/sessions/:sessionId/profile-pic/:contactId
  * @desc Get profile picture URL for a contact
+ * @scope contacts:read
  */
 router.get(
   '/:sessionId/profile-pic/:contactId',
+  requireScope('contacts:read'),
   async (req: Request<ContactParams>, res: Response, next: NextFunction) => {
     try {
       // Verify session ownership

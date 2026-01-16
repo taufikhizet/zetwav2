@@ -2,7 +2,7 @@ import { Router, type Response, type NextFunction } from 'express';
 import type { Request, ParamsDictionary } from 'express-serve-static-core';
 import { whatsappService } from '../../services/whatsapp.service.js';
 import { sessionService } from '../../services/session.service.js';
-import { authenticateAny } from '../../middleware/auth.middleware.js';
+import { authenticateAny, requireScope } from '../../middleware/auth.middleware.js';
 import { validateBody } from '../../middleware/validate.middleware.js';
 import { postTextStatusSchema, postMediaStatusSchema, deleteStatusSchema } from '../../schemas/status.schema.js';
 
@@ -26,8 +26,9 @@ router.use(authenticateAny);
 /**
  * @route GET /api/sessions/:sessionId/status
  * @desc Get my status updates
+ * @scope status:read
  */
-router.get('/', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/', requireScope('status:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -45,8 +46,9 @@ router.get('/', async (req: Request<SessionParams>, res: Response, next: NextFun
 /**
  * @route GET /api/sessions/:sessionId/status/contacts
  * @desc Get status updates from contacts
+ * @scope status:read
  */
-router.get('/contacts', async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+router.get('/contacts', requireScope('status:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -64,8 +66,9 @@ router.get('/contacts', async (req: Request<SessionParams>, res: Response, next:
 /**
  * @route GET /api/sessions/:sessionId/status/contact/:contactId
  * @desc Get status updates from a specific contact
+ * @scope status:read
  */
-router.get('/contact/:contactId', async (req: Request<ContactParams>, res: Response, next: NextFunction) => {
+router.get('/contact/:contactId', requireScope('status:read'), async (req: Request<ContactParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -86,9 +89,11 @@ router.get('/contact/:contactId', async (req: Request<ContactParams>, res: Respo
 /**
  * @route POST /api/sessions/:sessionId/status/text
  * @desc Post a text status update
+ * @scope status:write
  */
 router.post(
   '/text',
+  requireScope('status:write'),
   validateBody(postTextStatusSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -115,9 +120,11 @@ router.post(
 /**
  * @route POST /api/sessions/:sessionId/status/media
  * @desc Post a media status update (image/video)
+ * @scope status:write
  */
 router.post(
   '/media',
+  requireScope('status:write'),
   validateBody(postMediaStatusSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
@@ -145,8 +152,9 @@ router.post(
 /**
  * @route DELETE /api/sessions/:sessionId/status/:statusId
  * @desc Delete a status update
+ * @scope status:write
  */
-router.delete('/:statusId', async (req: Request<StatusParams>, res: Response, next: NextFunction) => {
+router.delete('/:statusId', requireScope('status:write'), async (req: Request<StatusParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
@@ -167,8 +175,9 @@ router.delete('/:statusId', async (req: Request<StatusParams>, res: Response, ne
 /**
  * @route POST /api/sessions/:sessionId/status/:statusId/seen
  * @desc Mark a status as seen
+ * @scope status:write
  */
-router.post('/:statusId/seen', async (req: Request<StatusParams>, res: Response, next: NextFunction) => {
+router.post('/:statusId/seen', requireScope('status:write'), async (req: Request<StatusParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
 
