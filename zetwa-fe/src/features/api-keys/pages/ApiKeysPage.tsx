@@ -10,11 +10,11 @@
 
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Info, Search, Filter, Loader2, RefreshCw } from 'lucide-react'
+import { Plus, Search, Filter, Loader2, RefreshCw, LayoutGrid, List } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -56,6 +56,8 @@ export function ApiKeysPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all')
 
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+
   // Filter and search logic
   const filteredKeys = useMemo(() => {
     return apiKeys.filter((key) => {
@@ -94,122 +96,119 @@ export function ApiKeysPage() {
       {/* Stats Cards */}
       {stats && <ApiKeyStatsCards stats={stats} />}
 
-      {/* Info Card */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
-            <Info className="h-5 w-5" />
-            How API Keys Work
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="space-y-1">
-              <p className="font-medium text-blue-800 dark:text-blue-200">🔐 Secure Access</p>
-              <p className="text-blue-600 dark:text-blue-400">
-                API keys are hashed and securely stored. You can only see the full key once
-                when creating or regenerating.
-              </p>
+      {/* Filters & Actions */}
+      {apiKeys.length > 0 && (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card p-4 rounded-xl shadow-sm">
+          <div className="flex items-center gap-3 flex-1 max-w-lg">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search keys..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 shadow-inner"
+              />
             </div>
-            <div className="space-y-1">
-              <p className="font-medium text-blue-800 dark:text-blue-200">🎯 Granular Permissions</p>
-              <p className="text-blue-600 dark:text-blue-400">
-                Assign specific scopes to each key. Grant only the permissions your
-                application needs.
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="font-medium text-blue-800 dark:text-blue-200">📊 Usage Tracking</p>
-              <p className="text-blue-600 dark:text-blue-400">
-                Monitor API usage with request counts and last access information for each
-                key.
-              </p>
-            </div>
+            <Select value={statusFilter} onValueChange={(value: FilterStatus) => setStatusFilter(value)}>
+              <SelectTrigger className="w-[160px] shadow-inner">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </CardContent>
-      </Card>
+          
+          <div className="flex items-center gap-2">
+             <Button onClick={() => navigate('/dashboard/api-keys/new')} size="sm" className="rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90">
+                <Plus className="mr-2 h-4 w-4" />
+                New API Key
+             </Button>
+             <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => refetch()} 
+                disabled={isRefetching}
+                className="text-muted-foreground hover:text-foreground"
+             >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+                Refresh
+             </Button>
+              <div className="h-8 w-px bg-border mx-1" />
+              <div className="flex items-center bg-gray-50/50 dark:bg-secondary/20 rounded-lg p-1 shadow-inner">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                 size="icon"
+                 className="h-8 w-8 rounded-md shadow-none"
+                 onClick={() => setViewMode('grid')}
+               >
+                 <LayoutGrid className="h-4 w-4" />
+               </Button>
+               <Button
+                 variant={viewMode === 'list' ? 'default' : 'ghost'}
+                 size="icon"
+                 className="h-8 w-8 rounded-md shadow-none"
+                 onClick={() => setViewMode('list')}
+               >
+                 <List className="h-4 w-4" />
+               </Button>
+             </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       {apiKeys.length === 0 ? (
         <ApiKeyEmptyState onCreateClick={() => navigate('/dashboard/api-keys/new')} />
       ) : (
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <CardTitle>Your API Keys</CardTitle>
-                <CardDescription>
-                  {filteredKeys.length} of {apiKeys.length} keys
-                </CardDescription>
-              </div>
-
-              {/* Search and Filter */}
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search keys..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 w-full sm:w-[200px]"
-                  />
-                </div>
-                <Select
-                  value={statusFilter}
-                  onValueChange={(value: FilterStatus) => setStatusFilter(value)}
-                >
-                  <SelectTrigger className="w-full sm:w-[140px]">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <div className="flex items-center gap-2">
-                   <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isRefetching}>
-                      <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-                   </Button>
-                   <Button onClick={() => navigate('/dashboard/api-keys/new')} size="sm">
-                      <Plus className="mr-2 h-4 w-4" /> New
-                   </Button>
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            {filteredKeys.length === 0 ? (
-              <div className="text-center py-12">
-                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <>
+          {filteredKeys.length === 0 ? (
+            <Card className="border-dashed border-2 bg-transparent shadow-none">
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Search className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium">No keys found</h3>
                 <p className="text-muted-foreground">
                   Try adjusting your search or filter criteria
                 </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredKeys.map((key) => (
-                  <ApiKeyCard
-                    key={key.id}
-                    apiKey={key}
-                    onToggleActive={(id, isActive) => {
-                      updateApiKeyMutation.mutate({ id, data: { isActive } })
-                    }}
-                    onEditScopes={setEditScopesKey}
-                    onDelete={setDeleteKey}
-                    onRegenerate={setRegenerateKey}
-                    isUpdating={updateApiKeyMutation.isPending}
-                  />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                <Button
+                  variant="outline"
+                  className="mt-6"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setStatusFilter('all')
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className={
+              viewMode === 'grid'
+                ? "grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
+                : "grid gap-4"
+            }>
+              {filteredKeys.map((key) => (
+                <ApiKeyCard
+                  key={key.id}
+                  apiKey={key}
+                  viewMode={viewMode}
+                  onToggleActive={(id, isActive) => {
+                    updateApiKeyMutation.mutate({ id, data: { isActive } })
+                  }}
+                  onEditScopes={setEditScopesKey}
+                  onDelete={setDeleteKey}
+                  onRegenerate={setRegenerateKey}
+                  isUpdating={updateApiKeyMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Dialogs */}

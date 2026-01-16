@@ -8,7 +8,6 @@ import {
   Clock,
   Calendar,
   Wifi,
-  WifiOff,
   Smartphone,
   Globe,
   Key,
@@ -24,21 +23,15 @@ import {
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { cn, formatRelativeTime, formatDate } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 
 import type { Session } from '@/features/sessions/api/session.api'
-import { getSessionStatus } from './SessionCard'
 
 interface SessionInfoTabProps {
   session: Session
 }
 
 export function SessionInfoTab({ session }: SessionInfoTabProps) {
-  const status = session.liveStatus || session.status
-  const statusConfig = getSessionStatus(status)
-  const StatusIcon = statusConfig.icon
-  const isConnected = session.isOnline || status === 'CONNECTED' || status === 'WORKING'
-
   const InfoRow = ({ icon: Icon, label, value, badge, mono }: {
     icon: typeof Phone
     label: string
@@ -60,228 +53,185 @@ export function SessionInfoTab({ session }: SessionInfoTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Connection Status */}
-      <Card className={cn(
-        isConnected
-          ? "border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-950/10"
-          : "border-gray-200 dark:border-gray-800"
-      )}>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            {isConnected ? (
-              <Wifi className="h-5 w-5 text-green-600" />
-            ) : (
-              <WifiOff className="h-5 w-5 text-muted-foreground" />
-            )}
-            Connection Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={cn("px-2.5 py-0.5 rounded-full text-sm font-medium flex items-center gap-1.5", statusConfig.color)}>
-                <StatusIcon className={cn("h-4 w-4", (statusConfig as { animate?: boolean }).animate && "animate-spin")} />
-                {statusConfig.label}
-              </div>
-            </div>
-            {session.connectedAt && (
-              <div className="text-right text-sm text-muted-foreground">
-                <p>Connected since</p>
-                <p className="font-medium">{formatRelativeTime(session.connectedAt)}</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Session Details */}
-      <Card>
+      {/* Merged Info Card */}
+      <Card className="border-none bg-white dark:bg-secondary/20 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
-            Session Details
+            Session Information
           </CardTitle>
           <CardDescription>
-            Core session information and identifiers
+            Overview of session details, configuration, and statistics
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-0 divide-y">
-          <InfoRow icon={Hash} label="Session ID" value={session.id} mono />
-          <InfoRow icon={Smartphone} label="Session Name" value={session.name} />
-          {session.description && (
-            <InfoRow icon={FileText} label="Description" value={session.description} />
-          )}
-          <InfoRow icon={Calendar} label="Created" value={session.createdAt ? formatDate(session.createdAt) : null} />
-        </CardContent>
-      </Card>
+        <CardContent className="space-y-6">
+          
+          {/* Session Details Section */}
+          <div>
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+              <Smartphone className="h-4 w-4" /> Basic Details
+            </h4>
+            <div className="space-y-0 divide-y rounded-lg border bg-gray-50/50 dark:bg-muted/30 shadow-inner p-4">
+              <InfoRow icon={Hash} label="Session ID" value={session.id} mono />
+              <InfoRow icon={Smartphone} label="Session Name" value={session.name} />
+              {session.description && (
+                <InfoRow icon={FileText} label="Description" value={session.description} />
+              )}
+              <InfoRow icon={Calendar} label="Created" value={session.createdAt ? formatDate(session.createdAt) : null} />
+            </div>
+          </div>
 
-      {/* WhatsApp Info */}
-      {(session.phoneNumber || session.pushName) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Phone className="h-5 w-5" />
-              WhatsApp Account
-            </CardTitle>
-            <CardDescription>
-              Connected WhatsApp account information
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-0 divide-y">
-            {session.phoneNumber && (
-              <InfoRow icon={Phone} label="Phone Number" value={session.phoneNumber} />
-            )}
-            {session.pushName && (
-              <InfoRow icon={User} label="Display Name" value={session.pushName} />
-            )}
-            {session.connectedAt && (
-              <InfoRow icon={Clock} label="Connected At" value={formatDate(session.connectedAt)} />
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Configuration Summary */}
-      {session.config && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              Configuration
-            </CardTitle>
-            <CardDescription>
-              Current session configuration overview
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-0 divide-y">
-            <InfoRow 
-              icon={Globe} 
-              label="Proxy" 
-              value={session.config.proxy?.server || 'Not configured'}
-              badge={session.config.proxy ? { label: 'Enabled', variant: 'success' } : undefined}
-            />
-            <InfoRow 
-              icon={Smartphone} 
-              label="Device Name" 
-              value={session.config.client?.deviceName || 'Default'}
-            />
-            <InfoRow 
-              icon={Smartphone} 
-              label="Browser Name" 
-              value={session.config.client?.browserName || 'Default'}
-            />
-            <InfoRow 
-              icon={Key} 
-              label="Debug Mode" 
-              value={session.config.debug ? 'Enabled' : 'Disabled'}
-              badge={session.config.debug ? { label: 'On', variant: 'destructive' } : undefined}
-            />
-            {/* Ignore settings */}
-            {session.config.ignore && (
-              <>
-                {session.config.ignore.status && (
-                  <InfoRow 
-                    icon={Radio} 
-                    label="Ignore Status" 
-                    value="Enabled"
-                    badge={{ label: 'Filtered', variant: 'secondary' }}
-                  />
+          {/* WhatsApp Info Section */}
+          {(session.phoneNumber || session.pushName) && (
+            <div>
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+                <Phone className="h-4 w-4" /> WhatsApp Account
+              </h4>
+              <div className="space-y-0 divide-y rounded-lg border bg-background/50">
+                {session.phoneNumber && (
+                  <InfoRow icon={Phone} label="Phone Number" value={session.phoneNumber} />
                 )}
-                {session.config.ignore.groups && (
-                  <InfoRow 
-                    icon={Users} 
-                    label="Ignore Groups" 
-                    value="Enabled"
-                    badge={{ label: 'Filtered', variant: 'secondary' }}
-                  />
+                {session.pushName && (
+                  <InfoRow icon={User} label="Display Name" value={session.pushName} />
                 )}
-                {session.config.ignore.channels && (
-                  <InfoRow 
-                    icon={Tv} 
-                    label="Ignore Channels" 
-                    value="Enabled"
-                    badge={{ label: 'Filtered', variant: 'secondary' }}
-                  />
+                {session.connectedAt && (
+                  <InfoRow icon={Clock} label="Connected At" value={formatDate(session.connectedAt)} />
                 )}
-                {session.config.ignore.broadcast && (
-                  <InfoRow 
-                    icon={MessageSquare} 
-                    label="Ignore Broadcast" 
-                    value="Enabled"
-                    badge={{ label: 'Filtered', variant: 'secondary' }}
-                  />
-                )}
-              </>
-            )}
-            
-            {/* NOWEB Engine Config */}
-            {session.config.noweb && (
-              <>
-                <InfoRow 
-                  icon={Database} 
-                  label="Store Enabled" 
-                  value={session.config.noweb.store?.enabled ? 'Yes' : 'No'}
-                  badge={session.config.noweb.store?.enabled ? { label: 'On', variant: 'success' } : undefined}
-                />
-                <InfoRow 
-                  icon={Loader2} 
-                  label="Full Sync" 
-                  value={session.config.noweb.store?.fullSync ? 'Yes' : 'No'}
-                  badge={session.config.noweb.store?.fullSync ? { label: 'On', variant: 'success' } : undefined}
-                />
-                <InfoRow 
-                  icon={Wifi} 
-                  label="Mark Online" 
-                  value={session.config.noweb.markOnline ? 'Yes' : 'No'}
-                  badge={session.config.noweb.markOnline ? { label: 'On', variant: 'success' } : undefined}
-                />
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Counts */}
-      {session._count && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Statistics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="p-4 rounded-lg bg-muted/30">
-                <p className="text-2xl font-bold">{session._count.webhooks || 0}</p>
-                <p className="text-xs text-muted-foreground">Webhooks</p>
-              </div>
-              <div className="p-4 rounded-lg bg-muted/30">
-                <p className="text-2xl font-bold">{session._count.messages || 0}</p>
-                <p className="text-xs text-muted-foreground">Messages</p>
-              </div>
-              <div className="p-4 rounded-lg bg-muted/30">
-                <p className="text-2xl font-bold">{session._count.chats || 0}</p>
-                <p className="text-xs text-muted-foreground">Chats</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
 
-      {/* Metadata */}
-      {session.config?.metadata && Object.keys(session.config.metadata).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Custom Metadata</CardTitle>
-            <CardDescription>
-              Key-value pairs included in webhook payloads
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <pre className="p-3 rounded-lg bg-muted text-sm font-mono overflow-x-auto shadow-inner">
-              {JSON.stringify(session.config.metadata, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
+          {/* Configuration Section */}
+          {session.config && (
+            <div>
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+                <Globe className="h-4 w-4" /> Configuration
+              </h4>
+              <div className="space-y-0 divide-y rounded-lg border bg-gray-50/50 dark:bg-muted/30 shadow-inner p-4">
+                <InfoRow 
+                  icon={Globe} 
+                  label="Proxy" 
+                  value={session.config.proxy?.server || 'Not configured'}
+                  badge={session.config.proxy ? { label: 'Enabled', variant: 'success' } : undefined}
+                />
+                <InfoRow 
+                  icon={Smartphone} 
+                  label="Device Name" 
+                  value={session.config.client?.deviceName || 'Default'}
+                />
+                <InfoRow 
+                  icon={Smartphone} 
+                  label="Browser Name" 
+                  value={session.config.client?.browserName || 'Default'}
+                />
+                <InfoRow 
+                  icon={Key} 
+                  label="Debug Mode" 
+                  value={session.config.debug ? 'Enabled' : 'Disabled'}
+                  badge={session.config.debug ? { label: 'On', variant: 'destructive' } : undefined}
+                />
+                {/* Ignore settings */}
+                {session.config.ignore && (
+                  <>
+                    {session.config.ignore.status && (
+                      <InfoRow 
+                        icon={Radio} 
+                        label="Ignore Status" 
+                        value="Enabled"
+                        badge={{ label: 'Filtered', variant: 'secondary' }}
+                      />
+                    )}
+                    {session.config.ignore.groups && (
+                      <InfoRow 
+                        icon={Users} 
+                        label="Ignore Groups" 
+                        value="Enabled"
+                        badge={{ label: 'Filtered', variant: 'secondary' }}
+                      />
+                    )}
+                    {session.config.ignore.channels && (
+                      <InfoRow 
+                        icon={Tv} 
+                        label="Ignore Channels" 
+                        value="Enabled"
+                        badge={{ label: 'Filtered', variant: 'secondary' }}
+                      />
+                    )}
+                    {session.config.ignore.broadcast && (
+                      <InfoRow 
+                        icon={MessageSquare} 
+                        label="Ignore Broadcast" 
+                        value="Enabled"
+                        badge={{ label: 'Filtered', variant: 'secondary' }}
+                      />
+                    )}
+                  </>
+                )}
+                
+                {/* NOWEB Engine Config */}
+                {session.config.noweb && (
+                  <>
+                    <InfoRow 
+                      icon={Database} 
+                      label="Store Enabled" 
+                      value={session.config.noweb.store?.enabled ? 'Yes' : 'No'}
+                      badge={session.config.noweb.store?.enabled ? { label: 'On', variant: 'success' } : undefined}
+                    />
+                    <InfoRow 
+                      icon={Loader2} 
+                      label="Full Sync" 
+                      value={session.config.noweb.store?.fullSync ? 'Yes' : 'No'}
+                      badge={session.config.noweb.store?.fullSync ? { label: 'On', variant: 'success' } : undefined}
+                    />
+                    <InfoRow 
+                      icon={Wifi} 
+                      label="Mark Online" 
+                      value={session.config.noweb.markOnline ? 'Yes' : 'No'}
+                      badge={session.config.noweb.markOnline ? { label: 'On', variant: 'success' } : undefined}
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Statistics Section */}
+          {session._count && (
+            <div>
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+                <Hash className="h-4 w-4" /> Statistics
+              </h4>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="p-4 rounded-lg bg-gray-50/50 dark:bg-muted/30 shadow-inner border border-gray-100 dark:border-gray-800">
+                  <p className="text-2xl font-bold">{session._count.webhooks || 0}</p>
+                  <p className="text-xs text-muted-foreground">Webhooks</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gray-50/50 dark:bg-muted/30 shadow-inner border border-gray-100 dark:border-gray-800">
+                  <p className="text-2xl font-bold">{session._count.messages || 0}</p>
+                  <p className="text-xs text-muted-foreground">Messages</p>
+                </div>
+                <div className="p-4 rounded-lg bg-gray-50/50 dark:bg-muted/30 shadow-inner border border-gray-100 dark:border-gray-800">
+                  <p className="text-2xl font-bold">{session._count.chats || 0}</p>
+                  <p className="text-xs text-muted-foreground">Chats</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Metadata Section */}
+          {session.config?.metadata && Object.keys(session.config.metadata).length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+                <FileText className="h-4 w-4" /> Custom Metadata
+              </h4>
+              <pre className="p-3 rounded-lg bg-muted text-sm font-mono overflow-x-auto shadow-inner">
+                {JSON.stringify(session.config.metadata, null, 2)}
+              </pre>
+            </div>
+          )}
+
+        </CardContent>
+      </Card>
     </div>
   )
 }

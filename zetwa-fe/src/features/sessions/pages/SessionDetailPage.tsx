@@ -106,7 +106,7 @@ export default function SessionDetailPage() {
         {/* Left Column: Status & Quick Info */}
         <div className="space-y-6">
           {/* QR/Auth Section - Always show when not connected */}
-          {!isConnected ? (
+          {!isConnected && (
             <QRCodeSection
               sessionId={sessionId!}
               socketQR={qrCode}
@@ -121,16 +121,6 @@ export default function SessionDetailPage() {
               onStart={() => restartMutation.mutate()}
               isStartPending={restartMutation.isPending}
             />
-          ) : (
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-2xl p-6 border border-green-100 dark:border-green-900/50 text-center shadow-sm">
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-              </div>
-              <h3 className="font-bold text-lg mb-1 text-green-900 dark:text-green-100">Session Active</h3>
-              <p className="text-sm text-green-700/80 dark:text-green-300/80">
-                Connected to WhatsApp since {new Date(session.updatedAt || session.createdAt).toLocaleDateString()}
-              </p>
-            </div>
           )}
 
           {/* Session Info Summary */}
@@ -141,9 +131,19 @@ export default function SessionDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="settings" className="w-full">
             <div className="flex items-center justify-between mb-6">
-              <TabsList className="grid w-full max-w-md grid-cols-2 p-1 bg-muted/50 rounded-xl">
-                <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Settings</TabsTrigger>
-                <TabsTrigger value="webhooks" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Webhooks</TabsTrigger>
+              <TabsList className="grid w-full max-w-md grid-cols-2 p-1 bg-white dark:bg-secondary/20 rounded-xl">
+                <TabsTrigger 
+                  value="settings" 
+                  className="rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
+                >
+                  Settings
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="webhooks" 
+                  className="rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
+                >
+                  Webhooks
+                </TabsTrigger>
               </TabsList>
             </div>
 

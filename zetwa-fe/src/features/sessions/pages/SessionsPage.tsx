@@ -211,11 +211,11 @@ export default function SessionsPage() {
                 placeholder="Search sessions..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 border-none bg-secondary/50 focus-visible:ring-0 focus-visible:bg-background transition-colors"
+                className="pl-10 shadow-inner"
               />
             </div>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-              <SelectTrigger className="w-[160px] border-none bg-secondary/50">
+              <SelectTrigger className="w-[160px] shadow-inner">
                 <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
@@ -244,7 +244,7 @@ export default function SessionsPage() {
               Refresh
             </Button>
             <div className="h-8 w-px bg-border mx-1" />
-            <div className="flex items-center bg-secondary/50 rounded-lg p-1">
+            <div className="flex items-center bg-gray-50/50 dark:bg-secondary/20 rounded-lg p-1 shadow-inner">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="icon"
@@ -313,6 +313,7 @@ export default function SessionsPage() {
             <SessionCard
               key={session.id}
               session={session}
+              viewMode={viewMode}
               onRestart={(id) => restartMutation.mutate(id)}
               onLogout={(id) => logoutMutation.mutate(id)}
               onDelete={(s) => setDeleteSession(s)}

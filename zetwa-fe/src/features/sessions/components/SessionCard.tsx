@@ -54,6 +54,7 @@ interface SessionCardProps {
   onDelete: (session: Session) => void
   isRestartPending?: boolean
   isLogoutPending?: boolean
+  viewMode?: 'grid' | 'list'
 }
 
 export function SessionCard({
@@ -63,6 +64,7 @@ export function SessionCard({
   onDelete,
   isRestartPending,
   isLogoutPending,
+  viewMode = 'grid',
 }: SessionCardProps) {
   const status = session.liveStatus || session.status
   const statusConfig = getSessionStatus(status)
@@ -72,13 +74,110 @@ export function SessionCard({
   // Safe access for optional animate property
   const isAnimating = 'animate' in statusConfig && statusConfig.animate
 
+  if (viewMode === 'list') {
+    return (
+      <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
+        <div className="flex flex-col sm:flex-row items-center p-4 gap-4">
+          {/* Icon & Basic Info */}
+          <div className="flex items-center gap-4 flex-1 w-full sm:w-auto">
+             <div className={cn(
+                 "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors",
+                 isOnline ? "bg-emerald-50 text-emerald-600 shadow-md shadow-emerald-500/20" : "bg-gray-50/50 text-muted-foreground shadow-inner"
+             )}>
+                 {session.profilePicUrl ? (
+                     <img 
+                         src={session.profilePicUrl} 
+                         alt={session.name} 
+                         className="h-full w-full rounded-xl object-cover" 
+                     />
+                 ) : (
+                     <Smartphone className="h-6 w-6" />
+                 )}
+                 {isOnline && (
+                     <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
+                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                         <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-white"></span>
+                     </span>
+                 )}
+             </div>
+             <div className="space-y-1 min-w-0">
+                 <h3 className="font-bold text-base leading-none tracking-tight text-gray-900 truncate">{session.name}</h3>
+                 <p className="text-xs text-muted-foreground truncate">{session.phoneNumber || 'No phone connected'}</p>
+             </div>
+          </div>
+
+          {/* Status Badge */}
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+             <div className={cn("px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap", statusConfig.color)}>
+                 <StatusIcon className={cn("h-3 w-3", isAnimating && "animate-spin")} />
+                 {statusConfig.label}
+             </div>
+             {session.updatedAt && (
+                 <div className="flex items-center text-xs text-gray-400 sm:hidden" title={new Date(session.updatedAt).toLocaleString()}>
+                     <Clock className="mr-1 h-3 w-3" />
+                     {formatRelativeTime(session.updatedAt)}
+                 </div>
+             )}
+          </div>
+
+          {/* Stats - Hidden on very small screens, visible on md+ */}
+          <div className="hidden md:flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-1.5" title="Webhooks">
+              <Webhook className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{session._count?.webhooks || 0}</span>
+            </div>
+            <div className="flex items-center gap-1.5" title="Messages">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{session._count?.messages || 0}</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 border-t sm:border-t-0 pt-2 sm:pt-0">
+             <Button className="flex-1 sm:flex-none h-9 text-xs font-semibold shadow-sm" variant={isOnline ? "outline" : "default"} asChild>
+                <Link to={`/dashboard/sessions/${session.id}`}>
+                    {isOnline ? 'Manage' : 'Connect'}
+                </Link>
+             </Button>
+             
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-full">
+                        <MoreVertical className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl border-gray-100 p-1">
+                    <DropdownMenuItem onClick={() => onRestart(session.id)} disabled={isRestartPending} className="cursor-pointer rounded-lg px-2 py-1.5 text-xs">
+                        <RefreshCw className={cn("mr-2 h-3.5 w-3.5", isRestartPending && "animate-spin")} /> 
+                        Restart
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onLogout(session.id)} disabled={isLogoutPending} className="cursor-pointer rounded-lg px-2 py-1.5 text-xs">
+                        <LogOut className="mr-2 h-3.5 w-3.5" /> 
+                        Logout
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-1" />
+                    <DropdownMenuItem 
+                        onClick={() => onDelete(session)} 
+                        className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer rounded-lg px-2 py-1.5 text-xs"
+                    >
+                        <Trash2 className="mr-2 h-3.5 w-3.5" /> 
+                        Delete
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </Card>
+    )
+  }
+
   return (
     <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2 p-6">
          <div className="flex items-center gap-4">
             <div className={cn(
-                "relative flex h-14 w-14 items-center justify-center rounded-2xl transition-colors shadow-sm",
-                isOnline ? "bg-emerald-50 text-emerald-600" : "bg-gray-50 text-gray-400"
+                "relative flex h-14 w-14 items-center justify-center rounded-2xl transition-colors",
+                isOnline ? "bg-emerald-50 text-emerald-600 shadow-md shadow-emerald-500/20" : "bg-gray-50/50 text-muted-foreground shadow-inner"
             )}>
                 {session.profilePicUrl ? (
                     <img 
