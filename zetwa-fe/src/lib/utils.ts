@@ -61,3 +61,40 @@ export function getStatusText(status: string) {
   }
   return texts[status] || status
 }
+
+/**
+ * Extract error message from API error response
+ */
+export function extractErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object') {
+    const axiosError = error as { 
+      response?: { 
+        data?: { 
+          error?: { 
+            message?: string
+            details?: Array<{ field: string; message: string }> 
+          } 
+        } 
+      }
+      message?: string 
+    }
+    const apiError = axiosError.response?.data?.error
+    
+    if (apiError) {
+      if (apiError.details && Array.isArray(apiError.details) && apiError.details.length > 0) {
+        const detail = apiError.details[0]
+        return `${detail.message}${detail.field ? ` (${detail.field})` : ''}`
+      }
+      if (apiError.message) {
+        return apiError.message
+      }
+    }
+    if (axiosError.message) {
+      return axiosError.message
+    }
+  }
+  if (error instanceof Error) {
+    return error.message
+  }
+  return fallback
+}

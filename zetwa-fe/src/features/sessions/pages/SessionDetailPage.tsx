@@ -40,44 +40,7 @@ import {
   WebhooksTab,
 } from '@/features/sessions/components'
 import { connectSocket, subscribeToSession, unsubscribeFromSession } from '@/lib/socket'
-import { formatRelativeTime } from '@/lib/utils'
-
-/**
- * Extract error message from API error response
- */
-function extractErrorMessage(error: unknown, fallback: string): string {
-  if (error && typeof error === 'object') {
-    const axiosError = error as { 
-      response?: { 
-        data?: { 
-          error?: { 
-            message?: string
-            details?: Array<{ field: string; message: string }> 
-          } 
-        } 
-      }
-      message?: string 
-    }
-    const apiError = axiosError.response?.data?.error
-    
-    if (apiError) {
-      if (apiError.details && Array.isArray(apiError.details) && apiError.details.length > 0) {
-        const detail = apiError.details[0]
-        return `${detail.message}${detail.field ? ` (${detail.field})` : ''}`
-      }
-      if (apiError.message) {
-        return apiError.message
-      }
-    }
-    if (axiosError.message) {
-      return axiosError.message
-    }
-  }
-  if (error instanceof Error) {
-    return error.message
-  }
-  return fallback
-}
+import { formatRelativeTime, extractErrorMessage } from '@/lib/utils'
 
 export default function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
