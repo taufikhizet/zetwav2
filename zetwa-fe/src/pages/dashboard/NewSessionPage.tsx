@@ -269,7 +269,7 @@ export default function NewSessionPage() {
         <form onSubmit={handleSubmit} className="space-y-8">
           
           {/* Step 1: Basic Information */}
-          <Card className="border-2 shadow-sm">
+          <Card>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold">

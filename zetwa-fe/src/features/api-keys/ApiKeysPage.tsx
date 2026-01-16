@@ -10,7 +10,7 @@
 
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, KeyRound, Info, Search, Filter, Loader2, RefreshCw } from 'lucide-react'
+import { Plus, Info, Search, Filter, Loader2, RefreshCw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -89,38 +89,13 @@ export function ApiKeysPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <KeyRound className="h-8 w-8 text-primary" />
-            API Keys
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage API keys for programmatic access to your WhatsApp sessions
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => refetch()}
-            disabled={isRefetching}
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button onClick={() => navigate('/dashboard/api-keys/new')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create API Key
-          </Button>
-        </div>
-      </div>
+
 
       {/* Stats Cards */}
       {stats && <ApiKeyStatsCards stats={stats} />}
 
       {/* Info Card */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
             <Info className="h-5 w-5" />
@@ -194,6 +169,15 @@ export function ApiKeysPage() {
                     <SelectItem value="expired">Expired</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                <div className="flex items-center gap-2">
+                   <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isRefetching}>
+                      <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+                   </Button>
+                   <Button onClick={() => navigate('/dashboard/api-keys/new')} size="sm">
+                      <Plus className="mr-2 h-4 w-4" /> New
+                   </Button>
+                </div>
               </div>
             </div>
           </CardHeader>

@@ -64,7 +64,7 @@ export function EndpointCard({
     <Accordion type="single" collapsible className="mb-3">
       <AccordionItem 
         value={accordionId} 
-        className={`border rounded-lg overflow-hidden border-l-4 ${methodBorderColors[method]}`}
+        className={`rounded-2xl border-none shadow-sm bg-card overflow-hidden border-l-4 ${methodBorderColors[method]}`}
       >
         <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50 [&[data-state=open]]:bg-muted/30">
           <div className="flex items-center gap-3 text-left flex-1 min-w-0">

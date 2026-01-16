@@ -1,7 +1,3 @@
-/**
- * Session Card Component - Modern card display for a single session
- */
-
 import { Link } from 'react-router-dom'
 import {
   MoreVertical,
@@ -10,8 +6,6 @@ import {
   LogOut,
   Eye,
   Smartphone,
-  Phone,
-  User,
   Webhook,
   MessageSquare,
   Clock,
@@ -23,8 +17,7 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,19 +28,19 @@ import {
 import { cn, formatRelativeTime } from '@/lib/utils'
 import type { Session } from '@/api/session.api'
 
-// WAHA-style status mapping
+// Modern status mapping with softer colors for KasirKita style
 export const SESSION_STATUS = {
-  STOPPED: { label: 'Stopped', color: 'bg-gray-400', icon: Square, variant: 'secondary' as const },
-  STARTING: { label: 'Starting', color: 'bg-yellow-400', icon: Loader2, variant: 'warning' as const, animate: true },
-  INITIALIZING: { label: 'Starting', color: 'bg-yellow-400', icon: Loader2, variant: 'warning' as const, animate: true },
-  SCAN_QR_CODE: { label: 'Scan QR', color: 'bg-blue-400', icon: QrCode, variant: 'default' as const, animate: true },
-  QR_READY: { label: 'Scan QR', color: 'bg-blue-400', icon: QrCode, variant: 'default' as const, animate: true },
-  AUTHENTICATING: { label: 'Connecting', color: 'bg-yellow-400', icon: Loader2, variant: 'warning' as const, animate: true },
-  WORKING: { label: 'Working', color: 'bg-green-500', icon: Wifi, variant: 'success' as const },
-  CONNECTED: { label: 'Working', color: 'bg-green-500', icon: Wifi, variant: 'success' as const },
-  FAILED: { label: 'Failed', color: 'bg-red-500', icon: WifiOff, variant: 'destructive' as const },
-  DISCONNECTED: { label: 'Disconnected', color: 'bg-orange-500', icon: WifiOff, variant: 'warning' as const },
-  LOGGED_OUT: { label: 'Logged Out', color: 'bg-gray-500', icon: LogOut, variant: 'secondary' as const },
+  STOPPED: { label: 'Stopped', color: 'bg-gray-100 text-gray-600', icon: Square },
+  STARTING: { label: 'Starting', color: 'bg-yellow-100 text-yellow-700', icon: Loader2, animate: true },
+  INITIALIZING: { label: 'Initializing', color: 'bg-blue-100 text-blue-700', icon: Loader2, animate: true },
+  SCAN_QR_CODE: { label: 'Scan QR', color: 'bg-indigo-100 text-indigo-700', icon: QrCode, animate: true },
+  QR_READY: { label: 'QR Ready', color: 'bg-indigo-100 text-indigo-700', icon: QrCode, animate: true },
+  AUTHENTICATING: { label: 'Connecting', color: 'bg-yellow-100 text-yellow-700', icon: Loader2, animate: true },
+  WORKING: { label: 'Active', color: 'bg-emerald-100 text-emerald-700', icon: Wifi },
+  CONNECTED: { label: 'Connected', color: 'bg-emerald-100 text-emerald-700', icon: Wifi },
+  FAILED: { label: 'Failed', color: 'bg-red-100 text-red-700', icon: WifiOff },
+  DISCONNECTED: { label: 'Disconnected', color: 'bg-orange-100 text-orange-700', icon: WifiOff },
+  LOGGED_OUT: { label: 'Logged Out', color: 'bg-gray-100 text-gray-600', icon: LogOut },
 } as const
 
 export function getSessionStatus(status: string) {
@@ -75,171 +68,112 @@ export function SessionCard({
   const statusConfig = getSessionStatus(status)
   const StatusIcon = statusConfig.icon
   const isOnline = session.isOnline || status === 'CONNECTED' || status === 'WORKING'
-  const needsAction = ['QR_READY', 'SCAN_QR_CODE', 'INITIALIZING'].includes(status)
+  
+  // Safe access for optional animate property
+  const isAnimating = 'animate' in statusConfig && statusConfig.animate
 
   return (
-    <Card className={cn(
-      "group relative overflow-hidden transition-all duration-200 hover:shadow-lg",
-      needsAction && "ring-2 ring-blue-400/50",
-      isOnline && "ring-1 ring-green-500/30"
-    )}>
-      {/* Status indicator bar at top */}
-      <div className={cn("h-1 w-full", statusConfig.color)} />
-
-      <CardContent className="p-4">
-        {/* Header: Name + Menu */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {/* Avatar/Icon */}
+    <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2 p-6">
+         <div className="flex items-center gap-4">
             <div className={cn(
-              "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
-              isOnline ? "bg-green-100 dark:bg-green-900/30" : "bg-muted"
+                "relative flex h-14 w-14 items-center justify-center rounded-2xl transition-colors shadow-sm",
+                isOnline ? "bg-emerald-50 text-emerald-600" : "bg-gray-50 text-gray-400"
             )}>
-              {session.profilePicUrl ? (
-                <img
-                  src={session.profilePicUrl}
-                  alt={session.pushName || session.name}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                <Smartphone className={cn(
-                  "h-5 w-5",
-                  isOnline ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
-                )} />
-              )}
+                {session.profilePicUrl ? (
+                    <img 
+                        src={session.profilePicUrl} 
+                        alt={session.name} 
+                        className="h-full w-full rounded-2xl object-cover" 
+                    />
+                ) : (
+                    <Smartphone className="h-7 w-7" />
+                )}
+                {isOnline && (
+                    <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white"></span>
+                    </span>
+                )}
             </div>
-
-            {/* Name & Description */}
-            <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-base truncate">{session.name}</h3>
-              {session.description && (
-                <p className="text-xs text-muted-foreground truncate">{session.description}</p>
-              )}
+            <div className="space-y-1">
+                <h3 className="font-bold text-lg leading-none tracking-tight text-gray-900">{session.name}</h3>
+                <p className="text-sm text-muted-foreground">{session.phoneNumber || 'No phone connected'}</p>
             </div>
-          </div>
+         </div>
 
-          {/* Actions Menu */}
-          <DropdownMenu>
+         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-full">
+                    <MoreVertical className="h-4 w-4" />
+                </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem asChild>
-                <Link to={`/dashboard/sessions/${session.id}`} className="flex items-center">
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Details
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onRestart(session.id)} disabled={isRestartPending}>
-                <RefreshCw className={cn("mr-2 h-4 w-4", isRestartPending && "animate-spin")} />
-                {isRestartPending ? 'Restarting...' : 'Restart'}
-              </DropdownMenuItem>
-              {isOnline && (
-                <DropdownMenuItem onClick={() => onLogout(session.id)} disabled={isLogoutPending}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  {isLogoutPending ? 'Logging out...' : 'Logout'}
+            <DropdownMenuContent align="end" className="w-48 rounded-2xl shadow-xl border-gray-100 p-2">
+                <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2">
+                    <Link to={`/dashboard/sessions/${session.id}`}>
+                        <Eye className="mr-2 h-4 w-4" /> View Details
+                    </Link>
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => onDelete(session)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuItem onClick={() => onRestart(session.id)} disabled={isRestartPending} className="cursor-pointer rounded-xl px-3 py-2">
+                    <RefreshCw className={cn("mr-2 h-4 w-4", isRestartPending && "animate-spin")} /> 
+                    Restart Session
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onLogout(session.id)} disabled={isLogoutPending} className="cursor-pointer rounded-xl px-3 py-2">
+                    <LogOut className="mr-2 h-4 w-4" /> 
+                    Logout Device
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuItem 
+                    onClick={() => onDelete(session)} 
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer rounded-xl px-3 py-2"
+                >
+                    <Trash2 className="mr-2 h-4 w-4" /> 
+                    Delete Session
+                </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        </DropdownMenu>
+      </CardHeader>
 
-        {/* Status Badge */}
-        <div className="flex items-center gap-2 mb-3">
-          <Badge variant={statusConfig.variant} className="gap-1.5">
-            <StatusIcon className={cn("h-3 w-3", (statusConfig as { animate?: boolean }).animate && "animate-spin")} />
-            {statusConfig.label}
-          </Badge>
-          {needsAction && (
-            <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
-              Action Required
-            </Badge>
-          )}
-        </div>
-
-        {/* Info Grid */}
-        <div className="space-y-2 text-sm">
-          {/* Phone Number */}
-          {session.phoneNumber && (
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-muted-foreground">
-                <Phone className="h-3.5 w-3.5" />
-                Phone
-              </span>
-              <span className="font-medium">{session.phoneNumber}</span>
+      <CardContent className="p-6 pt-2">
+         <div className="flex items-center justify-between mb-6">
+            <div className={cn("px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5", statusConfig.color)}>
+                <StatusIcon className={cn("h-3.5 w-3.5", isAnimating && "animate-spin")} />
+                {statusConfig.label}
             </div>
-          )}
-
-          {/* Push Name */}
-          {session.pushName && (
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-muted-foreground">
-                <User className="h-3.5 w-3.5" />
-                Name
-              </span>
-              <span className="font-medium truncate max-w-[150px]">{session.pushName}</span>
-            </div>
-          )}
-
-          {/* Webhooks Count */}
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Webhook className="h-3.5 w-3.5" />
-              Webhooks
-            </span>
-            <span className="font-medium">{session._count?.webhooks || 0}</span>
-          </div>
-
-          {/* Messages Count */}
-          {session._count?.messages !== undefined && session._count.messages > 0 && (
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-muted-foreground">
-                <MessageSquare className="h-3.5 w-3.5" />
-                Messages
-              </span>
-              <span className="font-medium">{session._count.messages}</span>
-            </div>
-          )}
-
-          {/* Created */}
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Clock className="h-3.5 w-3.5" />
-              Created
-            </span>
-            <span className="text-muted-foreground text-xs">
-              {formatRelativeTime(session.createdAt)}
-            </span>
-          </div>
-        </div>
-
-        {/* Action Button */}
-        <Link to={`/dashboard/sessions/${session.id}`} className="block mt-4">
-          <Button variant={needsAction ? "default" : "outline"} className="w-full" size="sm">
-            {needsAction ? (
-              <>
-                <QrCode className="mr-2 h-4 w-4" />
-                Connect WhatsApp
-              </>
-            ) : (
-              <>
-                <Eye className="mr-2 h-4 w-4" />
-                Manage Session
-              </>
+            {session.updatedAt && (
+                <div className="flex items-center text-xs text-gray-400" title={new Date(session.updatedAt).toLocaleString()}>
+                    <Clock className="mr-1.5 h-3.5 w-3.5" />
+                    {formatRelativeTime(session.updatedAt)}
+                </div>
             )}
-          </Button>
-        </Link>
+         </div>
+
+         <div className="grid grid-cols-2 gap-3">
+             <div className="flex flex-col gap-1 p-3 rounded-2xl bg-gray-50/80">
+                 <span className="text-xs text-gray-500 font-medium">Webhooks</span>
+                 <div className="flex items-center gap-2 text-gray-900 font-bold">
+                    <Webhook className="h-4 w-4 text-primary" />
+                    <span>{session._count?.webhooks || 0}</span>
+                 </div>
+             </div>
+             <div className="flex flex-col gap-1 p-3 rounded-2xl bg-gray-50/80">
+                 <span className="text-xs text-gray-500 font-medium">Messages</span>
+                 <div className="flex items-center gap-2 text-gray-900 font-bold">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <span>{session._count?.messages || 0}</span>
+                 </div>
+             </div>
+         </div>
       </CardContent>
+
+      <CardFooter className="p-6 pt-0">
+          <Button className="w-full rounded-2xl h-11 font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all" variant={isOnline ? "outline" : "default"} asChild>
+             <Link to={`/dashboard/sessions/${session.id}`}>
+                 {isOnline ? 'Manage Session' : 'Connect Now'}
+             </Link>
+          </Button>
+      </CardFooter>
     </Card>
   )
 }

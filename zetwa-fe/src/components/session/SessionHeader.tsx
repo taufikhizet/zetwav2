@@ -19,7 +19,6 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,10 +86,10 @@ export function SessionHeader({
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold">{session.name}</h1>
-                <Badge variant={statusConfig.variant} className="gap-1.5">
+                <div className={cn("px-2.5 py-0.5 rounded-full text-xs font-medium flex items-center gap-1.5", statusConfig.color)}>
                   <StatusIcon className={cn("h-3 w-3", (statusConfig as { animate?: boolean }).animate && "animate-spin")} />
                   {statusConfig.label}
-                </Badge>
+                </div>
               </div>
               {session.description && (
                 <p className="text-muted-foreground mt-1">{session.description}</p>

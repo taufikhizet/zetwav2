@@ -7,24 +7,19 @@ import {
   Plus,
   BookOpen,
   Zap,
-  Send,
-  CheckCircle,
+  Activity
 } from 'lucide-react'
 
 import { sessionApi } from '@/api/session.api'
 import { apiKeyApi } from '@/api/api-key.api'
-import { useAuthStore } from '@/stores/auth.store'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 import {
   StatCard,
-  QuickActionsCard,
-  SystemHealthCard,
-  RecentSessionsCard,
-  ApiGuideCard,
 } from './components'
 
 export default function DashboardPage() {
-  const user = useAuthStore((state) => state.user)
 
   const { data: sessions = [] } = useQuery({
     queryKey: ['sessions'],
@@ -41,151 +36,170 @@ export default function DashboardPage() {
   const totalMessages = sessions.reduce((acc, s) => acc + (s._count?.messages || 0), 0)
   const activeApiKeys = apiKeys.filter((k) => k.isActive).length
 
-  // Determine system health based on session statuses
-  const apiStatus = sessions.some((s) => s.status === 'FAILED')
-    ? 'degraded'
-    : sessions.length === 0 || connectedSessions.length === sessions.length
-      ? 'healthy'
-      : 'degraded'
-
   const quickActions = [
     {
-      label: 'Create New Session',
-      description: 'Connect a WhatsApp account',
+      label: 'New Session',
+      description: 'Connect WhatsApp',
       icon: Plus,
       href: '/dashboard/sessions/new',
+      variant: 'default' as const,
     },
     {
-      label: 'Generate API Key',
-      description: 'Create key with granular scopes',
+      label: 'New API Key',
+      description: 'Create access key',
       icon: Key,
       href: '/dashboard/api-keys',
     },
     {
-      label: 'API Documentation',
-      description: 'Explore all available endpoints',
+      label: 'Documentation',
+      description: 'View API docs',
       icon: BookOpen,
       href: '/docs',
     },
     {
-      label: 'Test API',
-      description: 'Send a test message',
+      label: 'Test Message',
+      description: 'Send payload',
       icon: Zap,
       href: '/docs#messages',
     },
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">
-          Welcome back, {user?.name?.split(' ')[0]}! 👋
-        </h1>
-        <p className="text-muted-foreground">
-          Monitor your WhatsApp API gateway and manage your integrations.
-        </p>
-      </div>
+    <div className="space-y-8">
 
-      {/* Primary Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+      {/* Stats Grid */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Active Sessions"
           value={connectedSessions.length}
-          subtitle={`of ${sessions.length} total`}
+          subtitle={`Total ${sessions.length} sessions`}
           icon={Smartphone}
           href="/dashboard/sessions"
-          color="green"
-          trend={sessions.length > 0 ? {
-            value: Math.round((connectedSessions.length / sessions.length) * 100),
-            label: 'online'
-          } : undefined}
+          color="purple"
+          className="shadow-sm border-none bg-card"
         />
         <StatCard
-          title="API Keys"
+          title="Total Messages"
+          value={totalMessages}
+          subtitle="Processed messages"
+          icon={MessageSquare}
+          color="blue"
+          className="shadow-sm border-none bg-card"
+        />
+        <StatCard
+          title="Active API Keys"
           value={activeApiKeys}
-          subtitle={`of ${apiKeys.length} total`}
+          subtitle={`Total ${apiKeys.length} keys`}
           icon={Key}
           href="/dashboard/api-keys"
-          color="blue"
+          color="orange"
+          className="shadow-sm border-none bg-card"
         />
         <StatCard
           title="Webhooks"
           value={totalWebhooks}
-          subtitle="configured"
+          subtitle="Active endpoints"
           icon={Webhook}
-          href="/dashboard/sessions"
-          color="purple"
-        />
-        <StatCard
-          title="Messages"
-          value={totalMessages.toLocaleString()}
-          subtitle="total"
-          icon={MessageSquare}
-          href="/dashboard/sessions"
-          color="orange"
+          color="green"
+          className="shadow-sm border-none bg-card"
         />
       </div>
 
-      {/* Secondary Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Messages Sent"
-          value={Math.floor(totalMessages * 0.6).toLocaleString()}
-          icon={Send}
-          color="blue"
-        />
-        <StatCard
-          title="Messages Received"
-          value={Math.floor(totalMessages * 0.4).toLocaleString()}
-          icon={MessageSquare}
-          color="green"
-        />
-        <StatCard
-          title="Webhook Deliveries"
-          value={totalWebhooks > 0 ? '99.9%' : '—'}
-          subtitle="success rate"
-          icon={CheckCircle}
-          color="green"
-        />
-        <StatCard
-          title="API Requests"
-          value="—"
-          subtitle="today"
-          icon={Zap}
-          color="purple"
-        />
-      </div>
+      <div className="grid gap-6 md:grid-cols-7">
+        {/* Quick Actions */}
+        <div className="md:col-span-5 space-y-6">
+            <Card className="border-none shadow-sm">
+                <CardHeader>
+                    <CardTitle>Quick Actions</CardTitle>
+                    <CardDescription>Common tasks to manage your gateway</CardDescription>
+                </CardHeader>
+                <CardContent className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {quickActions.map((action, i) => (
+                        <Button
+                            key={i}
+                            variant={action.variant || "outline"}
+                            className="h-24 flex flex-col items-center justify-center gap-2 rounded-xl border-dashed border-2 hover:border-solid hover:bg-secondary/50 transition-all"
+                            asChild
+                        >
+                            <a href={action.href}>
+                                <div className={`p-2 rounded-full ${action.variant === 'default' ? 'bg-primary-foreground/10' : 'bg-secondary'}`}>
+                                    <action.icon className="w-5 h-5" />
+                                </div>
+                                <span className="font-medium">{action.label}</span>
+                            </a>
+                        </Button>
+                    ))}
+                </CardContent>
+            </Card>
 
-      {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Left Column */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Recent Sessions */}
-          <RecentSessionsCard sessions={sessions} maxItems={5} />
-
-          {/* API Guide */}
-          <ApiGuideCard baseUrl={window.location.origin} />
+            {/* Recent Activity Placeholder (Can be real data later) */}
+             <Card className="border-none shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div className="space-y-1">
+                        <CardTitle>System Activity</CardTitle>
+                        <CardDescription>Real-time system events and logs</CardDescription>
+                    </div>
+                    <Activity className="w-5 h-5 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-4 text-sm p-3 rounded-lg bg-secondary/30">
+                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            <span className="font-medium">System Online</span>
+                            <span className="text-muted-foreground ml-auto">Just now</span>
+                        </div>
+                        {/* Placeholder items */}
+                        <div className="text-center py-8 text-muted-foreground text-sm">
+                            No critical alerts. Your system is running smoothly.
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
 
-        {/* Right Column */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* System Health */}
-          <SystemHealthCard
-            apiStatus={apiStatus}
-            whatsappConnections={{
-              active: connectedSessions.length,
-              total: sessions.length,
-            }}
-            messageQueue={{
-              pending: 0,
-              processed: totalMessages,
-            }}
-            uptime="99.99%"
-          />
+        {/* Side Panel / Health */}
+        <div className="md:col-span-2 space-y-6">
+             <Card className="bg-primary text-primary-foreground border-none shadow-lg overflow-hidden relative">
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+                <CardHeader>
+                    <CardTitle className="text-lg">Pro Tips</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <p className="text-sm opacity-90">
+                        Did you know you can use webhooks to receive real-time message updates?
+                    </p>
+                    <Button variant="secondary" size="sm" className="w-full" asChild>
+                        <a href="/docs#webhooks">Learn Webhooks</a>
+                    </Button>
+                </CardContent>
+            </Card>
 
-          {/* Quick Actions */}
-          <QuickActionsCard actions={quickActions} />
+             <Card className="border-none shadow-sm">
+                <CardHeader>
+                    <CardTitle className="text-lg">Resource Usage</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Memory</span>
+                            <span className="font-medium">24%</span>
+                        </div>
+                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 w-[24%]" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Storage</span>
+                            <span className="font-medium">12%</span>
+                        </div>
+                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                            <div className="h-full bg-purple-500 w-[12%]" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
       </div>
     </div>

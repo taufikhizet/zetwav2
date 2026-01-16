@@ -79,10 +79,10 @@ export function SessionInfoTab({ session }: SessionInfoTabProps) {
         <CardContent>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Badge variant={statusConfig.variant} className="gap-1.5 text-sm py-1 px-3">
+              <div className={cn("px-2.5 py-0.5 rounded-full text-sm font-medium flex items-center gap-1.5", statusConfig.color)}>
                 <StatusIcon className={cn("h-4 w-4", (statusConfig as { animate?: boolean }).animate && "animate-spin")} />
                 {statusConfig.label}
-              </Badge>
+              </div>
             </div>
             {session.connectedAt && (
               <div className="text-right text-sm text-muted-foreground">

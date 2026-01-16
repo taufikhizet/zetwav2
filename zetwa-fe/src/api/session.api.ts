@@ -89,6 +89,7 @@ export interface Session {
   profilePicUrl: string | null
   connectedAt: string | null
   createdAt: string
+  updatedAt: string
   liveStatus?: string
   isOnline?: boolean
   qrCode?: string | null

@@ -1,5 +1,5 @@
 /**
- * Sessions Page - Modern sessions list with WAHA-style UI
+ * Sessions Page - Modern sessions list with KasirKita-style UI
  */
 
 import { useState } from 'react'
@@ -12,12 +12,12 @@ import {
   Loader2,
   Search,
   Filter,
-  Grid3X3,
   List,
   RefreshCw,
   Wifi,
   WifiOff,
   QrCode,
+  LayoutGrid
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -148,65 +148,53 @@ export default function SessionsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Sessions</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your WhatsApp connections
-          </p>
-        </div>
-        <Button onClick={() => navigate('/dashboard/sessions/new')} size="lg">
-          <Plus className="mr-2 h-5 w-5" />
-          New Session
-        </Button>
-      </div>
+    <div className="space-y-8">
+
 
       {/* Stats Cards */}
       {sessions.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('all')}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Smartphone className="h-5 w-5 text-primary" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setStatusFilter('all')}>
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-primary/10 text-primary">
+                <Smartphone className="h-6 w-6" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-xs text-muted-foreground">Total Sessions</p>
+                <p className="text-xs font-medium text-muted-foreground">Total Sessions</p>
               </div>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('online')}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                <Wifi className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setStatusFilter('online')}>
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-emerald-100 text-emerald-600">
+                <Wifi className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.online}</p>
-                <p className="text-xs text-muted-foreground">Online</p>
+                <p className="text-2xl font-bold text-emerald-600">{stats.online}</p>
+                <p className="text-xs font-medium text-muted-foreground">Online</p>
               </div>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('needs-action')}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <QrCode className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setStatusFilter('needs-action')}>
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
+                <QrCode className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.needsAction}</p>
-                <p className="text-xs text-muted-foreground">Needs Action</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.needsAction}</p>
+                <p className="text-xs font-medium text-muted-foreground">Needs Action</p>
               </div>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setStatusFilter('offline')}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-                <WifiOff className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setStatusFilter('offline')}>
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-slate-100 text-slate-600">
+                <WifiOff className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">{stats.offline}</p>
-                <p className="text-xs text-muted-foreground">Offline</p>
+                <p className="text-2xl font-bold text-slate-600">{stats.offline}</p>
+                <p className="text-xs font-medium text-muted-foreground">Offline</p>
               </div>
             </CardContent>
           </Card>
@@ -215,20 +203,20 @@ export default function SessionsPage() {
 
       {/* Filters & Actions */}
       {sessions.length > 0 && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 flex-1 max-w-md">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card p-4 rounded-xl shadow-sm">
+          <div className="flex items-center gap-3 flex-1 max-w-lg">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search sessions..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-10 border-none bg-secondary/50 focus-visible:ring-0 focus-visible:bg-background transition-colors"
               />
             </div>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-              <SelectTrigger className="w-[140px]">
-                <Filter className="h-4 w-4 mr-2" />
+              <SelectTrigger className="w-[160px] border-none bg-secondary/50">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
               <SelectContent>
@@ -241,28 +229,34 @@ export default function SessionsPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button onClick={() => navigate('/dashboard/sessions/new')} size="sm" className="rounded-lg shadow-sm bg-primary text-primary-foreground hover:bg-primary/90">
+                <Plus className="mr-2 h-4 w-4" />
+                New Session
+            </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => refetch()}
               disabled={isRefetching}
+              className="text-muted-foreground hover:text-foreground"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <div className="flex items-center border rounded-lg p-1">
+            <div className="h-8 w-px bg-border mx-1" />
+            <div className="flex items-center bg-secondary/50 rounded-lg p-1">
               <Button
-                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 rounded-md shadow-none"
                 onClick={() => setViewMode('grid')}
               >
-                <Grid3X3 className="h-4 w-4" />
+                <LayoutGrid className="h-4 w-4" />
               </Button>
               <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 rounded-md shadow-none"
                 onClick={() => setViewMode('list')}
               >
                 <List className="h-4 w-4" />
@@ -274,24 +268,24 @@ export default function SessionsPage() {
 
       {/* Sessions Grid/List */}
       {sessions.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="p-4 rounded-full bg-muted mb-4">
+        <Card className="border-dashed border-2 bg-transparent shadow-none">
+          <CardContent className="flex flex-col items-center justify-center py-20">
+            <div className="p-6 rounded-full bg-secondary mb-6">
               <Smartphone className="h-12 w-12 text-muted-foreground" />
             </div>
             <h2 className="text-xl font-semibold mb-2">No sessions yet</h2>
-            <p className="text-muted-foreground text-center max-w-md mb-6">
+            <p className="text-muted-foreground text-center max-w-md mb-8">
               Create your first WhatsApp session to start sending and receiving messages via API.
             </p>
-            <Button onClick={() => navigate('/dashboard/sessions/new')} size="lg">
+            <Button onClick={() => navigate('/dashboard/sessions/new')} size="lg" className="rounded-xl">
               <Plus className="mr-2 h-5 w-5" />
               Create Session
             </Button>
           </CardContent>
         </Card>
       ) : filteredSessions.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
+        <Card className="border-dashed border-2 bg-transparent shadow-none">
+          <CardContent className="flex flex-col items-center justify-center py-16">
             <Search className="h-12 w-12 text-muted-foreground mb-4" />
             <h2 className="text-lg font-semibold mb-2">No sessions found</h2>
             <p className="text-muted-foreground text-center">
@@ -299,7 +293,7 @@ export default function SessionsPage() {
             </p>
             <Button
               variant="outline"
-              className="mt-4"
+              className="mt-6"
               onClick={() => {
                 setSearchQuery('')
                 setStatusFilter('all')
@@ -312,8 +306,8 @@ export default function SessionsPage() {
       ) : (
         <div className={
           viewMode === 'grid'
-            ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-            : "grid gap-3"
+            ? "grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            : "grid gap-4"
         }>
           {filteredSessions.map((session) => (
             <SessionCard
