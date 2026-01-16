@@ -90,7 +90,7 @@ export default function SessionDetailPage() {
   // ============================================
 
   return (
-    <div className="min-h-screen pb-12">
+    <div className="space-y-8">
       {/* Header */}
       <SessionHeader
         session={session}
@@ -102,57 +102,74 @@ export default function SessionDetailPage() {
       />
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* QR/Auth Section - Always show when not connected */}
-        {!isConnected && (
-          <QRCodeSection
-            sessionId={sessionId!}
-            socketQR={qrCode}
-            pairingCode={pairingCode}
-            status={status}
-            isRestarting={restartMutation.isPending}
-            onRequestPairingCode={(phone: string) => pairingCodeMutation.mutate(phone)}
-            onRestart={() => restartMutation.mutate()}
-            isPairingPending={pairingCodeMutation.isPending}
-            isRestartPending={restartMutation.isPending}
-            isConnected={isConnected}
-          />
-        )}
-
-        {/* Tabs */}
-        <Tabs defaultValue="settings" className="mt-8">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="info">Info</TabsTrigger>
-            <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="settings" className="mt-6">
-            <SessionSettingsTab 
-               session={session}
-               onUpdate={async (data: UpdateSessionInput) => { await updateMutation.mutateAsync(data) }}
-               isUpdating={updateMutation.isPending}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Status & Quick Info */}
+        <div className="space-y-6">
+          {/* QR/Auth Section - Always show when not connected */}
+          {!isConnected ? (
+            <QRCodeSection
+              sessionId={sessionId!}
+              socketQR={qrCode}
+              pairingCode={pairingCode}
+              status={status}
+              isRestarting={restartMutation.isPending}
+              onRequestPairingCode={(phone: string) => pairingCodeMutation.mutate(phone)}
+              onRestart={() => restartMutation.mutate()}
+              isPairingPending={pairingCodeMutation.isPending}
+              isRestartPending={restartMutation.isPending}
+              isConnected={isConnected}
+              onStart={() => restartMutation.mutate()}
+              isStartPending={restartMutation.isPending}
             />
-          </TabsContent>
+          ) : (
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-2xl p-6 border border-green-100 dark:border-green-900/50 text-center shadow-sm">
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+              </div>
+              <h3 className="font-bold text-lg mb-1 text-green-900 dark:text-green-100">Session Active</h3>
+              <p className="text-sm text-green-700/80 dark:text-green-300/80">
+                Connected to WhatsApp since {new Date(session.updatedAt || session.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          )}
 
-          <TabsContent value="info" className="mt-6">
-            <SessionInfoTab session={session} />
-          </TabsContent>
+          {/* Session Info Summary */}
+          <SessionInfoTab session={session} />
+        </div>
 
-          <TabsContent value="webhooks" className="mt-6">
-             <WebhooksTab 
-                webhooks={webhooks}
-                onCreateWebhook={async (data: CreateWebhookInput) => { await createWebhookMutation.mutateAsync(data) }}
-                onUpdateWebhook={async (id: string, data: Partial<CreateWebhookInput & { isActive: boolean }>) => { await updateWebhookMutation.mutateAsync({ webhookId: id, data }) }}
-                onDeleteWebhook={async (id: string) => { await deleteWebhookMutation.mutateAsync(id) }}
-                onTestWebhook={async (id: string) => await testWebhookMutation.mutateAsync(id)}
-                isCreating={createWebhookMutation.isPending}
-                isUpdating={updateWebhookMutation.isPending}
-                isDeleting={deleteWebhookMutation.isPending}
-                isTesting={testWebhookMutation.isPending}
-             />
-          </TabsContent>
-        </Tabs>
+        {/* Right Column: Detailed Config & Webhooks */}
+        <div className="lg:col-span-2 space-y-6">
+          <Tabs defaultValue="settings" className="w-full">
+            <div className="flex items-center justify-between mb-6">
+              <TabsList className="grid w-full max-w-md grid-cols-2 p-1 bg-muted/50 rounded-xl">
+                <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Settings</TabsTrigger>
+                <TabsTrigger value="webhooks" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Webhooks</TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="settings" className="mt-0 space-y-6">
+              <SessionSettingsTab 
+                 session={session}
+                 onUpdate={async (data: UpdateSessionInput) => { await updateMutation.mutateAsync(data) }}
+                 isUpdating={updateMutation.isPending}
+              />
+            </TabsContent>
+
+            <TabsContent value="webhooks" className="mt-0 space-y-4">
+               <WebhooksTab 
+                  webhooks={webhooks}
+                  onCreateWebhook={async (data: CreateWebhookInput) => { await createWebhookMutation.mutateAsync(data) }}
+                  onUpdateWebhook={async (id: string, data: Partial<CreateWebhookInput & { isActive: boolean }>) => { await updateWebhookMutation.mutateAsync({ webhookId: id, data }) }}
+                  onDeleteWebhook={async (id: string) => { await deleteWebhookMutation.mutateAsync(id) }}
+                  onTestWebhook={async (id: string) => await testWebhookMutation.mutateAsync(id)}
+                  isCreating={createWebhookMutation.isPending}
+                  isUpdating={updateWebhookMutation.isPending}
+                  isDeleting={deleteWebhookMutation.isPending}
+                  isTesting={testWebhookMutation.isPending}
+               />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
 
       {/* Delete Confirmation Dialog */}

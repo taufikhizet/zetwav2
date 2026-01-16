@@ -46,25 +46,10 @@ import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { sessionApi } from '@/features/sessions/api/session.api'
+import type { SessionStatus } from '../types/session.types'
 
 // Only poll if no socket QR available - reduce server load
 const QR_POLL_INTERVAL = 10000 // 10 seconds - not too aggressive
-
-type SessionStatus = 
-  | 'STOPPED' 
-  | 'STARTING' 
-  | 'INITIALIZING' 
-  | 'QR_READY' 
-  | 'SCAN_QR'
-  | 'SCAN_QR_CODE'
-  | 'AUTHENTICATED'
-  | 'AUTHENTICATING' 
-  | 'CONNECTED' 
-  | 'WORKING'
-  | 'DISCONNECTED' 
-  | 'LOGGED_OUT' 
-  | 'FAILED'
-  | 'QR_TIMEOUT'
 
 interface QRCodeSectionProps {
   /** Session ID for API calls */
@@ -94,6 +79,29 @@ interface QRCodeSectionProps {
   /** Is start pending */
   isStartPending?: boolean
 }
+
+// Helper for rendering action buttons with consistent loading state
+const ActionButton = ({ onClick, disabled, loading, icon: Icon, text, spinIcon = false }: {
+  onClick: () => void
+  disabled: boolean
+  loading: boolean
+  icon: any
+  text: string
+  spinIcon?: boolean
+}) => (
+  <Button onClick={onClick} disabled={disabled}>
+    {loading ? (
+      spinIcon && Icon ? (
+        <Icon className="h-4 w-4 mr-2 animate-spin" />
+      ) : (
+        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+      )
+    ) : (
+      Icon && <Icon className="h-4 w-4 mr-2" />
+    )}
+    {text}
+  </Button>
+)
 
 export function QRCodeSection({
   sessionId,
@@ -177,11 +185,14 @@ export function QRCodeSection({
         description: apiMessage,
         showQR: false,
         action: (
-          <Button onClick={onRestart} disabled={isRestartPending}>
-            {isRestartPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            <RefreshCw className={cn("h-4 w-4 mr-2", isRestartPending && "animate-spin")} />
-            Get New QR Code
-          </Button>
+          <ActionButton 
+            onClick={onRestart}
+            disabled={isRestartPending}
+            loading={isRestartPending}
+            icon={RefreshCw}
+            text="Get New QR Code"
+            spinIcon={true}
+          />
         ),
       }
     }
@@ -195,11 +206,13 @@ export function QRCodeSection({
           description: 'Start the session to connect WhatsApp',
           showQR: false,
           action: onStart && (
-            <Button onClick={onStart} disabled={isStartPending}>
-              {isStartPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <Play className="h-4 w-4 mr-2" />
-              Start Session
-            </Button>
+            <ActionButton 
+              onClick={onStart}
+              disabled={isStartPending || false}
+              loading={isStartPending || false}
+              icon={isStartPending ? null : Play}
+              text="Start Session"
+            />
           ),
         }
       
@@ -245,11 +258,14 @@ export function QRCodeSection({
           description: apiMessage || 'Connection lost. Restart to reconnect.',
           showQR: false,
           action: (
-            <Button onClick={onRestart} disabled={isRestartPending}>
-              {isRestartPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <RefreshCw className={cn("h-4 w-4 mr-2", isRestartPending && "animate-spin")} />
-              Reconnect
-            </Button>
+            <ActionButton 
+              onClick={onRestart}
+              disabled={isRestartPending}
+              loading={isRestartPending}
+              icon={RefreshCw}
+              text="Reconnect"
+              spinIcon={true}
+            />
           ),
         }
       
@@ -261,11 +277,14 @@ export function QRCodeSection({
           description: apiMessage || 'This session was logged out from WhatsApp',
           showQR: false,
           action: (
-            <Button onClick={onRestart} disabled={isRestartPending}>
-              {isRestartPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <RefreshCw className={cn("h-4 w-4 mr-2", isRestartPending && "animate-spin")} />
-              Restart Session
-            </Button>
+            <ActionButton 
+              onClick={onRestart}
+              disabled={isRestartPending}
+              loading={isRestartPending}
+              icon={RefreshCw}
+              text="Restart Session"
+              spinIcon={true}
+            />
           ),
         }
       
@@ -280,11 +299,14 @@ export function QRCodeSection({
             : 'Something went wrong. Please try again.'),
           showQR: false,
           action: (
-            <Button onClick={onRestart} disabled={isRestartPending}>
-              {isRestartPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <RefreshCw className={cn("h-4 w-4 mr-2", isRestartPending && "animate-spin")} />
-              Get New QR Code
-            </Button>
+            <ActionButton 
+              onClick={onRestart}
+              disabled={isRestartPending}
+              loading={isRestartPending}
+              icon={RefreshCw}
+              text="Get New QR Code"
+              spinIcon={true}
+            />
           ),
         }
       
@@ -296,11 +318,14 @@ export function QRCodeSection({
           description: apiMessage || `Session status: ${status}`,
           showQR: false,
           action: (
-            <Button onClick={onRestart} disabled={isRestartPending}>
-              {isRestartPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <RefreshCw className={cn("h-4 w-4 mr-2", isRestartPending && "animate-spin")} />
-              Restart Session
-            </Button>
+            <ActionButton 
+              onClick={onRestart}
+              disabled={isRestartPending}
+              loading={isRestartPending}
+              icon={RefreshCw}
+              text="Restart Session"
+              spinIcon={true}
+            />
           ),
         }
     }
@@ -309,64 +334,73 @@ export function QRCodeSection({
   const config = getStateConfig()
 
   return (
-    <Card className="overflow-hidden border-2 border-primary/10">
-      <div className="grid md:grid-cols-2 gap-0">
-        {/* Left Side: Status & Actions */}
-        <div className="p-8 flex flex-col justify-center bg-muted/30">
-          <div className="flex items-start gap-4 mb-6">
-            <div className={cn("p-3 rounded-xl flex items-center justify-center shrink-0", config.iconBg)}>
+    <Card className="overflow-hidden border-2 border-primary/10 bg-white dark:bg-gray-950">
+      <div className="flex flex-col">
+        {/* Top Side: Status & Actions */}
+        <div className={cn(
+          "p-6 flex transition-all",
+          config.showQR 
+            ? "flex-row items-center gap-4 text-left justify-center" 
+            : "flex-col items-center justify-center text-center"
+        )}>
+          <div className={cn(
+            "rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-all", 
+            config.iconBg,
+            config.showQR ? "p-3" : "p-4 mb-4"
+          )}>
+            <div className={cn("[&>svg]:w-6 [&>svg]:h-6", config.showQR && "[&>svg]:w-5 [&>svg]:h-5")}>
               {config.icon}
-            </div>
-            <div>
-              <h3 className="text-xl font-bold mb-1">{config.title}</h3>
-              <p className="text-muted-foreground">{config.description}</p>
             </div>
           </div>
           
-          <div className="mt-auto">
-            {config.action}
+          <div className={cn("space-y-1", config.showQR ? "max-w-none" : "max-w-md")}>
+            <h3 className={cn("font-bold", config.showQR ? "text-lg" : "text-xl")}>{config.title}</h3>
+            <p className="text-sm text-muted-foreground">{config.description}</p>
+            {config.action && (
+              <div className="pt-2">
+                {config.action}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right Side: Auth Methods (QR/Phone) */}
+        {/* Bottom Side: Auth Methods (QR/Phone) */}
         {config.showQR && (
-          <div className="border-t md:border-t-0 md:border-l bg-background p-6">
-            <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as 'qr' | 'phone')} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="qr">
-                  <QrCode className="h-4 w-4 mr-2" />
+          <div className="px-4 pb-8 pt-2">
+            <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as 'qr' | 'phone')} className="w-full max-w-[320px] mx-auto">
+              <TabsList className="grid w-full grid-cols-2 mb-6 h-9 p-1">
+                <TabsTrigger value="qr" className="h-7 text-xs font-medium rounded-md">
+                  <QrCode className="h-3.5 w-3.5 mr-2" />
                   Scan QR
                 </TabsTrigger>
-                <TabsTrigger value="phone">
-                  <Phone className="h-4 w-4 mr-2" />
+                <TabsTrigger value="phone" className="h-7 text-xs font-medium rounded-md">
+                  <Phone className="h-3.5 w-3.5 mr-2" />
                   Pairing Code
                 </TabsTrigger>
               </TabsList>
               
               <TabsContent value="qr" className="mt-0">
-                <div className="flex flex-col items-center justify-center min-h-[300px]">
+                <div className="flex flex-col items-center justify-center min-h-[320px]">
                   {isLoadingQRCode ? (
                     <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                      <p>Waiting for QR code...</p>
+                      <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                      <p className="text-lg">Waiting for QR code...</p>
                     </div>
                   ) : qrCode ? (
                     <div className="relative group">
-                      <div className="bg-white p-4 rounded-xl border-2 border-slate-100 shadow-sm">
-                         <img 
-                           src={qrCode} 
-                           alt="WhatsApp QR Code" 
-                           className="w-64 h-64 object-contain" 
-                         />
-                      </div>
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl backdrop-blur-sm">
-                         <p className="text-white font-medium">Scan with WhatsApp</p>
+                       <img 
+                         src={qrCode} 
+                         alt="WhatsApp QR Code" 
+                         className="w-80 h-80 object-contain" 
+                       />
+                      <div className="absolute inset-0 bg-white/90 dark:bg-black/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                         <p className="text-foreground font-medium text-lg">Scan with WhatsApp</p>
                       </div>
                     </div>
                   ) : (
                     <div className="text-center text-muted-foreground p-8">
-                      <QrCode className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                      <p>QR code not available</p>
+                      <QrCode className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                      <p className="text-lg">QR code not available</p>
                     </div>
                   )}
                 </div>

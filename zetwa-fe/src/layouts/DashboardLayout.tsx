@@ -7,13 +7,12 @@ import {
   Key,
   Menu,
   User,
-  Search,
   Bell,
-  LogOut
+  LogOut,
+  ChevronRight
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -30,6 +29,9 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Sessions', href: '/dashboard/sessions', icon: Smartphone },
   { name: 'API Keys', href: '/dashboard/api-keys', icon: Key },
+]
+
+const bottomNavigation = [
   { name: 'Docs', href: '/docs', icon: MessageSquare },
 ]
 
@@ -42,6 +44,36 @@ export default function DashboardLayout() {
   const handleLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  const getBreadcrumbs = () => {
+    const path = location.pathname
+    const parts = path.split('/').filter(Boolean)
+    
+    // Custom labels for paths
+    const labels: Record<string, string> = {
+      dashboard: 'Dashboard',
+      sessions: 'Sessions',
+      'api-keys': 'API Keys',
+      new: 'New',
+      docs: 'Documentation'
+    }
+
+    // Build breadcrumb items
+    const items = parts.map((part, index) => {
+      const href = '/' + parts.slice(0, index + 1).join('/')
+      const label = labels[part] || part
+      // Check if it's an ID (simple check: length > 15 and contains numbers)
+      const isId = part.length > 15 && /\d/.test(part)
+      
+      return {
+        label: isId ? 'Details' : label.charAt(0).toUpperCase() + label.slice(1),
+        href,
+        isLast: index === parts.length - 1
+      }
+    })
+
+    return items
   }
 
   const getInitials = (name: string) => {
@@ -66,21 +98,21 @@ export default function DashboardLayout() {
       {/* Mini Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-24 bg-card border-r shadow-none transform transition-transform duration-200 ease-in-out lg:translate-x-0 flex flex-col items-center py-6',
+          'fixed inset-y-0 left-0 z-50 w-[100px] bg-white dark:bg-card border-r shadow-lg shadow-gray-100/50 dark:shadow-none transform transition-transform duration-200 ease-in-out lg:translate-x-0 flex flex-col items-center py-8',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         {/* Logo */}
         <div className="mb-10">
           <Link to="/dashboard" className="flex items-center justify-center">
-            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center shadow-sm">
-              <MessageSquare className="w-7 h-7 text-primary" />
-            </div>
+             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30">
+                <MessageSquare className="w-5 h-5 text-white" />
+             </div>
           </Link>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 w-full px-2 space-y-4">
+        <nav className="flex-1 w-full px-4 space-y-6">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href || 
               (item.href !== '/dashboard' && location.pathname.startsWith(item.href))
@@ -89,18 +121,23 @@ export default function DashboardLayout() {
                 key={item.name}
                 to={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl transition-all duration-200 group',
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                )}
+                className="flex flex-col items-center gap-2 group"
               >
-                <item.icon className={cn(
-                  "w-6 h-6 transition-transform duration-200 group-hover:scale-110",
-                  isActive ? "text-primary fill-primary/20" : "text-muted-foreground"
-                )} />
-                <span className="text-[10px] font-medium text-center leading-none">
+                <div className={cn(
+                  "w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-300 ease-out shadow-sm",
+                  isActive 
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-100" 
+                    : "bg-gray-50/50 dark:bg-secondary/20 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary group-hover:scale-105 border border-transparent shadow-inner"
+                )}>
+                   <item.icon className={cn(
+                     "w-6 h-6 transition-transform duration-300",
+                     isActive ? "scale-100" : "group-hover:scale-110"
+                   )} />
+                </div>
+                <span className={cn(
+                  "text-[10px] font-bold tracking-wide transition-colors duration-200 uppercase",
+                  isActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-primary/80"
+                )}>
                   {item.name}
                 </span>
               </Link>
@@ -108,14 +145,45 @@ export default function DashboardLayout() {
           })}
         </nav>
 
-        {/* User Profile (Mini) - Removed per user request */}
-
+        {/* Bottom Actions */}
+        <div className="mt-auto px-4 space-y-4">
+          {bottomNavigation.map((item) => {
+            const isActive = location.pathname === item.href || 
+              (item.href !== '/dashboard' && location.pathname.startsWith(item.href))
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                onClick={() => setSidebarOpen(false)}
+                className="flex flex-col items-center gap-2 group"
+              >
+                <div className={cn(
+                  "w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-300 ease-out shadow-sm",
+                  isActive 
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-100" 
+                    : "bg-gray-50/50 dark:bg-secondary/20 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary group-hover:scale-105 border border-transparent shadow-inner"
+                )}>
+                   <item.icon className={cn(
+                     "w-6 h-6 transition-transform duration-300",
+                     isActive ? "scale-100" : "group-hover:scale-110"
+                   )} />
+                </div>
+                <span className={cn(
+                  "text-[10px] font-bold tracking-wide transition-colors duration-200 uppercase",
+                  isActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-primary/80"
+                )}>
+                  {item.name}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
       </aside>
 
       {/* Main Content Wrapper */}
-      <div className="lg:pl-24 flex flex-col min-h-screen transition-all duration-200">
+      <div className="lg:pl-[100px] flex flex-col min-h-screen transition-all duration-200 bg-gray-50/50 dark:bg-background">
         {/* Top Header */}
-        <header className="sticky top-0 z-30 h-24 px-8 bg-background/80 backdrop-blur-md flex items-center justify-between">
+        <header className="sticky top-0 z-30 h-16 px-8 bg-background/80 backdrop-blur-md flex items-center justify-between">
             <div className="flex items-center gap-4">
                 <Button
                   variant="ghost"
@@ -126,18 +194,28 @@ export default function DashboardLayout() {
                   <Menu className="w-6 h-6" />
                 </Button>
                 
-                {/* Search Bar (Visual) */}
-                <div className="hidden md:flex items-center relative w-96 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                    <Input 
-                        placeholder="Search anything..." 
-                        className="pl-11 h-12 bg-white border-none shadow-sm rounded-full focus-visible:ring-1 focus-visible:ring-primary/20 transition-all text-sm"
-                    />
-                </div>
+                {/* Breadcrumbs */}
+                <nav className="hidden md:flex items-center text-sm font-medium">
+                  {getBreadcrumbs().map((item, index) => (
+                    <div key={item.href} className="flex items-center">
+                      {index > 0 && <ChevronRight className="w-4 h-4 mx-2 text-muted-foreground/50" />}
+                      {item.isLast ? (
+                        <span className="text-foreground font-semibold">{item.label}</span>
+                      ) : (
+                        <Link 
+                          to={item.href} 
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          {item.label}
+                        </Link>
+                      )}
+                    </div>
+                  ))}
+                </nav>
             </div>
 
             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full hover:bg-white hover:shadow-sm transition-all">
+                <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full hover:bg-muted/50 transition-all">
                     <Bell className="w-5 h-5 text-muted-foreground" />
                     <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-destructive rounded-full border-2 border-background"></span>
                 </Button>
@@ -145,8 +223,8 @@ export default function DashboardLayout() {
                 <div className="hidden md:flex items-center gap-3 pl-4 border-l">
                    <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white hover:shadow-sm transition-all p-0">
-                          <Avatar className="h-10 w-10 border-2 border-background shadow-sm">
+                        <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-muted/50 transition-all p-0">
+                          <Avatar className="h-8 w-8 border-2 border-background shadow-sm">
                             <AvatarImage src={user?.avatar || undefined} />
                             <AvatarFallback className="bg-primary/10 text-primary text-xs">
                               {user?.name ? getInitials(user.name) : 'U'}
@@ -175,7 +253,7 @@ export default function DashboardLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 px-8 pb-8 pt-2">
+        <main className="flex-1 px-8 py-8">
            <div className="animate-in fade-in-50 duration-500">
              <Outlet />
            </div>

@@ -156,7 +156,7 @@ export default function SessionsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setStatusFilter('all')}>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary/10 text-primary">
+              <div className="p-3 rounded-xl bg-primary/10 text-primary shadow-md shadow-primary/20">
                 <Smartphone className="h-6 w-6" />
               </div>
               <div>
@@ -167,7 +167,7 @@ export default function SessionsPage() {
           </Card>
           <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setStatusFilter('online')}>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-emerald-100 text-emerald-600">
+              <div className="p-3 rounded-xl bg-emerald-100 text-emerald-600 shadow-md shadow-emerald-500/20">
                 <Wifi className="h-6 w-6" />
               </div>
               <div>
@@ -178,7 +178,7 @@ export default function SessionsPage() {
           </Card>
           <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setStatusFilter('needs-action')}>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
+              <div className="p-3 rounded-xl bg-blue-100 text-blue-600 shadow-md shadow-blue-500/20">
                 <QrCode className="h-6 w-6" />
               </div>
               <div>
@@ -189,7 +189,7 @@ export default function SessionsPage() {
           </Card>
           <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setStatusFilter('offline')}>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-slate-100 text-slate-600">
+              <div className="p-3 rounded-xl bg-slate-100 text-slate-600 shadow-inner">
                 <WifiOff className="h-6 w-6" />
               </div>
               <div>
@@ -270,7 +270,7 @@ export default function SessionsPage() {
       {sessions.length === 0 ? (
         <Card className="border-dashed border-2 bg-transparent shadow-none">
           <CardContent className="flex flex-col items-center justify-center py-20">
-            <div className="p-6 rounded-full bg-secondary mb-6">
+            <div className="p-6 rounded-full bg-secondary mb-6 shadow-inner">
               <Smartphone className="h-12 w-12 text-muted-foreground" />
             </div>
             <h2 className="text-xl font-semibold mb-2">No sessions yet</h2>

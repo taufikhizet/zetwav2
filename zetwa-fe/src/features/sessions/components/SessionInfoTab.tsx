@@ -276,7 +276,7 @@ export function SessionInfoTab({ session }: SessionInfoTabProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <pre className="p-3 rounded-lg bg-muted text-sm font-mono overflow-x-auto">
+            <pre className="p-3 rounded-lg bg-muted text-sm font-mono overflow-x-auto shadow-inner">
               {JSON.stringify(session.config.metadata, null, 2)}
             </pre>
           </CardContent>

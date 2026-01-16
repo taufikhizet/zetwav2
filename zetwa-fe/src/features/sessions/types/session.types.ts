@@ -113,6 +113,8 @@ export type SessionStatus =
   | 'SCAN_QR_CODE'
   | 'WORKING'
   | 'QR_TIMEOUT'
+  | 'SCAN_QR'
+  | 'AUTHENTICATED'
 
 // Session information
 export interface Session {

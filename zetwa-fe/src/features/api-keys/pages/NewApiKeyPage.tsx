@@ -321,14 +321,11 @@ export function NewApiKeyPage() {
 
   // Form view
   return (
-    <div className="min-h-screen pb-12">
-      {/* Main Content */}
-      <div className="w-full px-4 py-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          
-          <div className="grid gap-8 lg:grid-cols-2">
-            {/* Left Column: Info & Basic Config */}
-            <div className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8">
+      
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* Left Column: Info & Basic Config */}
+        <div className="space-y-8">
               {/* Info Banner */}
               <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl">
                 <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
@@ -696,10 +693,8 @@ export function NewApiKeyPage() {
                 </CardContent>
               </Card>
             </div>
-          </div>
-        </form>
       </div>
-    </div>
+    </form>
   )
 }
 

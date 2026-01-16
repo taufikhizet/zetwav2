@@ -200,6 +200,19 @@ export const SESSION_HELP: Record<string, FieldHelpContent> = {
   },
 
   // Event Filters
+  ignoreEvents: {
+    title: 'Filter Event',
+    description: 'Konfigurasi untuk mengabaikan jenis event tertentu.',
+    details: {
+      whatItDoes: 'Bagian ini memungkinkan Anda untuk memfilter event yang tidak ingin diproses oleh sistem. Ini membantu mengurangi penggunaan resource dan bandwidth jika aplikasi Anda tidak membutuhkan data tersebut.',
+      whenToUse: 'Gunakan filter ini jika bot atau aplikasi Anda hanya fokus pada fitur tertentu (misalnya hanya chat personal) dan tidak perlu memproses update dari grup, status, atau channel.',
+      tips: [
+        'Aktifkan filter yang tidak relevan dengan use case Anda',
+        'Filter yang aktif akan mengurangi beban CPU dan memori',
+      ],
+    },
+  },
+
   ignoreStatus: {
     title: 'Abaikan Status/Story',
     description: 'Tidak menerima event dari Status WhatsApp (Story).',
@@ -254,6 +267,19 @@ export const SESSION_HELP: Record<string, FieldHelpContent> = {
   },
 
   // NOWEB Engine Configuration
+  nowebEngine: {
+    title: 'NOWEB Engine',
+    description: 'Konfigurasi tingkat lanjut untuk core engine WhatsApp.',
+    details: {
+      whatItDoes: 'Mengatur perilaku internal dari engine Baileys yang digunakan untuk koneksi WhatsApp. Pengaturan ini mempengaruhi bagaimana data disimpan, disinkronisasi, dan ditampilkan.',
+      whenToUse: 'Ubah pengaturan ini jika Anda memiliki kebutuhan khusus terkait penyimpanan data lokal (store) atau sinkronisasi riwayat chat.',
+      tips: [
+        'Biarkan default jika Anda tidak yakin',
+        'Pengaturan store mempengaruhi penggunaan memori',
+      ],
+    },
+  },
+
   nowebStoreEnabled: {
     title: 'Aktifkan Store',
     description: 'Simpan data kontak, chat, dan pesan secara lokal.',

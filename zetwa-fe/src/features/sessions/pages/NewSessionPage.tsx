@@ -37,14 +37,11 @@ export default function NewSessionPage() {
   } = useNewSession()
 
   return (
-    <div className="min-h-screen pb-12">
-      {/* Main Content */}
-      <div className="w-full px-4 py-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          
-          <div className="grid gap-8 lg:grid-cols-2">
-             {/* Left Column: Basic Info & Config */}
-             <div className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8">
+      
+      <div className="grid gap-8 lg:grid-cols-2">
+         {/* Left Column: Basic Info & Config */}
+         <div className="space-y-8">
                 
                 <BasicInfoCard 
                   name={name}
@@ -121,9 +118,7 @@ export default function NewSessionPage() {
                    </CardContent>
                  </Card>
              </div>
-          </div>
-        </form>
       </div>
-    </div>
+    </form>
   )
 }

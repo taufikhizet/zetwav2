@@ -150,14 +150,14 @@ export function SessionCard({
          </div>
 
          <div className="grid grid-cols-2 gap-3">
-             <div className="flex flex-col gap-1 p-3 rounded-2xl bg-gray-50/80">
+             <div className="flex flex-col gap-1 p-3 rounded-2xl bg-gray-50/80 shadow-inner">
                  <span className="text-xs text-gray-500 font-medium">Webhooks</span>
                  <div className="flex items-center gap-2 text-gray-900 font-bold">
                     <Webhook className="h-4 w-4 text-primary" />
                     <span>{session._count?.webhooks || 0}</span>
                  </div>
              </div>
-             <div className="flex flex-col gap-1 p-3 rounded-2xl bg-gray-50/80">
+             <div className="flex flex-col gap-1 p-3 rounded-2xl bg-gray-50/80 shadow-inner">
                  <span className="text-xs text-gray-500 font-medium">Messages</span>
                  <div className="flex items-center gap-2 text-gray-900 font-bold">
                     <MessageSquare className="h-4 w-4 text-primary" />

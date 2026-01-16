@@ -3,9 +3,7 @@
  */
 
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft,
   RefreshCw,
   LogOut,
   Trash2,
@@ -48,7 +46,6 @@ export function SessionHeader({
   onSendMessage,
   isRestartPending,
 }: SessionHeaderProps) {
-  const navigate = useNavigate()
   const [idCopied, setIdCopied] = useState(false)
 
   const status = session.liveStatus || session.status
@@ -63,95 +60,95 @@ export function SessionHeader({
   }
 
   return (
-    <div className="border-b bg-gradient-to-r from-background to-muted/30">
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard/sessions')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            
-            {/* Session Avatar */}
-            <div className={cn(
-              "w-14 h-14 rounded-full flex items-center justify-center",
-              isConnected ? "bg-green-100 dark:bg-green-900/30" : "bg-muted"
-            )}>
-              {session.profilePicUrl ? (
-                <img src={session.profilePicUrl} alt="" className="w-14 h-14 rounded-full object-cover" />
-              ) : (
-                <Smartphone className={cn("h-7 w-7", isConnected ? "text-green-600" : "text-muted-foreground")} />
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold">{session.name}</h1>
-                <div className={cn("px-2.5 py-0.5 rounded-full text-xs font-medium flex items-center gap-1.5", statusConfig.color)}>
-                  <StatusIcon className={cn("h-3 w-3", (statusConfig as { animate?: boolean }).animate && "animate-spin")} />
-                  {statusConfig.label}
-                </div>
-              </div>
-              {session.description && (
-                <p className="text-muted-foreground mt-1">{session.description}</p>
-              )}
-              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                {session.phoneNumber && (
-                  <span className="flex items-center gap-1">
-                    <Phone className="h-3.5 w-3.5" />
-                    {session.phoneNumber}
-                  </span>
-                )}
-                {session.pushName && (
-                  <span className="flex items-center gap-1">
-                    <User className="h-3.5 w-3.5" />
-                    {session.pushName}
-                  </span>
-                )}
-                <button
-                  onClick={handleCopyId}
-                  className="flex items-center gap-1 hover:text-foreground transition-colors"
-                >
-                  {idCopied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                  <span className="font-mono text-xs">{session.id.slice(0, 8)}...</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {isConnected && (
-              <Button variant="outline" onClick={onSendMessage}>
-                <Send className="h-4 w-4 mr-2" />
-                Send Message
-              </Button>
-            )}
-            <Button variant="outline" onClick={onRestart} disabled={isRestartPending}>
-              <RefreshCw className={cn("h-4 w-4 mr-2", isRestartPending && "animate-spin")} />
-              Restart
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {isConnected && (
-                  <DropdownMenuItem onClick={onLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive" onClick={onDelete}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Session
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="flex items-start gap-4">
+        {/* Session Avatar */}
+        <div className={cn(
+          "w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border shadow-sm transition-all duration-300",
+          isConnected 
+            ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-100 dark:border-green-900/50 shadow-[0_0_15px_rgba(34,197,94,0.15)]" 
+            : "bg-muted/50 border-border/50"
+        )}>
+          {session.profilePicUrl ? (
+            <img src={session.profilePicUrl} alt="" className="w-16 h-16 rounded-2xl object-cover" />
+          ) : (
+            <Smartphone className={cn("h-8 w-8 transition-colors duration-300", isConnected ? "text-green-600 dark:text-green-400" : "text-muted-foreground")} />
+          )}
         </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">{session.name}</h1>
+            <div className={cn("px-2.5 py-0.5 rounded-full text-xs font-medium flex items-center gap-1.5 border shadow-sm", statusConfig.color)}>
+              <StatusIcon className={cn("h-3 w-3", (statusConfig as { animate?: boolean }).animate && "animate-spin")} />
+              {statusConfig.label}
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            {session.phoneNumber && (
+              <span className="flex items-center gap-1.5">
+                <Phone className="h-3.5 w-3.5" />
+                {session.phoneNumber}
+              </span>
+            )}
+            {session.pushName && (
+              <span className="flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5" />
+                {session.pushName}
+              </span>
+            )}
+            <button
+              onClick={handleCopyId}
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors group"
+              title="Click to copy ID"
+            >
+              <div className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded border group-hover:border-primary/50 transition-colors">
+                {session.id}
+              </div>
+              {idCopied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 opacity-50 group-hover:opacity-100" />}
+            </button>
+          </div>
+          
+          {session.description && (
+            <p className="text-sm text-muted-foreground pt-1">{session.description}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 self-start mt-4 md:mt-0">
+        {isConnected && (
+          <Button variant="outline" size="sm" onClick={onSendMessage} className="h-9">
+            <Send className="h-4 w-4 mr-2" />
+            Message
+          </Button>
+        )}
+        <Button variant="outline" size="sm" onClick={onRestart} disabled={isRestartPending} className="h-9">
+          <RefreshCw className={cn("h-4 w-4 mr-2", isRestartPending && "animate-spin")} />
+          Restart
+        </Button>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="h-9 w-9">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {isConnected && (
+              <DropdownMenuItem onClick={onLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Session
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   )
