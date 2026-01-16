@@ -112,6 +112,7 @@ export type SessionStatus =
   | 'STARTING'
   | 'SCAN_QR_CODE'
   | 'WORKING'
+  | 'QR_TIMEOUT'
 
 // Session information
 export interface Session {
@@ -124,6 +125,7 @@ export interface Session {
   profilePicUrl: string | null
   connectedAt: string | null
   createdAt: string
+  updatedAt: string
   liveStatus?: SessionStatus
   isOnline?: boolean
   qrCode?: string | null
@@ -144,4 +146,17 @@ export interface MeInfo {
   phoneNumber?: string
   pushName?: string
   profilePicUrl?: string
+}
+
+/** QR code response with format support (legacy) */
+export interface QRCodeResponse {
+  status: string
+  value?: string | null
+  qrCode?: string | null
+  message?: string
+  canRetry?: boolean
+  /** Action to take when session needs intervention (e.g., 'restart') */
+  action?: 'restart' | null
+  /** API endpoint to call for the action */
+  endpoint?: string
 }

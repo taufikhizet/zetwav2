@@ -1,25 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { 
-  Book, 
-  Key, 
-  MessageSquare, 
-  Smartphone, 
-  Users, 
-  Webhook,
   ChevronRight,
   Menu,
   X,
-  UsersRound,
-  Radio,
-  Tag,
-  CircleDot,
-  UserCircle,
-  MessageCirclePlus,
   ArrowLeft,
+  Smartphone,
+  Key,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { DOC_SECTIONS } from '../constants/sections'
 
 import {
   QuickStartSection,
@@ -37,22 +28,6 @@ import {
   ExtendedMessagesSection,
 } from '../sections'
 
-const sections = [
-  { id: 'quickstart', label: 'Quick Start', icon: Book },
-  { id: 'auth', label: 'Authentication', icon: Key },
-  { id: 'sessions', label: 'Sessions', icon: Smartphone },
-  { id: 'messages', label: 'Messages', icon: MessageSquare },
-  { id: 'extended-messages', label: 'Extended Messages', icon: MessageCirclePlus },
-  { id: 'contacts', label: 'Contacts & Chats', icon: Users },
-  { id: 'groups', label: 'Groups', icon: UsersRound },
-  { id: 'presence', label: 'Presence', icon: Radio },
-  { id: 'labels', label: 'Labels', icon: Tag },
-  { id: 'status', label: 'Status/Stories', icon: CircleDot },
-  { id: 'profile', label: 'Profile', icon: UserCircle },
-  { id: 'webhooks', label: 'Webhooks', icon: Webhook },
-  { id: 'apikeys', label: 'API Keys', icon: Key },
-]
-
 export default function DocumentationPage() {
   const [activeSection, setActiveSection] = useState('quickstart')
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -64,40 +39,26 @@ export default function DocumentationPage() {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'quickstart':
-        return <QuickStartSection baseUrl={baseUrl} />
-      case 'auth':
-        return <AuthSection baseUrl={baseUrl} />
-      case 'sessions':
-        return <SessionsSection baseUrl={baseUrl} />
-      case 'messages':
-        return <MessagesSection baseUrl={baseUrl} />
-      case 'extended-messages':
-        return <ExtendedMessagesSection baseUrl={baseUrl} />
-      case 'contacts':
-        return <ContactsSection baseUrl={baseUrl} />
-      case 'groups':
-        return <GroupsSection baseUrl={baseUrl} />
-      case 'presence':
-        return <PresenceSection baseUrl={baseUrl} />
-      case 'labels':
-        return <LabelsSection baseUrl={baseUrl} />
-      case 'status':
-        return <StatusSection baseUrl={baseUrl} />
-      case 'profile':
-        return <ProfileSection baseUrl={baseUrl} />
-      case 'webhooks':
-        return <WebhooksSection baseUrl={baseUrl} />
-      case 'apikeys':
-        return <ApiKeysSection baseUrl={baseUrl} />
-      default:
-        return <QuickStartSection baseUrl={baseUrl} />
+      case 'quickstart': return <QuickStartSection baseUrl={baseUrl} />
+      case 'auth': return <AuthSection baseUrl={baseUrl} />
+      case 'sessions': return <SessionsSection baseUrl={baseUrl} />
+      case 'messages': return <MessagesSection baseUrl={baseUrl} />
+      case 'extended-messages': return <ExtendedMessagesSection baseUrl={baseUrl} />
+      case 'contacts': return <ContactsSection baseUrl={baseUrl} />
+      case 'groups': return <GroupsSection baseUrl={baseUrl} />
+      case 'presence': return <PresenceSection baseUrl={baseUrl} />
+      case 'labels': return <LabelsSection baseUrl={baseUrl} />
+      case 'status': return <StatusSection baseUrl={baseUrl} />
+      case 'profile': return <ProfileSection baseUrl={baseUrl} />
+      case 'webhooks': return <WebhooksSection baseUrl={baseUrl} />
+      case 'apikeys': return <ApiKeysSection baseUrl={baseUrl} />
+      default: return <QuickStartSection baseUrl={baseUrl} />
     }
   }
 
   const NavContent = () => (
     <nav className="space-y-1">
-      {sections.map((section) => {
+      {DOC_SECTIONS.map((section) => {
         const Icon = section.icon
         const isActive = activeSection === section.id
         return (
@@ -189,7 +150,7 @@ export default function DocumentationPage() {
           <div className="lg:hidden sticky top-14 z-40 bg-background border-b p-2">
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setMobileOpen(true)}>
               <Menu className="h-4 w-4" />
-              {sections.find(s => s.id === activeSection)?.label}
+              {DOC_SECTIONS.find(s => s.id === activeSection)?.label}
             </Button>
           </div>
 

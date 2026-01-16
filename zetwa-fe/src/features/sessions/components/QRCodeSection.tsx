@@ -42,9 +42,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { sessionApi } from '@/features/sessions/api/session.api'
 
@@ -102,7 +101,6 @@ export function QRCodeSection({
   socketQR,
   sessionQR,
   isConnected,
-  isRestarting,
   onRestart,
   isRestartPending,
   onRequestPairingCode,
@@ -142,7 +140,7 @@ export function QRCodeSection({
 
   // QR priority: Socket > API > Session data
   // Socket is real-time, API is polling fallback, session is initial load
-  const qrCode = socketQR || apiQR?.qr || sessionQR || null
+  const qrCode = socketQR || apiQR?.qrCode || apiQR?.value || sessionQR || null
   
   // If API returns action='restart', session needs to be restarted to get new QR
   const needsRestart = apiQR?.action === 'restart'
@@ -299,7 +297,8 @@ export function QRCodeSection({
           showQR: false,
           action: (
             <Button onClick={onRestart} disabled={isRestartPending}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              {isRestartPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <RefreshCw className={cn("h-4 w-4 mr-2", isRestartPending && "animate-spin")} />
               Restart Session
             </Button>
           ),
@@ -307,177 +306,154 @@ export function QRCodeSection({
     }
   }
 
-  // Restarting state
-  if (isRestarting) {
-    return (
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <QrCode className="h-5 w-5" />
-            Connect WhatsApp
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <div className="mx-auto w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Restarting Session</h3>
-            <p className="text-muted-foreground">
-              Please wait while we initialize the session...
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const stateConfig = getStateConfig()
+  const config = getStateConfig()
 
   return (
-    <Card className="mb-8">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5" />
-              Connect WhatsApp
-            </CardTitle>
-            <CardDescription className="mt-1.5">
-              {stateConfig.showQR 
-                ? 'Scan the QR code or use a pairing code to link your WhatsApp account'
-                : stateConfig.description
-              }
-            </CardDescription>
-          </div>
-          <Badge variant={stateConfig.showQR ? 'default' : 'secondary'} className="shrink-0">
-            {status.replace(/_/g, ' ')}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {/* Non-QR States */}
-        {!stateConfig.showQR && (
-          <div className="text-center py-8">
-            <div className={cn("mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4", stateConfig.iconBg)}>
-              {stateConfig.icon}
+    <Card className="overflow-hidden border-2 border-primary/10">
+      <div className="grid md:grid-cols-2 gap-0">
+        {/* Left Side: Status & Actions */}
+        <div className="p-8 flex flex-col justify-center bg-muted/30">
+          <div className="flex items-start gap-4 mb-6">
+            <div className={cn("p-3 rounded-xl flex items-center justify-center shrink-0", config.iconBg)}>
+              {config.icon}
             </div>
-            <h3 className="text-lg font-semibold mb-2">{stateConfig.title}</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              {stateConfig.description}
-            </p>
-            {stateConfig.action}
+            <div>
+              <h3 className="text-xl font-bold mb-1">{config.title}</h3>
+              <p className="text-muted-foreground">{config.description}</p>
+            </div>
           </div>
-        )}
+          
+          <div className="mt-auto">
+            {config.action}
+          </div>
+        </div>
 
-        {/* QR Code Display */}
-        {stateConfig.showQR && (
-          <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as 'qr' | 'phone')} className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6">
-              <TabsTrigger value="qr">
-                <QrCode className="h-4 w-4 mr-2" />
-                QR Code
-              </TabsTrigger>
-              <TabsTrigger value="phone">
-                <Phone className="h-4 w-4 mr-2" />
-                Phone Number
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="qr" className="text-center">
-              {/* QR Code Image */}
-              <div className="inline-block p-4 bg-white rounded-xl shadow-lg">
-                {qrCode ? (
-                  <img 
-                    src={qrCode} 
-                    alt="Scan this QR code with WhatsApp" 
-                    className="w-64 h-64"
-                  />
-                ) : (
-                  <div className="w-64 h-64 flex items-center justify-center bg-muted rounded-lg">
-                    {isLoadingQRCode ? (
-                      <div className="text-center">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">Loading QR code...</p>
-                      </div>
-                    ) : (
-                      <div className="text-center">
-                        <QrCode className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">Waiting for QR code...</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+        {/* Right Side: Auth Methods (QR/Phone) */}
+        {config.showQR && (
+          <div className="border-t md:border-t-0 md:border-l bg-background p-6">
+            <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as 'qr' | 'phone')} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="qr">
+                  <QrCode className="h-4 w-4 mr-2" />
+                  Scan QR
+                </TabsTrigger>
+                <TabsTrigger value="phone">
+                  <Phone className="h-4 w-4 mr-2" />
+                  Pairing Code
+                </TabsTrigger>
+              </TabsList>
               
-              {/* Instructions */}
-              <div className="mt-6 space-y-2 max-w-md mx-auto">
-                <p className="text-sm text-muted-foreground font-medium flex items-center justify-center gap-1">
-                  <Info className="h-4 w-4" />
-                  How to scan:
-                </p>
-                <ol className="text-sm text-muted-foreground text-left list-decimal list-inside space-y-1 bg-muted/50 p-3 rounded-lg">
-                  <li>Open WhatsApp on your phone</li>
-                  <li>Go to <strong>Settings</strong> → <strong>Linked Devices</strong></li>
-                  <li>Tap <strong>Link a Device</strong></li>
-                  <li>Point your phone at this QR code</li>
-                </ol>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="phone" className="max-w-md mx-auto">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Phone Number</Label>
-                  <Input
-                    placeholder="e.g., 628123456789"
-                    value={pairingPhone}
-                    onChange={(e) => setPairingPhone(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Enter phone number with country code (without + or spaces)
-                  </p>
+              <TabsContent value="qr" className="mt-0">
+                <div className="flex flex-col items-center justify-center min-h-[300px]">
+                  {isLoadingQRCode ? (
+                    <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                      <p>Waiting for QR code...</p>
+                    </div>
+                  ) : qrCode ? (
+                    <div className="relative group">
+                      <div className="bg-white p-4 rounded-xl border-2 border-slate-100 shadow-sm">
+                         <img 
+                           src={qrCode} 
+                           alt="WhatsApp QR Code" 
+                           className="w-64 h-64 object-contain" 
+                         />
+                      </div>
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl backdrop-blur-sm">
+                         <p className="text-white font-medium">Scan with WhatsApp</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground p-8">
+                      <QrCode className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                      <p>QR code not available</p>
+                    </div>
+                  )}
                 </div>
-
-                {pairingCode ? (
-                  <div className="p-4 bg-muted rounded-lg text-center">
-                    <p className="text-sm text-muted-foreground mb-2">Enter this code on your phone:</p>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-3xl font-mono font-bold tracking-widest">{pairingCode}</span>
-                      <Button variant="ghost" size="icon" onClick={handleCopyPairingCode}>
-                        {pairingCodeCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </TabsContent>
+              
+              <TabsContent value="phone" className="mt-0">
+                <div className="flex flex-col justify-center min-h-[300px] space-y-6">
+                  {!pairingCode ? (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input 
+                          id="phone" 
+                          placeholder="e.g. 6281234567890" 
+                          value={pairingPhone}
+                          onChange={(e) => setPairingPhone(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enter number with country code (no + or spaces)
+                        </p>
+                      </div>
+                      <Button 
+                        className="w-full" 
+                        onClick={handleRequestPairingCode}
+                        disabled={isPairingPending || pairingPhone.length < 10}
+                      >
+                        {isPairingPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Requesting...
+                          </>
+                        ) : (
+                          <>
+                            <Smartphone className="mr-2 h-4 w-4" />
+                            Get Pairing Code
+                          </>
+                        )}
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Open WhatsApp → Settings → Linked Devices → Link a Device → Link with phone number
-                    </p>
-                  </div>
-                ) : (
-                  <Button 
-                    className="w-full" 
-                    onClick={handleRequestPairingCode}
-                    disabled={isPairingPending || pairingPhone.replace(/\D/g, '').length < 10}
-                  >
-                    {isPairingPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Get Pairing Code
-                  </Button>
-                )}
-
-                <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
-                  <p className="font-medium text-blue-700 dark:text-blue-300 mb-1">
-                    💡 When to use pairing code?
-                  </p>
-                  <ul className="text-blue-600 dark:text-blue-400 text-xs space-y-1">
-                    <li>• When QR code scanning is difficult</li>
-                    <li>• When using WhatsApp on a different device</li>
-                    <li>• For automated/headless setups</li>
-                  </ul>
+                  ) : (
+                    <div className="space-y-6 text-center">
+                      <div className="bg-muted/50 p-6 rounded-xl border-2 border-dashed">
+                        <p className="text-sm text-muted-foreground mb-2">Enter this code on your phone:</p>
+                        <div className="text-3xl font-mono font-bold tracking-wider text-primary">
+                          {pairingCode}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          className="flex-1"
+                          onClick={handleCopyPairingCode}
+                        >
+                          {pairingCodeCopied ? (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Copy Code
+                            </>
+                          )}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          className="flex-1"
+                          onClick={() => setPairingPhone('')} // Reset flow to try again
+                        >
+                          Try Another Number
+                        </Button>
+                      </div>
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg flex gap-3 text-left">
+                        <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                        <p className="text-sm text-blue-600 dark:text-blue-400">
+                          Open WhatsApp on your phone &gt; Linked Devices &gt; Link a Device &gt; Link with phone number instead
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          </div>
         )}
-      </CardContent>
+      </div>
     </Card>
   )
 }
