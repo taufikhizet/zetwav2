@@ -5,8 +5,8 @@
  */
 
 // Page components
-export { ApiKeysPage } from './ApiKeysPage'
-export { NewApiKeyPage } from './NewApiKeyPage'
+export { ApiKeysPage } from './pages/ApiKeysPage'
+export { NewApiKeyPage } from './pages/NewApiKeyPage'
 
 // Types and constants
 export * from './types'
@@ -18,7 +18,7 @@ export * from './hooks'
 export * from './utils'
 
 // Help content
-export * from './help-content'
+export * from './constants/help-content'
 
 // Components
 export * from './components'

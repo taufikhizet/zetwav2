@@ -34,7 +34,13 @@ import {
 } from '@/components/ui/tooltip'
 
 import type { ApiKey } from '../types'
-import { isExpired, formatRelativeDate, formatExpirationDate, getScopeBadgeVariant, formatUsageCount } from '../utils'
+import { 
+  isExpired, 
+  formatRelativeDate, 
+  formatExpirationDate, 
+  getScopeBadgeVariant, 
+  formatUsageCount 
+} from '../utils'
 
 interface ApiKeyCardProps {
   apiKey: ApiKey

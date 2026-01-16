@@ -7,18 +7,17 @@ import { useAuthStore } from '@/stores/auth.store'
 import DashboardLayout from '@/layouts/DashboardLayout'
 
 // Auth Pages
-import LoginPage from '@/pages/auth/LoginPage'
-import RegisterPage from '@/pages/auth/RegisterPage'
+import LoginPage from '@/features/auth/pages/LoginPage'
+import RegisterPage from '@/features/auth/pages/RegisterPage'
 
 // Dashboard Pages
-import DashboardPage from '@/pages/dashboard/DashboardPage'
-import SessionsPage from '@/pages/dashboard/SessionsPage'
-import NewSessionPage from '@/pages/dashboard/NewSessionPage'
-import SessionDetailPage from '@/pages/dashboard/SessionDetailPage'
-import ApiKeysPage from '@/pages/dashboard/ApiKeysPage'
-import { NewApiKeyPage } from '@/features/api-keys'
-import DocumentationPage from '@/pages/docs'
-import SettingsPage from '@/pages/dashboard/SettingsPage'
+import DashboardPage from '@/features/dashboard/pages/DashboardPage'
+import SessionsPage from '@/features/sessions/pages/SessionsPage'
+import NewSessionPage from '@/features/sessions/pages/NewSessionPage'
+import SessionDetailPage from '@/features/sessions/pages/SessionDetailPage'
+import { ApiKeysPage, NewApiKeyPage } from '@/features/api-keys'
+import DocumentationPage from '@/features/docs/pages/DocumentationPage'
+import SettingsPage from '@/features/settings/pages/SettingsPage'
 
 // Create query client
 const queryClient = new QueryClient({
