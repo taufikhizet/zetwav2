@@ -117,7 +117,7 @@ export const sessionApi = {
     return response.data
   },
 
-  getMessages: async (sessionId: string, params: { page?: number; limit?: number; chatId?: string } = {}): Promise<any> => {
+  getMessages: async (sessionId: string, params: { page?: number; limit?: number; chatId?: string; direction?: string } = {}): Promise<any> => {
     const response = await api.get(`/sessions/${sessionId}/messages`, { params })
     return response.data.data
   },

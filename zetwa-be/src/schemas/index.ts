@@ -278,7 +278,7 @@ export const editMessageSchema = z.object({
 export const messageQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).transform(Number).default('1'),
   limit: z.string().regex(/^\d+$/).transform(Number).default('20'),
-  direction: z.enum(['asc', 'desc']).default('desc'),
+  direction: z.enum(['asc', 'desc', 'INCOMING', 'OUTGOING']).default('desc'),
   type: z.string().optional(),
   chatId: z.string().optional(),
   startDate: z.string().datetime().optional(),

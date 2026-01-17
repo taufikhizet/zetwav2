@@ -368,9 +368,22 @@ router.get('/:sessionId/messages', requireScope('messages:read'), async (req: Re
       sessionId: req.params.sessionId,
     };
 
-    if (direction) where.direction = direction;
+    if (direction && (direction === 'asc' || direction === 'desc')) {
+      // It's sort order, not filter
+    } else if (direction) {
+      where.direction = direction;
+    }
+
     if (type) where.type = type;
-    if (chatId) where.chatId = chatId;
+    if (chatId) {
+      if (chatId.includes('@')) {
+        // If chatId is a WhatsApp ID (e.g., 628xxx@c.us), filter by relation
+        where.chat = { waChatId: chatId };
+      } else {
+        // Otherwise assume it's an internal CUID
+        where.chatId = chatId;
+      }
+    }
     if (startDate || endDate) {
       where.timestamp = {};
       if (startDate) (where.timestamp as Record<string, Date>).gte = new Date(startDate);
@@ -389,17 +402,28 @@ router.get('/:sessionId/messages', requireScope('messages:read'), async (req: Re
             },
           },
         },
-        orderBy: { timestamp: 'desc' },
+        orderBy: { timestamp: direction === 'asc' ? 'asc' : 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
       prisma.message.count({ where }),
     ]);
 
+    // Map messages to include from/to from metadata if not present in schema
+    const messagesMapped = messages.map(msg => {
+      const metadata = msg.metadata as Record<string, any> || {};
+      return {
+        ...msg,
+        from: metadata.from || msg.chatId, // Fallback to chatId if missing (approximate)
+        to: metadata.to,
+        author: metadata.author,
+      };
+    });
+
     res.json({
       success: true,
       data: {
-        messages,
+        messages: messagesMapped,
         pagination: {
           page,
           limit,
