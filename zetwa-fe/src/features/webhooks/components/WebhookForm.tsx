@@ -117,7 +117,7 @@ export function WebhookForm({
   const isAllSelected = value.events?.includes('*')
 
   return (
-    <div className={`space-y-4 ${compact ? '' : 'p-4 border rounded-lg bg-muted/20'}`}>
+    <div className={`space-y-4 ${compact ? '' : 'p-6 rounded-xl bg-card border shadow-sm'}`}>
       {/* Webhook Name */}
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
@@ -272,11 +272,11 @@ export function WebhookForm({
               </Label>
               <Button
                 type="button"
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={addCustomHeader}
                 disabled={disabled}
-                className="h-7 text-xs"
+                className="h-7 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <Plus className="h-3 w-3 mr-1" />
                 Add Header
@@ -332,29 +332,37 @@ export function WebhookForm({
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs">Max Attempts</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Max Attempts
+                  <FieldHelp content={WEBHOOK_HELP.retryAttempts} />
+                </Label>
                 <Input
                   type="number"
                   min={1}
                   max={10}
-                  value={value.retries?.attempts || 3}
+                  placeholder="3"
+                  value={value.retries?.attempts?.toString() ?? ''}
                   onChange={(e) => updateField('retries', { 
                     ...(value.retries || { delaySeconds: 5, policy: 'exponential' }), 
-                    attempts: parseInt(e.target.value) || 3 
+                    attempts: e.target.value === '' ? undefined : parseInt(e.target.value)
                   })}
                   disabled={disabled}
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs">Delay (Seconds)</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Delay (Seconds)
+                  <FieldHelp content={WEBHOOK_HELP.retryDelay} />
+                </Label>
                 <Input
                   type="number"
                   min={1}
                   max={60}
-                  value={value.retries?.delaySeconds || 5}
+                  placeholder="5"
+                  value={value.retries?.delaySeconds?.toString() ?? ''}
                   onChange={(e) => updateField('retries', { 
                     ...(value.retries || { attempts: 3, policy: 'exponential' }), 
-                    delaySeconds: parseInt(e.target.value) || 5
+                    delaySeconds: e.target.value === '' ? undefined : parseInt(e.target.value)
                   })}
                   disabled={disabled}
                 />
@@ -362,7 +370,10 @@ export function WebhookForm({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs">Backoff Policy</Label>
+              <Label className="text-xs flex items-center gap-1">
+                Backoff Policy
+                <FieldHelp content={WEBHOOK_HELP.retryPolicy} />
+              </Label>
               <Select
                 value={value.retries?.policy || 'exponential'}
                 onValueChange={(policy: RetryPolicy) => updateField('retries', {
@@ -390,13 +401,15 @@ export function WebhookForm({
              <Label className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 Timeout (seconds)
+                <FieldHelp content={WEBHOOK_HELP.webhookTimeout} />
              </Label>
              <Input
                 type="number"
                 min={1}
                 max={60}
-                value={(value.timeout || 10000) / 1000}
-                onChange={(e) => updateField('timeout', (parseInt(e.target.value) || 10) * 1000)}
+                placeholder="30"
+                value={value.timeout?.toString() ?? ''}
+                onChange={(e) => updateField('timeout', e.target.value === '' ? undefined : parseInt(e.target.value))}
                 disabled={disabled}
              />
              <p className="text-xs text-muted-foreground">

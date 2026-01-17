@@ -1,3 +1,4 @@
+
 import { 
   Bug, 
   Globe, 
@@ -92,11 +93,11 @@ export function AdvancedConfigCard({
             </div>
             <div className="space-y-1">
               <Label htmlFor="debugMode" className="text-sm font-medium cursor-pointer flex items-center gap-2">
-                Debug Mode
+                {SESSION_HELP.debugMode.title}
                 <FieldHelp content={SESSION_HELP.debugMode} />
               </Label>
               <p className="text-xs text-muted-foreground">
-                Enable detailed logging for troubleshooting.
+                {SESSION_HELP.debugMode.description}
               </p>
             </div>
           </div>
@@ -119,11 +120,11 @@ export function AdvancedConfigCard({
               </div>
               <div>
                 <h3 className="font-medium flex items-center gap-2">
-                  Proxy Configuration
+                  {SESSION_HELP.useProxy.title}
                   <FieldHelp content={SESSION_HELP.useProxy} />
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Route traffic through a proxy
+                  {SESSION_HELP.useProxy.description}
                 </p>
               </div>
             </div>
@@ -140,7 +141,7 @@ export function AdvancedConfigCard({
               <div className="p-4 rounded-lg border bg-muted/30 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="proxyServer" className="text-sm flex items-center gap-2">
-                    Proxy Server URL
+                    {SESSION_HELP.proxyServer.title}
                     <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Required</Badge>
                     <FieldHelp content={SESSION_HELP.proxyServer} />
                   </Label>
@@ -155,7 +156,10 @@ export function AdvancedConfigCard({
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="proxyUsername" className="text-sm">Username</Label>
+                    <Label htmlFor="proxyUsername" className="text-sm flex items-center gap-1">
+                      {SESSION_HELP.proxyUsername.title}
+                      <FieldHelp content={SESSION_HELP.proxyUsername} />
+                    </Label>
                     <Input
                       id="proxyUsername"
                       placeholder="Optional"
@@ -165,7 +169,10 @@ export function AdvancedConfigCard({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="proxyPassword" className="text-sm">Password</Label>
+                    <Label htmlFor="proxyPassword" className="text-sm flex items-center gap-1">
+                      {SESSION_HELP.proxyPassword.title}
+                      <FieldHelp content={SESSION_HELP.proxyPassword} />
+                    </Label>
                     <PasswordInput
                       id="proxyPassword"
                       placeholder="Optional"
@@ -189,7 +196,10 @@ export function AdvancedConfigCard({
               <Smartphone className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-medium flex items-center gap-2">Client Information</h3>
+              <h3 className="font-medium flex items-center gap-2">
+                Client Information
+                <FieldHelp content={SESSION_HELP.deviceName} />
+              </h3>
               <p className="text-xs text-muted-foreground">
                 Customize how the session appears to WhatsApp
               </p>
@@ -199,7 +209,7 @@ export function AdvancedConfigCard({
           <div className="pl-[52px] grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="deviceName" className="text-sm flex items-center gap-2">
-                Device Name
+                {SESSION_HELP.deviceName.title}
                 <FieldHelp content={SESSION_HELP.deviceName} />
               </Label>
               <Input
@@ -212,7 +222,7 @@ export function AdvancedConfigCard({
             </div>
             <div className="space-y-2">
               <Label htmlFor="browserName" className="text-sm flex items-center gap-2">
-                Browser Name
+                {SESSION_HELP.browserName.title}
                 <FieldHelp content={SESSION_HELP.browserName} />
               </Label>
               <Input
@@ -236,59 +246,75 @@ export function AdvancedConfigCard({
             </div>
             <div>
               <h3 className="font-medium flex items-center gap-2">
-                Ignore Events
+                {SESSION_HELP.ignoreEvents.title}
                 <FieldHelp content={SESSION_HELP.ignoreEvents} />
               </h3>
               <p className="text-xs text-muted-foreground">
-                Reduce server load by ignoring specific updates
+                {SESSION_HELP.ignoreEvents.description}
               </p>
             </div>
           </div>
 
           <div className="pl-[52px] grid gap-4 sm:grid-cols-2">
-            <div className="flex items-center space-x-2 border p-3 rounded-lg bg-muted/20">
+            <div className="flex items-center space-x-2 p-3 rounded-lg bg-muted/50 shadow-inner">
               <Checkbox 
                 id="ignoreStatus" 
                 checked={ignoreStatus}
                 onCheckedChange={(c) => setIgnoreStatus(c as boolean)}
                 disabled={disabled}
               />
-              <Label htmlFor="ignoreStatus" className="text-sm cursor-pointer flex-1">
-                Ignore Status/Stories
-              </Label>
+              <div className="flex-1 flex flex-col">
+                <Label htmlFor="ignoreStatus" className="text-sm cursor-pointer flex items-center gap-2">
+                  Status
+                  <FieldHelp content={SESSION_HELP.ignoreStatus} />
+                </Label>
+                <span className="text-[10px] text-muted-foreground">Stories</span>
+              </div>
             </div>
-            <div className="flex items-center space-x-2 border p-3 rounded-lg bg-muted/20">
+            <div className="flex items-center space-x-2 p-3 rounded-lg bg-muted/50 shadow-inner">
               <Checkbox 
                 id="ignoreGroups" 
                 checked={ignoreGroups}
                 onCheckedChange={(c) => setIgnoreGroups(c as boolean)}
                 disabled={disabled}
               />
-              <Label htmlFor="ignoreGroups" className="text-sm cursor-pointer flex-1">
-                Ignore Groups
-              </Label>
+              <div className="flex-1 flex flex-col">
+                <Label htmlFor="ignoreGroups" className="text-sm cursor-pointer flex items-center gap-2">
+                  Groups
+                  <FieldHelp content={SESSION_HELP.ignoreGroups} />
+                </Label>
+                <span className="text-[10px] text-muted-foreground">Group msgs</span>
+              </div>
             </div>
-            <div className="flex items-center space-x-2 border p-3 rounded-lg bg-muted/20">
+            <div className="flex items-center space-x-2 p-3 rounded-lg bg-muted/50 shadow-inner">
               <Checkbox 
                 id="ignoreChannels" 
                 checked={ignoreChannels}
                 onCheckedChange={(c) => setIgnoreChannels(c as boolean)}
                 disabled={disabled}
               />
-              <Label htmlFor="ignoreChannels" className="text-sm cursor-pointer flex-1">
-                Ignore Channels
-              </Label>
+              <div className="flex-1 flex flex-col">
+                <Label htmlFor="ignoreChannels" className="text-sm cursor-pointer flex items-center gap-2">
+                  Channels
+                  <FieldHelp content={SESSION_HELP.ignoreChannels} />
+                </Label>
+                <span className="text-[10px] text-muted-foreground">WA Channels</span>
+              </div>
             </div>
-            <div className="flex items-center space-x-2 border p-3 rounded-lg bg-muted/20">
+            <div className="flex items-center space-x-2 p-3 rounded-lg bg-muted/50 shadow-inner">
               <Checkbox 
                 id="ignoreBroadcast" 
                 checked={ignoreBroadcast}
                 onCheckedChange={(c) => setIgnoreBroadcast(c as boolean)}
                 disabled={disabled}
               />
-              <Label htmlFor="ignoreBroadcast" className="text-sm cursor-pointer flex-1">
-                Ignore Broadcasts
-              </Label>
+              <div className="flex-1 flex flex-col">
+                <Label htmlFor="ignoreBroadcast" className="text-sm cursor-pointer flex items-center gap-2">
+                  Broadcast
+                  <FieldHelp content={SESSION_HELP.ignoreBroadcast} />
+                </Label>
+                <span className="text-[10px] text-muted-foreground">Broadcast</span>
+              </div>
             </div>
           </div>
         </div>
@@ -303,21 +329,24 @@ export function AdvancedConfigCard({
             </div>
             <div>
               <h3 className="font-medium flex items-center gap-2">
-                NOWEB Engine
+                {SESSION_HELP.nowebEngine.title}
                 <Badge variant="outline" className="text-[10px]">Advanced</Badge>
                 <FieldHelp content={SESSION_HELP.nowebEngine} />
               </h3>
               <p className="text-xs text-muted-foreground">
-                Configuration for the internal Baileys store
+                {SESSION_HELP.nowebEngine.description}
               </p>
             </div>
           </div>
 
           <div className="pl-[52px] space-y-3">
-            <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 shadow-inner">
               <div className="space-y-0.5">
-                <Label htmlFor="nowebStore" className="text-sm font-medium">Enable Store</Label>
-                <p className="text-xs text-muted-foreground">Keep messages in memory/file</p>
+                <Label htmlFor="nowebStore" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                  Enable Store
+                  <FieldHelp content={SESSION_HELP.nowebStoreEnabled} />
+                </Label>
+                <p className="text-xs text-muted-foreground">{SESSION_HELP.nowebStoreEnabled.description}</p>
               </div>
               <Switch
                 id="nowebStore"
@@ -328,10 +357,13 @@ export function AdvancedConfigCard({
             </div>
 
             {nowebStoreEnabled && (
-              <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/20 ml-4 border-l-4 border-l-primary">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 shadow-inner">
                 <div className="space-y-0.5">
-                  <Label htmlFor="nowebFullSync" className="text-sm font-medium">Full Sync</Label>
-                  <p className="text-xs text-muted-foreground">Download full history (high memory usage)</p>
+                  <Label htmlFor="nowebFullSync" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                    Full Sync
+                    <FieldHelp content={SESSION_HELP.nowebFullSync} />
+                  </Label>
+                  <p className="text-xs text-muted-foreground">{SESSION_HELP.nowebFullSync.description}</p>
                 </div>
                 <Switch
                   id="nowebFullSync"
@@ -342,10 +374,13 @@ export function AdvancedConfigCard({
               </div>
             )}
 
-            <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 shadow-inner">
               <div className="space-y-0.5">
-                <Label htmlFor="nowebMarkOnline" className="text-sm font-medium">Mark Online</Label>
-                <p className="text-xs text-muted-foreground">Appear online when connected</p>
+                <Label htmlFor="nowebMarkOnline" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                  Mark Online
+                  <FieldHelp content={SESSION_HELP.nowebMarkOnline} />
+                </Label>
+                <p className="text-xs text-muted-foreground">{SESSION_HELP.nowebMarkOnline.description}</p>
               </div>
               <Switch
                 id="nowebMarkOnline"
@@ -367,11 +402,11 @@ export function AdvancedConfigCard({
             </div>
             <div>
               <h3 className="font-medium flex items-center gap-2">
-                Metadata
+                {SESSION_HELP.metadata.title}
                 <FieldHelp content={SESSION_HELP.metadata} />
               </h3>
               <p className="text-xs text-muted-foreground">
-                Custom JSON data to attach to this session
+                {SESSION_HELP.metadata.description}
               </p>
             </div>
           </div>

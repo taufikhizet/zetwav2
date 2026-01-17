@@ -14,10 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { FieldHelp } from '@/components/ui/field-help'
-import { WEBHOOK_HELP } from '@/lib/field-help-content'
+import { Switch } from '@/components/ui/switch'
 import { WebhookForm, emptyWebhookConfig } from './WebhookForm'
 import type { InlineWebhookConfig, WebhookConfig } from '@/features/webhooks/types/webhook.types'
 
@@ -61,10 +59,8 @@ export function WebhookDialog({
   isPending = false,
   onSubmit,
 }: WebhookDialogProps) {
-  // Webhook name (not part of InlineWebhookConfig)
-  const [name, setName] = useState('')
-  
   // Webhook config (using InlineWebhookConfig structure)
+  // config.name stores the webhook name
   const [config, setConfig] = useState<InlineWebhookConfig>(emptyWebhookConfig)
   
   // Is active toggle for edit mode
@@ -74,8 +70,8 @@ export function WebhookDialog({
   useEffect(() => {
     if (open) {
       if (mode === 'edit' && webhook) {
-        setName(webhook.name || '')
         setConfig({
+          name: webhook.name || '',
           url: webhook.url,
           events: webhook.events || [],
           hmac: webhook.hmac,
@@ -85,8 +81,7 @@ export function WebhookDialog({
         })
         setIsActive(webhook.isActive)
       } else {
-        setName('')
-        setConfig({ ...emptyWebhookConfig })
+        setConfig({ ...emptyWebhookConfig, name: '' })
         setIsActive(true)
       }
     }
@@ -95,12 +90,18 @@ export function WebhookDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!name.trim()) return
+    // name is now part of config, but might be undefined in type, so we default to empty string
+    const webhookName = config.name || ''
+    
+    // Allow empty name (backend will generate one if needed), but if provided, use it
+    // Or if we want to enforce name:
+    // if (!webhookName.trim()) return
+    
     if (!config.url) return
     
     onSubmit({
       ...(mode === 'edit' && webhook ? { id: webhook.id } : {}),
-      name: name.trim(),
+      name: webhookName.trim(), 
       url: config.url,
       events: config.events,
       secret: config.hmac?.key,
@@ -111,7 +112,8 @@ export function WebhookDialog({
     })
   }
 
-  const isValid = name.trim() && config.url && config.events?.length > 0
+  // Check validity - Name is now optional or handled by config
+  const isValid = config.url && config.events?.length > 0
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,83 +130,46 @@ export function WebhookDialog({
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6 py-4">
-          {/* Webhook Name */}
-          <div className="space-y-2">
-            <Label htmlFor="webhook-name" className="flex items-center gap-1">
-              Name
-              <FieldHelp content={WEBHOOK_HELP.webhookName} />
-            </Label>
-            <Input
-              id="webhook-name"
-              placeholder="e.g., My Notification Service"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={isPending}
-            />
-            <p className="text-xs text-muted-foreground">
-              A friendly name to identify this webhook
-            </p>
-          </div>
-
-          {/* Webhook Form (URL, Events, Advanced) */}
+        <form onSubmit={handleSubmit} className="space-y-6 py-4 bg-muted/30 -mx-6 px-6">
           <WebhookForm
             value={config}
             onChange={setConfig}
             disabled={isPending}
             showAdvancedByDefault={mode === 'edit'}
+            error={!config.url && mode === 'create' ? 'URL is required' : undefined}
           />
 
-          {/* Active toggle for edit mode */}
           {mode === 'edit' && (
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-              <div>
-                <Label htmlFor="webhook-active" className="cursor-pointer flex items-center gap-1">
-                  Active
-                  <FieldHelp content={WEBHOOK_HELP.webhookIsActive} />
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Disable to pause webhook notifications
+            <div className="flex items-center justify-between p-6 rounded-xl bg-card border shadow-sm">
+              <div className="space-y-0.5">
+                <Label className="text-base">Active Status</Label>
+                <p className="text-sm text-muted-foreground">
+                  {isActive ? 'Webhook is active and receiving events' : 'Webhook is paused'}
                 </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="webhook-active"
-                  className="sr-only peer"
-                  checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
-                  disabled={isPending}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-              </label>
+              <Switch
+                checked={isActive}
+                onCheckedChange={setIsActive}
+                disabled={isPending}
+              />
             </div>
           )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending || !isValid}>
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {mode === 'create' ? 'Create Webhook' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
         </form>
-        
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isPending}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isPending || !isValid}
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {mode === 'create' ? 'Creating...' : 'Saving...'}
-              </>
-            ) : (
-              mode === 'create' ? 'Create Webhook' : 'Save Changes'
-            )}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -1,3 +1,4 @@
+
 /**
  * Session Settings Tab - Edit session configuration (name, description, client, proxy, ignore, metadata)
  */
@@ -12,14 +13,8 @@ import {
   Code,
   Bug,
   Info,
-  Radio,
-  Users,
-  MessageSquare,
-  Shield,
   Settings2,
-  Tv,
   Database,
-  Wifi,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -33,6 +28,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Checkbox } from '@/components/ui/checkbox'
 import { FieldHelp } from '@/components/ui/field-help'
 import { SESSION_HELP } from '@/lib/field-help-content'
 
@@ -69,7 +65,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
   const [ignoreBroadcast, setIgnoreBroadcast] = useState(session.config?.ignore?.broadcast || false)
   
   // NOWEB engine config
-  const [nowebStoreEnabled, setNowebStoreEnabled] = useState(session.config?.noweb?.store?.enabled ?? true)
+  const [nowebStoreEnabled, setNowebStoreEnabled] = useState(session.config?.noweb?.store?.enabled ?? false)
   const [nowebFullSync, setNowebFullSync] = useState(session.config?.noweb?.store?.fullSync || false)
   const [nowebMarkOnline, setNowebMarkOnline] = useState(session.config?.noweb?.markOnline ?? true)
   
@@ -99,7 +95,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
     setIgnoreGroups(session.config?.ignore?.groups || false)
     setIgnoreChannels(session.config?.ignore?.channels || false)
     setIgnoreBroadcast(session.config?.ignore?.broadcast || false)
-    setNowebStoreEnabled(session.config?.noweb?.store?.enabled ?? true)
+    setNowebStoreEnabled(session.config?.noweb?.store?.enabled ?? false)
     setNowebFullSync(session.config?.noweb?.store?.fullSync || false)
     setNowebMarkOnline(session.config?.noweb?.markOnline ?? true)
     setMetadataJson(session.config?.metadata ? JSON.stringify(session.config.metadata, null, 2) : '')
@@ -208,7 +204,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
   return (
     <div className="space-y-6">
       {/* Basic Info Card */}
-      <Card>
+      <Card className="border-0 shadow-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings2 className="h-5 w-5" />
@@ -254,7 +250,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
       </Card>
 
       {/* Debug Mode */}
-      <Card className="border-orange-200 dark:border-orange-900 bg-orange-50/30 dark:bg-orange-950/10">
+      <Card className="border-0 shadow-none bg-orange-50/30 dark:bg-orange-950/10">
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex gap-3">
@@ -279,7 +275,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
 
       {/* Advanced Settings */}
       <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-        <Card>
+        <Card className="border-0 shadow-none">
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
               <div className="flex items-center justify-between">
@@ -297,9 +293,12 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                     <Smartphone className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-medium">Device Identification</h3>
+                    <h3 className="font-medium flex items-center gap-2">
+                      Client Information
+                      <FieldHelp content={SESSION_HELP.deviceName} />
+                    </h3>
                     <p className="text-xs text-muted-foreground">
-                      How this session appears in WhatsApp's Linked Devices
+                      Customize how the session appears to WhatsApp
                     </p>
                   </div>
                 </div>
@@ -310,7 +309,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                       <FieldHelp content={SESSION_HELP.deviceName} />
                     </Label>
                     <Input
-                      placeholder="e.g., Windows, macOS"
+                      placeholder="e.g., Zetwa Server 1"
                       value={deviceName}
                       onChange={(e) => setDeviceName(e.target.value)}
                     />
@@ -321,7 +320,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                       <FieldHelp content={SESSION_HELP.browserName} />
                     </Label>
                     <Input
-                      placeholder="e.g., Chrome, Firefox"
+                      placeholder="e.g., Chrome (Windows)"
                       value={browserName}
                       onChange={(e) => setBrowserName(e.target.value)}
                     />
@@ -341,7 +340,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                     <div>
                       <h3 className="font-medium flex items-center gap-2">
                         Proxy Configuration
-                        <Shield className="h-4 w-4 text-muted-foreground" />
+                        <FieldHelp content={SESSION_HELP.useProxy} />
                       </h3>
                       <p className="text-xs text-muted-foreground">
                         Route traffic through a proxy server
@@ -353,7 +352,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                 
                 {useProxy && (
                   <div className="space-y-4 pl-[52px] animate-in slide-in-from-top-2 duration-200">
-                    <div className="p-4 rounded-lg border bg-muted/30 space-y-4">
+                    <div className="p-4 rounded-lg bg-muted/30 space-y-4 shadow-inner">
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2">
                           Proxy Server URL
@@ -401,77 +400,79 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
               {/* Event Filters */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
                     <Filter className="h-5 w-5" />
                   </div>
                   <div>
                     <h3 className="font-medium flex items-center gap-1">
-                      Event Filters
-                      <FieldHelp content={{
-                        title: 'Event Filters',
-                        description: 'Filter untuk mengabaikan pesan dari jenis chat tertentu',
-                        details: {
-                          whatItDoes: 'Event filters memungkinkan Anda mengabaikan pesan dari jenis chat tertentu sehingga tidak dikirim ke webhook dan tidak diproses oleh sistem.',
-                          whenToUse: 'Gunakan filter ini untuk mengurangi noise dari pesan yang tidak relevan dengan use case Anda.',
-                          examples: [
-                            'Aktifkan "Status" untuk mengabaikan story/status WhatsApp',
-                            'Aktifkan "Groups" untuk fokus hanya pada chat pribadi',
-                            'Aktifkan "Channels" untuk mengabaikan channel/newsletter',
-                            'Aktifkan "Broadcast" untuk mengabaikan pesan broadcast',
-                          ],
-                          notes: ['Pesan yang difilter tidak akan dikirim ke webhook. Gunakan dengan bijak.'],
-                        },
-                      }} />
+                      Ignore Events
+                      <FieldHelp content={SESSION_HELP.ignoreEvents} />
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      Choose which message types to ignore
+                      Reduce server load by ignoring specific updates
                     </p>
                   </div>
                 </div>
                 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 pl-[52px]">
-                  <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${ignoreStatus ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
-                    <div className="flex items-center gap-2">
-                      <Radio className="h-4 w-4 text-pink-500" />
-                      <div>
-                        <Label htmlFor="ignoreStatus" className="text-sm cursor-pointer">Status</Label>
-                        <p className="text-[10px] text-muted-foreground">Stories</p>
-                      </div>
+                   <div className="flex items-center space-x-2 p-3 rounded-lg bg-muted/50 shadow-inner">
+                    <Checkbox 
+                      id="ignoreStatus" 
+                      checked={ignoreStatus}
+                      onCheckedChange={(c) => setIgnoreStatus(c as boolean)}
+                    />
+                    <div className="flex-1 flex flex-col">
+                      <Label htmlFor="ignoreStatus" className="text-sm cursor-pointer flex items-center gap-2">
+                        Status
+                        <FieldHelp content={SESSION_HELP.ignoreStatus} />
+                      </Label>
+                      <span className="text-[10px] text-muted-foreground">Stories</span>
                     </div>
-                    <Switch id="ignoreStatus" checked={ignoreStatus} onCheckedChange={setIgnoreStatus} />
                   </div>
                   
-                  <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${ignoreGroups ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-indigo-500" />
-                      <div>
-                        <Label htmlFor="ignoreGroups" className="text-sm cursor-pointer">Groups</Label>
-                        <p className="text-[10px] text-muted-foreground">Group msgs</p>
-                      </div>
+                   <div className="flex items-center space-x-2 p-3 rounded-lg bg-muted/50 shadow-inner">
+                    <Checkbox 
+                      id="ignoreGroups" 
+                      checked={ignoreGroups}
+                      onCheckedChange={(c) => setIgnoreGroups(c as boolean)}
+                    />
+                    <div className="flex-1 flex flex-col">
+                      <Label htmlFor="ignoreGroups" className="text-sm cursor-pointer flex items-center gap-2">
+                        Groups
+                        <FieldHelp content={SESSION_HELP.ignoreGroups} />
+                      </Label>
+                      <span className="text-[10px] text-muted-foreground">Group msgs</span>
                     </div>
-                    <Switch id="ignoreGroups" checked={ignoreGroups} onCheckedChange={setIgnoreGroups} />
                   </div>
                   
-                  <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${ignoreChannels ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
-                    <div className="flex items-center gap-2">
-                      <Tv className="h-4 w-4 text-violet-500" />
-                      <div>
-                        <Label htmlFor="ignoreChannels" className="text-sm cursor-pointer">Channels</Label>
-                        <p className="text-[10px] text-muted-foreground">WA Channels</p>
-                      </div>
+                   <div className="flex items-center space-x-2 p-3 rounded-lg bg-muted/50 shadow-inner">
+                    <Checkbox 
+                      id="ignoreChannels" 
+                      checked={ignoreChannels}
+                      onCheckedChange={(c) => setIgnoreChannels(c as boolean)}
+                    />
+                    <div className="flex-1 flex flex-col">
+                      <Label htmlFor="ignoreChannels" className="text-sm cursor-pointer flex items-center gap-2">
+                        Channels
+                        <FieldHelp content={SESSION_HELP.ignoreChannels} />
+                      </Label>
+                      <span className="text-[10px] text-muted-foreground">WA Channels</span>
                     </div>
-                    <Switch id="ignoreChannels" checked={ignoreChannels} onCheckedChange={setIgnoreChannels} />
                   </div>
                   
-                  <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${ignoreBroadcast ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-cyan-500" />
-                      <div>
-                        <Label htmlFor="ignoreBroadcast" className="text-sm cursor-pointer">Broadcast</Label>
-                        <p className="text-[10px] text-muted-foreground">Broadcast</p>
-                      </div>
+                   <div className="flex items-center space-x-2 p-3 rounded-lg bg-muted/50 shadow-inner">
+                    <Checkbox 
+                      id="ignoreBroadcast" 
+                      checked={ignoreBroadcast}
+                      onCheckedChange={(c) => setIgnoreBroadcast(c as boolean)}
+                    />
+                    <div className="flex-1 flex flex-col">
+                      <Label htmlFor="ignoreBroadcast" className="text-sm cursor-pointer flex items-center gap-2">
+                        Broadcast
+                        <FieldHelp content={SESSION_HELP.ignoreBroadcast} />
+                      </Label>
+                      <span className="text-[10px] text-muted-foreground">Broadcast</span>
                     </div>
-                    <Switch id="ignoreBroadcast" checked={ignoreBroadcast} onCheckedChange={setIgnoreBroadcast} />
                   </div>
                 </div>
               </div>
@@ -481,67 +482,53 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
               {/* NOWEB Engine Configuration */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                     <Database className="h-5 w-5" />
                   </div>
                   <div>
                     <h3 className="font-medium flex items-center gap-1">
-                      Engine Configuration
-                      <FieldHelp content={{
-                        title: 'Engine Configuration',
-                        description: 'Konfigurasi lanjutan untuk WhatsApp engine (NOWEB)',
-                        details: {
-                          whatItDoes: 'Mengatur perilaku engine WhatsApp untuk menyimpan data, sinkronisasi, dan status online.',
-                          whenToUse: 'Sesuaikan pengaturan ini berdasarkan kebutuhan performa dan privasi.',
-                          examples: [
-                            'Store: Menyimpan pesan dan chat ke database lokal',
-                            'Full Sync: Sinkronisasi semua chat saat login (lambat tapi lengkap)',
-                            'Mark Online: Menampilkan status online saat terhubung',
-                          ],
-                          tips: [
-                            'Nonaktifkan Store jika hanya butuh webhook tanpa menyimpan history',
-                            'Full Sync berguna untuk mendapatkan semua chat, tapi memperlambat startup',
-                            'Nonaktifkan Mark Online untuk mode stealth/ghost',
-                          ],
-                        },
-                      }} />
+                      {SESSION_HELP.nowebEngine.title}
+                      <Badge variant="outline" className="text-[10px] ml-1">Advanced</Badge>
+                      <FieldHelp content={SESSION_HELP.nowebEngine} />
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      Advanced settings for WhatsApp engine
+                      {SESSION_HELP.nowebEngine.description}
                     </p>
                   </div>
                 </div>
                 
-                <div className="grid gap-3 sm:grid-cols-3 pl-[52px]">
-                  <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${nowebStoreEnabled ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
-                    <div className="flex items-center gap-2">
-                      <Database className="h-4 w-4 text-teal-500" />
-                      <div>
-                        <Label htmlFor="nowebStoreEnabled" className="text-sm cursor-pointer">Store</Label>
-                        <p className="text-[10px] text-muted-foreground">Save data</p>
-                      </div>
+                <div className="pl-[52px] space-y-3">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 shadow-inner">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="nowebStoreEnabled" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                        Enable Store
+                        <FieldHelp content={SESSION_HELP.nowebStoreEnabled} />
+                      </Label>
+                      <p className="text-xs text-muted-foreground">{SESSION_HELP.nowebStoreEnabled.description}</p>
                     </div>
                     <Switch id="nowebStoreEnabled" checked={nowebStoreEnabled} onCheckedChange={setNowebStoreEnabled} />
                   </div>
-                  
-                  <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${nowebFullSync ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 text-orange-500" />
-                      <div>
-                        <Label htmlFor="nowebFullSync" className="text-sm cursor-pointer">Full Sync</Label>
-                        <p className="text-[10px] text-muted-foreground">Sync all</p>
+
+                  {nowebStoreEnabled && (
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 shadow-inner">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="nowebFullSync" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                          Full Sync
+                          <FieldHelp content={SESSION_HELP.nowebFullSync} />
+                        </Label>
+                        <p className="text-xs text-muted-foreground">{SESSION_HELP.nowebFullSync.description}</p>
                       </div>
+                      <Switch id="nowebFullSync" checked={nowebFullSync} onCheckedChange={setNowebFullSync} />
                     </div>
-                    <Switch id="nowebFullSync" checked={nowebFullSync} onCheckedChange={setNowebFullSync} />
-                  </div>
-                  
-                  <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-colors ${nowebMarkOnline ? 'bg-muted/50 border-primary/30' : 'bg-background'}`}>
-                    <div className="flex items-center gap-2">
-                      <Wifi className="h-4 w-4 text-green-500" />
-                      <div>
-                        <Label htmlFor="nowebMarkOnline" className="text-sm cursor-pointer">Online</Label>
-                        <p className="text-[10px] text-muted-foreground">Show online</p>
-                      </div>
+                  )}
+
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 shadow-inner">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="nowebMarkOnline" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                        Mark Online
+                        <FieldHelp content={SESSION_HELP.nowebMarkOnline} />
+                      </Label>
+                      <p className="text-xs text-muted-foreground">{SESSION_HELP.nowebMarkOnline.description}</p>
                     </div>
                     <Switch id="nowebMarkOnline" checked={nowebMarkOnline} onCheckedChange={setNowebMarkOnline} />
                   </div>
@@ -553,7 +540,7 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
               {/* Custom Metadata */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                     <Code className="h-5 w-5" />
                   </div>
                   <div>
@@ -569,14 +556,11 @@ export function SessionSettingsTab({ session, onUpdate, isUpdating }: SessionSet
                 
                 <div className="pl-[52px] space-y-2">
                   <Textarea
-                    placeholder={`{
-  "user_id": "123",
-  "team": "support"
-}`}
+                    placeholder='{"customId": "123", "group": "sales"}'
                     value={metadataJson}
                     onChange={(e) => setMetadataJson(e.target.value)}
                     rows={4}
-                    className="font-mono text-sm"
+                    className="font-mono text-xs"
                   />
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <Info className="h-3 w-3" />

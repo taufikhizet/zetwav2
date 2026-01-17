@@ -35,7 +35,7 @@ export function useNewSession() {
   const [ignoreBroadcast, setIgnoreBroadcast] = useState(false)
   
   // NOWEB engine config
-  const [nowebStoreEnabled, setNowebStoreEnabled] = useState(true)
+  const [nowebStoreEnabled, setNowebStoreEnabled] = useState(false)
   const [nowebFullSync, setNowebFullSync] = useState(false)
   const [nowebMarkOnline, setNowebMarkOnline] = useState(true)
   

@@ -11,10 +11,7 @@ import {
   MoreVertical,
   Pencil,
   Trash2,
-  Eye,
-  EyeOff,
   TestTube2,
-  ExternalLink,
   Clock,
   CheckCircle2,
   XCircle,
@@ -24,6 +21,7 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -187,10 +185,10 @@ export function WebhooksTab({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Webhooks</h2>
-          <p className="text-sm text-muted-foreground">Receive real-time event notifications via HTTP POST</p>
+          <h2 className="text-lg font-semibold tracking-tight">Webhooks</h2>
+          <p className="text-sm text-muted-foreground">Manage your HTTP callbacks and event subscriptions</p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Webhook
         </Button>
@@ -198,14 +196,16 @@ export function WebhooksTab({
 
       {/* Webhook List */}
       {webhooks.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Webhook className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="font-semibold mb-2">No webhooks configured</h3>
-            <p className="text-muted-foreground text-center max-w-md mb-4">
-              Add webhooks to receive HTTP notifications when events occur in this session.
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Webhook className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">No webhooks configured</h3>
+            <p className="text-muted-foreground max-w-sm mb-6 text-sm">
+              Add webhooks to receive real-time HTTP notifications when specific events occur in this session.
             </p>
-            <Button variant="outline" onClick={openCreate}>
+            <Button onClick={openCreate}>
               <Plus className="h-4 w-4 mr-2" />
               Add Webhook
             </Button>
@@ -214,18 +214,15 @@ export function WebhooksTab({
       ) : (
         <div className="grid gap-4">
           {webhooks.map((webhook) => (
-            <Card key={webhook.id} className={!webhook.isActive ? 'opacity-60' : ''}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Globe className="h-4 w-4 text-muted-foreground" />
-                      <h3 className="font-medium truncate">{webhook.name}</h3>
-                      <Badge variant={webhook.isActive ? 'success' : 'secondary'}>
-                        {webhook.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
+            <Card key={webhook.id} className={`transition-all hover:shadow-md ${!webhook.isActive ? 'bg-muted/30' : ''}`}>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex-1 min-w-0 space-y-3">
+                    {/* Header: Name & Test Status */}
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-semibold text-base truncate">{webhook.name}</h3>
                       {testResults[webhook.id] && (
-                        <Badge variant={testResults[webhook.id].success ? 'success' : 'destructive'} className="gap-1">
+                        <Badge variant={testResults[webhook.id].success ? 'outline' : 'destructive'} className={`h-5 px-2 text-[10px] gap-1 ${testResults[webhook.id].success ? 'text-green-600 border-green-600 bg-green-50' : ''}`}>
                           {testResults[webhook.id].success ? (
                             <CheckCircle2 className="h-3 w-3" />
                           ) : (
@@ -238,91 +235,83 @@ export function WebhooksTab({
                       )}
                     </div>
                     
-                    <p className="text-sm text-muted-foreground truncate mb-2 flex items-center gap-1">
-                      <ExternalLink className="h-3 w-3" />
-                      {webhook.url}
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-1">
-                      {checkAllEventsSelected(webhook.events) ? (
-                        <Badge variant="outline" className="text-xs">All Events</Badge>
-                      ) : (
-                        <>
-                          {webhook.events.slice(0, 4).map((event) => (
-                            <Badge key={event} variant="outline" className="text-xs">
-                              {event}
-                            </Badge>
-                          ))}
-                          {webhook.events.length > 4 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{webhook.events.length - 4} more
-                            </Badge>
-                          )}
-                        </>
-                      )}
+                    {/* URL Display */}
+                    <div className="flex items-center text-sm font-mono bg-gray-50/50 dark:bg-secondary/20 px-2.5 py-1.5 rounded-md w-fit max-w-full shadow-inner">
+                      <Globe className="h-3.5 w-3.5 mr-2 text-muted-foreground flex-shrink-0" />
+                      <span className="truncate text-foreground/80">{webhook.url}</span>
                     </div>
                     
-                    {/* Webhook stats */}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      {webhook.secret && (
-                        <span className="flex items-center gap-1">
-                          <Key className="h-3 w-3" />
-                          HMAC enabled
-                        </span>
-                      )}
-                      <span className="flex items-center gap-1">
-                        <RefreshCw className="h-3 w-3" />
-                        {webhook.retries?.attempts ?? webhook.retryAttempts ?? 3} retries
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {Math.round((webhook.timeout || 30000) / 1000)}s timeout
-                      </span>
+                    {/* Events & Stats Row */}
+                    <div className="flex flex-wrap items-center gap-y-3 gap-x-6 pt-1">
+                      <div className="flex flex-wrap gap-1.5">
+                        {checkAllEventsSelected(webhook.events) ? (
+                          <Badge variant="secondary" className="text-xs font-normal">All Events</Badge>
+                        ) : (
+                          <>
+                            {webhook.events.slice(0, 3).map((event) => (
+                              <Badge key={event} variant="secondary" className="text-xs font-normal">
+                                {event}
+                              </Badge>
+                            ))}
+                            {webhook.events.length > 3 && (
+                              <Badge variant="secondary" className="text-xs font-normal">
+                                +{webhook.events.length - 3} more
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground ml-auto sm:ml-0">
+                        {webhook.secret && (
+                          <div className="flex items-center gap-1.5" title="HMAC Signature Enabled">
+                            <Key className="h-3.5 w-3.5" />
+                            <span>Signed</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5" title="Retry Policy">
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          <span>{webhook.retries?.attempts ?? webhook.retryAttempts ?? 3}x</span>
+                        </div>
+                        <div className="flex items-center gap-1.5" title="Request Timeout">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>{Math.round((webhook.timeout || 30000) / 1000)}s</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleTest(webhook.id)}
-                      disabled={isTesting}
-                    >
-                      {isTesting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <TestTube2 className="h-4 w-4" />
-                      )}
-                    </Button>
+                  {/* Actions */}
+                  <div className="flex items-center gap-3 self-start mt-1">
+                    <Switch
+                      checked={webhook.isActive}
+                      onCheckedChange={() => handleToggleActive(webhook)}
+                      disabled={isUpdating}
+                    />
                     
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => handleTest(webhook.id)} disabled={isTesting}>
+                          {isTesting ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <TestTube2 className="mr-2 h-4 w-4" />
+                          )}
+                          Test Delivery
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEdit(webhook)}>
                           <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleToggleActive(webhook)}>
-                          {webhook.isActive ? (
-                            <>
-                              <EyeOff className="mr-2 h-4 w-4" />
-                              Disable
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Enable
-                            </>
-                          )}
+                          Edit Configuration
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={() => openDelete(webhook)}>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => openDelete(webhook)}>
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          Delete Webhook
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

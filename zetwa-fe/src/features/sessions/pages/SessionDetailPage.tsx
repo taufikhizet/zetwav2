@@ -3,6 +3,7 @@
  * Uses modular components from @/components/session
  */
 
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   Loader2,
@@ -38,6 +39,7 @@ import type { CreateWebhookInput } from '../api/session.api'
 
 export default function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
   
   const {
     session,
@@ -173,7 +175,10 @@ export default function SessionDetailPage() {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <Dialog open={deleteOpen} onOpenChange={(open) => {
+        setDeleteOpen(open)
+        if (!open) setDeleteConfirmation('')
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Session?</DialogTitle>
@@ -182,6 +187,18 @@ export default function SessionDetailPage() {
               and remove all data from our servers.
             </DialogDescription>
           </DialogHeader>
+
+          <div className="py-4 space-y-3">
+            <Label>
+              Type <span className="font-bold">{session.name}</span> to confirm
+            </Label>
+            <Input 
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              placeholder={session.name}
+            />
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               Cancel
@@ -189,7 +206,7 @@ export default function SessionDetailPage() {
             <Button
               variant="destructive"
               onClick={() => deleteMutation.mutate()}
-              disabled={deleteMutation.isPending}
+              disabled={deleteMutation.isPending || deleteConfirmation !== session.name}
             >
               {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
             </Button>

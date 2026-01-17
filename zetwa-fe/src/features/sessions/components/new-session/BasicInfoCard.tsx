@@ -38,9 +38,9 @@ export function BasicInfoCard({
             1
           </div>
           <div>
-            <CardTitle className="text-xl">Session Details</CardTitle>
+            <CardTitle className="text-xl">Basic Information</CardTitle>
             <CardDescription className="mt-1">
-              Give your session a unique name to identify it easily
+              Configure essential session details
             </CardDescription>
           </div>
         </div>
@@ -49,7 +49,7 @@ export function BasicInfoCard({
         {/* Session Name */}
         <div className="space-y-2">
           <Label htmlFor="name" className="text-sm font-medium flex items-center gap-2">
-            Session Name
+            {SESSION_HELP.sessionName.title}
             <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Required</Badge>
             <FieldHelp content={SESSION_HELP.sessionName} />
           </Label>
@@ -78,7 +78,7 @@ export function BasicInfoCard({
         {/* Description */}
         <div className="space-y-2">
           <Label htmlFor="description" className="text-sm font-medium flex items-center gap-2">
-            Description
+            {SESSION_HELP.description.title}
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Optional</Badge>
             <FieldHelp content={SESSION_HELP.description} />
           </Label>
@@ -96,18 +96,18 @@ export function BasicInfoCard({
         <Separator />
 
         {/* Auto Start Toggle */}
-        <div className="flex items-start justify-between gap-4 p-4 rounded-lg bg-muted/50 border">
+        <div className="flex items-start justify-between gap-4 p-4 rounded-lg bg-muted/50 shadow-inner">
           <div className="flex gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 shrink-0">
               <Zap className="h-5 w-5" />
             </div>
             <div className="space-y-1">
               <Label htmlFor="autoStart" className="text-sm font-medium cursor-pointer flex items-center gap-2">
-                Start Session Immediately
+                {SESSION_HELP.autoStart.title}
                 <FieldHelp content={SESSION_HELP.autoStart} />
               </Label>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                When enabled, WhatsApp initialization will begin right after creation. 
+                {SESSION_HELP.autoStart.description}
               </p>
             </div>
           </div>

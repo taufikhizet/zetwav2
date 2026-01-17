@@ -33,6 +33,7 @@ export const SESSION_STATUS = {
   STOPPED: { label: 'Stopped', color: 'bg-gray-100 text-gray-600', icon: Square },
   STARTING: { label: 'Starting', color: 'bg-yellow-100 text-yellow-700', icon: Loader2, animate: true },
   INITIALIZING: { label: 'Initializing', color: 'bg-blue-100 text-blue-700', icon: Loader2, animate: true },
+  SCAN_QR: { label: 'Scan QR', color: 'bg-indigo-100 text-indigo-700', icon: QrCode, animate: true },
   SCAN_QR_CODE: { label: 'Scan QR', color: 'bg-indigo-100 text-indigo-700', icon: QrCode, animate: true },
   QR_READY: { label: 'QR Ready', color: 'bg-indigo-100 text-indigo-700', icon: QrCode, animate: true },
   AUTHENTICATING: { label: 'Connecting', color: 'bg-yellow-100 text-yellow-700', icon: Loader2, animate: true },

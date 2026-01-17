@@ -71,7 +71,7 @@ export function SessionInfoTab({ session }: SessionInfoTabProps) {
             <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
               <Smartphone className="h-4 w-4" /> Basic Details
             </h4>
-            <div className="space-y-0 divide-y rounded-lg border bg-gray-50/50 dark:bg-muted/30 shadow-inner p-4">
+            <div className="space-y-0 divide-y rounded-lg bg-gray-50/50 dark:bg-muted/30 shadow-inner p-4">
               <InfoRow icon={Hash} label="Session ID" value={session.id} mono />
               <InfoRow icon={Smartphone} label="Session Name" value={session.name} />
               {session.description && (
@@ -107,9 +107,9 @@ export function SessionInfoTab({ session }: SessionInfoTabProps) {
               <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
                 <Globe className="h-4 w-4" /> Configuration
               </h4>
-              <div className="space-y-0 divide-y rounded-lg border bg-gray-50/50 dark:bg-muted/30 shadow-inner p-4">
+              <div className="space-y-0 divide-y rounded-lg bg-gray-50/50 dark:bg-muted/30 shadow-inner p-4">
                 <InfoRow 
-                  icon={Globe} 
+                  icon={Globe}  
                   label="Proxy" 
                   value={session.config.proxy?.server || 'Not configured'}
                   badge={session.config.proxy ? { label: 'Enabled', variant: 'success' } : undefined}

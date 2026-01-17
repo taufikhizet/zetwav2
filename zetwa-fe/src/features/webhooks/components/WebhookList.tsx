@@ -1,16 +1,12 @@
-/**
- * Webhook List Component - Manage multiple webhooks during session creation
- */
 
-import { Plus, Trash2, Webhook, ChevronDown, ChevronUp, GripVertical } from 'lucide-react'
 import { useState } from 'react'
+import { Plus, Trash2, Webhook, Pencil, Globe, Shield } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-
-import { WebhookForm, emptyWebhookConfig } from './WebhookForm'
-import type { InlineWebhookConfig } from '@/features/webhooks/types/webhook.types'
+import { Card, CardContent } from '@/components/ui/card'
+import { WebhookDialog, type WebhookSubmitData } from './WebhookDialog'
+import type { InlineWebhookConfig, WebhookConfig } from '@/features/webhooks/types/webhook.types'
 
 interface WebhookListProps {
   /** List of webhook configurations */
@@ -29,163 +25,191 @@ export function WebhookList({
   disabled = false,
   maxWebhooks = 10,
 }: WebhookListProps) {
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(webhooks.length > 0 ? 0 : null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
 
   // Add a new webhook
-  const addWebhook = () => {
-    if (webhooks.length >= maxWebhooks) return
-    const newWebhooks = [...webhooks, { ...emptyWebhookConfig }]
-    onChange(newWebhooks)
-    setExpandedIndex(newWebhooks.length - 1)
+  const handleAdd = (data: WebhookSubmitData) => {
+    const newWebhook: InlineWebhookConfig = {
+      name: data.name, // Store name in the config
+      url: data.url,
+      events: data.events,
+      hmac: data.secret ? { key: data.secret } : undefined,
+      retries: data.retries,
+      customHeaders: data.customHeaders,
+      timeout: data.timeout,
+    }
+    
+    onChange([...webhooks, newWebhook])
+    setDialogOpen(false)
   }
 
   // Update a webhook
-  const updateWebhook = (index: number, webhook: InlineWebhookConfig) => {
+  const handleUpdate = (data: WebhookSubmitData) => {
+    if (editingIndex === null) return
+
+    const updatedWebhook: InlineWebhookConfig = {
+      name: data.name,
+      url: data.url,
+      events: data.events,
+      hmac: data.secret ? { key: data.secret } : undefined,
+      retries: data.retries,
+      customHeaders: data.customHeaders,
+      timeout: data.timeout,
+    }
+
     const newWebhooks = [...webhooks]
-    newWebhooks[index] = webhook
+    newWebhooks[editingIndex] = updatedWebhook
     onChange(newWebhooks)
+    setDialogOpen(false)
+    setEditingIndex(null)
   }
 
   // Remove a webhook
-  const removeWebhook = (index: number) => {
+  const handleRemove = (index: number) => {
     const newWebhooks = webhooks.filter((_, i) => i !== index)
     onChange(newWebhooks)
-    if (expandedIndex === index) {
-      setExpandedIndex(newWebhooks.length > 0 ? 0 : null)
-    } else if (expandedIndex !== null && expandedIndex > index) {
-      setExpandedIndex(expandedIndex - 1)
-    }
   }
 
-  // Get a display name for the webhook
-  const getWebhookDisplayName = (webhook: InlineWebhookConfig, index: number): string => {
-    // Use explicit name if provided
-    if (webhook.name && webhook.name.trim()) {
-      return webhook.name
-    }
-    // Fall back to hostname from URL
-    if (webhook.url) {
-      try {
-        const url = new URL(webhook.url)
-        return url.hostname
-      } catch {
-        return webhook.url.slice(0, 30)
-      }
-    }
-    return `Webhook ${index + 1}`
+  // Open edit dialog
+  const openEdit = (index: number) => {
+    setEditingIndex(index)
+    setDialogOpen(true)
   }
 
-  // Get event summary
-  const getEventSummary = (webhook: InlineWebhookConfig): string => {
-    if (!webhook.events || webhook.events.length === 0) return 'No events'
-    if (webhook.events.includes('*')) return 'All events'
-    return `${webhook.events.length} event${webhook.events.length > 1 ? 's' : ''}`
+  // Open create dialog
+  const openCreate = () => {
+    setEditingIndex(null)
+    setDialogOpen(true)
   }
 
-  if (webhooks.length === 0) {
-    return (
-      <div className="text-center py-8 border-2 border-dashed rounded-lg">
-        <Webhook className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-        <h3 className="font-medium mb-1">No webhooks configured</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Add webhooks to receive real-time notifications when events occur
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={addWebhook}
-          disabled={disabled}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Webhook
-        </Button>
-      </div>
-    )
+  // Convert InlineWebhookConfig to WebhookConfig for Dialog
+  const getWebhookConfigForDialog = (webhook: InlineWebhookConfig): WebhookConfig => {
+    return {
+      id: 'temp-id', // Dummy ID for dialog
+      name: webhook.name || '',
+      url: webhook.url,
+      events: webhook.events,
+      isActive: true,
+      timeout: webhook.timeout ?? 30, // Default 30s if undefined
+      createdAt: new Date().toISOString(),
+      hmac: webhook.hmac,
+      retries: webhook.retries,
+      customHeaders: webhook.customHeaders,
+      _count: { logs: 0 },
+    }
   }
 
   return (
-    <div className="space-y-3">
-      {webhooks.map((webhook, index) => (
-        <Collapsible
-          key={index}
-          open={expandedIndex === index}
-          onOpenChange={(open) => setExpandedIndex(open ? index : null)}
-        >
-          <div className="border rounded-lg overflow-hidden">
-            <CollapsibleTrigger asChild>
-              <div className="flex items-center justify-between p-3 bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors">
-                <div className="flex items-center gap-3">
-                  <GripVertical className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex items-center gap-2">
-                    <Webhook className="h-4 w-4 text-primary" />
-                    <span className="font-medium text-sm">
-                      {getWebhookDisplayName(webhook, index)}
-                    </span>
-                  </div>
-                  <Badge variant="secondary" className="text-[10px]">
-                    {getEventSummary(webhook)}
-                  </Badge>
-                  {!webhook.url && (
-                    <Badge variant="destructive" className="text-[10px]">
-                      URL required
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      removeWebhook(index)
-                    }}
-                    disabled={disabled}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                  </Button>
-                  {expandedIndex === index ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
-              </div>
-            </CollapsibleTrigger>
-
-            <CollapsibleContent>
-              <div className="p-3 border-t">
-                <WebhookForm
-                  value={webhook}
-                  onChange={(newValue) => updateWebhook(index, newValue)}
-                  disabled={disabled}
-                  compact
-                />
-              </div>
-            </CollapsibleContent>
+    <div className="space-y-4">
+      {webhooks.length === 0 ? (
+        <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/20">
+          <div className="flex justify-center mb-4">
+            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <Webhook className="h-6 w-6" />
+            </div>
           </div>
-        </Collapsible>
-      ))}
+          <h3 className="text-lg font-medium mb-1">No webhooks configured</h3>
+          <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+            Add webhooks to receive real-time notifications when events occur in your WhatsApp session.
+          </p>
+          <Button
+            type="button"
+            onClick={openCreate}
+            disabled={disabled}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Webhook
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {webhooks.map((webhook, index) => (
+            <Card key={index} className="overflow-hidden border-l-4 border-l-primary">
+              <CardContent className="p-4 flex items-start justify-between gap-4">
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold truncate">
+                      {webhook.name || new URL(webhook.url).hostname}
+                    </h4>
+                    {webhook.hmac?.key && (
+                      <Badge variant="outline" className="text-[10px] h-5 px-1.5 gap-0.5">
+                        <Shield className="h-3 w-3" />
+                        Secured
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Globe className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{webhook.url}</span>
+                  </div>
 
-      {webhooks.length < maxWebhooks && (
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={addWebhook}
-          disabled={disabled}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Another Webhook
-        </Button>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {(webhook.events || []).slice(0, 3).map((event) => (
+                      <Badge key={event} variant="secondary" className="text-xs">
+                        {event === '*' ? 'All Events' : event}
+                      </Badge>
+                    ))}
+                    {(webhook.events || []).length > 3 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{(webhook.events || []).length - 3} more
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                   <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => openEdit(index)}
+                      disabled={disabled}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">Edit</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => handleRemove(index)}
+                      disabled={disabled}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete</span>
+                    </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {webhooks.length < maxWebhooks && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-dashed"
+              onClick={openCreate}
+              disabled={disabled}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Another Webhook
+            </Button>
+          )}
+        </div>
       )}
 
-      {webhooks.length >= maxWebhooks && (
-        <p className="text-xs text-center text-muted-foreground">
-          Maximum {maxWebhooks} webhooks allowed per session
-        </p>
-      )}
+      <WebhookDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={editingIndex !== null ? 'edit' : 'create'}
+        webhook={editingIndex !== null ? getWebhookConfigForDialog(webhooks[editingIndex]) : undefined}
+        onSubmit={editingIndex !== null ? handleUpdate : handleAdd}
+        isPending={false}
+      />
     </div>
   )
 }
