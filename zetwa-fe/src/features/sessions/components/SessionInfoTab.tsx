@@ -87,7 +87,7 @@ export function SessionInfoTab({ session }: SessionInfoTabProps) {
               <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
                 <Phone className="h-4 w-4" /> WhatsApp Account
               </h4>
-              <div className="space-y-0 divide-y rounded-lg border bg-background/50">
+              <div className="space-y-0 divide-y rounded-lg bg-gray-50/50 dark:bg-muted/30 shadow-inner p-4">
                 {session.phoneNumber && (
                   <InfoRow icon={Phone} label="Phone Number" value={session.phoneNumber} />
                 )}

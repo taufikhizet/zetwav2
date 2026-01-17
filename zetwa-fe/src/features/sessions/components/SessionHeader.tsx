@@ -28,7 +28,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -122,13 +121,13 @@ export function SessionHeader({
       {/* Actions */}
       <div className="flex items-center gap-2 self-start mt-4 md:mt-0">
         {isConnected && (
-          <Button variant="outline" size="sm" onClick={onSendMessage} className="h-9 bg-white dark:bg-secondary/20 shadow-sm hover:bg-gray-50">
-            <Send className="h-4 w-4 mr-2 text-muted-foreground" />
+          <Button variant="outline" size="sm" onClick={onSendMessage} className="h-9 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 border-emerald-200 shadow-sm">
+            <Send className="h-4 w-4 mr-2" />
             Message
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={() => setIsRestartDialogOpen(true)} disabled={isRestartPending} className="h-9 bg-white dark:bg-secondary/20 shadow-sm hover:bg-gray-50">
-          <RefreshCw className={cn("h-4 w-4 mr-2 text-muted-foreground", isRestartPending && "animate-spin")} />
+        <Button variant="outline" size="sm" onClick={() => setIsRestartDialogOpen(true)} disabled={isRestartPending} className="h-9 bg-orange-50 text-orange-600 hover:bg-orange-100 hover:text-orange-700 border-orange-200 shadow-sm">
+          <RefreshCw className={cn("h-4 w-4 mr-2", isRestartPending && "animate-spin")} />
           Restart
         </Button>
         
@@ -158,13 +157,21 @@ export function SessionHeader({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Restart Session?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will restart the WhatsApp session. It may take a few moments to reconnect.
-            </AlertDialogDescription>
+            <div className="text-sm text-muted-foreground space-y-3 mt-2">
+              <p>
+                This action will <span className="font-semibold text-destructive">terminate the current connection</span> and start a fresh WhatsApp instance.
+              </p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Existing connection will be closed immediately.</li>
+                <li>System will attempt to reconnect automatically using saved session.</li>
+                <li>If reconnection fails, you may need to scan a new QR code.</li>
+                <li>Process typically takes 10-30 seconds.</li>
+              </ul>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={onRestart}>Restart</AlertDialogAction>
+            <AlertDialogAction onClick={onRestart} className="bg-orange-600 hover:bg-orange-700">Restart Session</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

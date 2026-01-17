@@ -40,6 +40,7 @@ import type { CreateWebhookInput } from '../api/session.api'
 export default function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const [deleteConfirmation, setDeleteConfirmation] = useState('')
+  const [logoutConfirmation, setLogoutConfirmation] = useState('')
   
   const {
     session,
@@ -182,10 +183,17 @@ export default function SessionDetailPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Session?</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone. This will permanently delete the session
-              and remove all data from our servers.
-            </DialogDescription>
+            <div className="text-sm text-muted-foreground space-y-3 mt-2">
+              <p>
+                This action is <span className="font-semibold text-destructive">irreversible</span>. Deleting this session will:
+              </p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Permanently remove all session configuration and data.</li>
+                <li>Stop all active webhooks associated with this session.</li>
+                <li>Terminate the WhatsApp connection immediately.</li>
+                <li>Require a full reconfiguration if you want to use this number again.</li>
+              </ul>
+            </div>
           </DialogHeader>
 
           <div className="py-4 space-y-3">
@@ -208,30 +216,55 @@ export default function SessionDetailPage() {
               onClick={() => deleteMutation.mutate()}
               disabled={deleteMutation.isPending || deleteConfirmation !== session.name}
             >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete Session'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Logout Confirmation Dialog */}
-      <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+      <Dialog open={logoutOpen} onOpenChange={(open) => {
+        setLogoutOpen(open)
+        if (!open) setLogoutConfirmation('')
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Logout Session?</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to logout? You will need to scan the QR code again to reconnect.
-            </DialogDescription>
+            <div className="text-sm text-muted-foreground space-y-3 mt-2">
+              <p>
+                You are about to <span className="font-semibold text-orange-600">disconnect</span> this device from WhatsApp.
+              </p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>The current session will be terminated on WhatsApp Web.</li>
+                <li>All message processing will stop immediately.</li>
+                <li>Session configuration (webhooks, settings) will be preserved.</li>
+                <li>You will need to scan a new QR code to reconnect.</li>
+              </ul>
+            </div>
           </DialogHeader>
+
+          {session.phoneNumber && (
+            <div className="py-4 space-y-3">
+              <Label>
+                Type phone number <span className="font-bold">{session.phoneNumber}</span> to confirm
+              </Label>
+              <Input 
+                value={logoutConfirmation}
+                onChange={(e) => setLogoutConfirmation(e.target.value)}
+                placeholder={session.phoneNumber}
+              />
+            </div>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setLogoutOpen(false)}>
               Cancel
             </Button>
             <Button
               onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
+              disabled={logoutMutation.isPending || (session.phoneNumber ? logoutConfirmation !== session.phoneNumber : false)}
             >
-              {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
+              {logoutMutation.isPending ? 'Logging out...' : 'Logout Session'}
             </Button>
           </DialogFooter>
         </DialogContent>
