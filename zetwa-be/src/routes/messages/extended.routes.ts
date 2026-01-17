@@ -145,7 +145,8 @@ router.post(
       const result = await whatsappService.sendContact(
         req.params.sessionId,
         req.body.to,
-        req.body.contact
+        req.body.contact,
+        { quotedMessageId: req.body.quotedMessageId }
       );
 
       res.json({
@@ -180,9 +181,12 @@ router.post(
       const result = await whatsappService.sendPoll(
         req.params.sessionId,
         req.body.to,
-        req.body.name,
-        req.body.options,
-        req.body.allowMultipleAnswers
+        req.body.poll.name,
+        req.body.poll.options,
+        { 
+          selectableCount: req.body.poll.multipleAnswers ? req.body.poll.options.length : 1,
+          quotedMessageId: req.body.quotedMessageId 
+        }
       );
 
       res.json({

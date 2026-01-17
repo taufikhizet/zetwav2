@@ -88,7 +88,8 @@ export async function sendLocation(
 export async function sendContact(
   session: WASession,
   to: string,
-  contact: ContactInfo
+  contact: ContactInfo,
+  options?: { quotedMessageId?: string }
 ): Promise<Message> {
   if (session.status !== 'CONNECTED') {
     throw new SessionNotConnectedError(session.sessionId);
@@ -96,18 +97,26 @@ export async function sendContact(
 
   const chatId = formatChatId(to);
   
+  // Clean phone number for waid (digits only)
+  const cleanPhone = contact.phone.replace(/\D/g, '');
+
   // Create vCard
   const vcard = [
     'BEGIN:VCARD',
     'VERSION:3.0',
     `FN:${contact.name}`,
-    `TEL;TYPE=CELL:${contact.phone}`,
+    `TEL;type=CELL;type=VOICE;waid=${cleanPhone}:+${cleanPhone}`,
     contact.organization ? `ORG:${contact.organization}` : '',
     contact.email ? `EMAIL:${contact.email}` : '',
     'END:VCARD',
   ].filter(Boolean).join('\n');
 
-  const result = await session.client.sendMessage(chatId, vcard);
+  const sendOptions: { quotedMessageId?: string } = {};
+  if (options?.quotedMessageId) {
+    sendOptions.quotedMessageId = options.quotedMessageId;
+  }
+
+  const result = await session.client.sendMessage(chatId, vcard, sendOptions);
   
   logger.info({ sessionId: session.sessionId, to: chatId }, 'Contact sent');
 

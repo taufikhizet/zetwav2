@@ -942,9 +942,9 @@ export class WhatsAppService {
     return messaging.sendLocation(this.getSessionSafe(sessionId), to, latitude, longitude, description, options);
   }
 
-  async sendContact(sessionId: string, to: string, contactId: string, options?: { quotedMessageId?: string }) {
-    // Use messaging.ts implementation
-    return messaging.sendContact(this.getSessionSafe(sessionId), to, contactId, options);
+  async sendContact(sessionId: string, to: string, contact: ContactInfo, options?: { quotedMessageId?: string }) {
+    // Use messages-extended.ts implementation which supports vCard generation
+    return messagesExtended.sendContact(this.getSessionSafe(sessionId), to, contact, options);
   }
 
   async sendPoll(sessionId: string, to: string, name: string, options: string[], settings?: { selectableCount?: number; quotedMessageId?: string }) {

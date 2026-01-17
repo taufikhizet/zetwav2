@@ -157,6 +157,9 @@ export async function sendContact(
 
   const chatId = formatChatId(to);
   const contactJid = formatChatId(contactId);
+  
+  // Directly create contact object or get it
+  // WAWebJS getContactById automatically subscribes to updates
   const contact = await session.client.getContactById(contactJid);
 
   const sendOptions: { quotedMessageId?: string } = {};

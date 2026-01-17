@@ -24,14 +24,18 @@ export const sendContactSchema = z.object({
     organization: z.string().optional(),
     email: z.string().email().optional(),
   }),
+  quotedMessageId: z.string().optional(),
 });
 
 // Send poll schema
 export const sendPollSchema = z.object({
   to: z.string().min(1, 'Recipient is required'),
-  name: z.string().min(1, 'Poll title is required').max(255),
-  options: z.array(z.string().min(1)).min(2, 'At least 2 options required').max(12),
-  allowMultipleAnswers: z.boolean().default(false),
+  poll: z.object({
+    name: z.string().min(1, 'Poll title is required').max(255),
+    options: z.array(z.string().min(1)).min(2, 'At least 2 options required').max(12),
+    multipleAnswers: z.boolean().default(false),
+  }),
+  quotedMessageId: z.string().optional(),
 });
 
 // Send buttons schema (may not work due to WhatsApp restrictions)

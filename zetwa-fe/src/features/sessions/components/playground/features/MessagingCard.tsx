@@ -44,6 +44,7 @@ export function MessagingCard({ sessionId }: MessagingCardProps) {
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
   const [locationDesc, setLocationDesc] = useState('')
+  const [locationUrl, setLocationUrl] = useState('')
 
   // Contact Message State
   const [contactTo, setContactTo] = useState('')
@@ -111,11 +112,12 @@ export function MessagingCard({ sessionId }: MessagingCardProps) {
       to: locationTo,
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
-      description: locationDesc
+      description: locationDesc,
+      url: locationUrl
     }),
     onSuccess: () => {
       toast.success('Location sent successfully')
-      setLocationDesc('')
+      // Don't clear values to allow easy re-sending or adjustment
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to send location')
@@ -360,6 +362,16 @@ export function MessagingCard({ sessionId }: MessagingCardProps) {
                         onChange={(e) => setLocationDesc(e.target.value)}
                       />
                     </div>
+
+                    <div className="grid gap-2">
+                      <Label>URL (Optional)</Label>
+                      <Input 
+                        placeholder="https://maps.google.com/..." 
+                        value={locationUrl}
+                        onChange={(e) => setLocationUrl(e.target.value)}
+                      />
+                      <p className="text-[11px] text-muted-foreground">Link to the location (e.g. Google Maps)</p>
+                    </div>
         
                     <Button 
                       className="w-full" 
@@ -383,7 +395,8 @@ export function MessagingCard({ sessionId }: MessagingCardProps) {
                   to: locationTo || "6281234567890",
                   latitude: parseFloat(latitude) || -6.2,
                   longitude: parseFloat(longitude) || 106.8,
-                  description: locationDesc || "Jakarta"
+                  description: locationDesc || "Jakarta",
+                  url: locationUrl || "https://maps.google.com/..."
                 }}
               />
             </TabsContent>

@@ -200,11 +200,13 @@ router.post(
   }
 );
 
+/*
 /**
  * @route POST /api/sessions/:sessionId/messages/send-poll
  * @desc Send a poll message
  * @scope messages:send
  */
+/*
 router.post(
   '/:sessionId/messages/send-poll',
   requireScope('messages:send'),
@@ -236,6 +238,7 @@ router.post(
     }
   }
 );
+*/
 
 /**
  * @route POST /api/sessions/:sessionId/messages/send-location
@@ -275,11 +278,13 @@ router.post(
   }
 );
 
+/*
 /**
  * @route POST /api/sessions/:sessionId/messages/send-contact
  * @desc Send a contact message
  * @scope messages:send
  */
+/*
 router.post(
   '/:sessionId/messages/send-contact',
   requireScope('messages:send'),
@@ -310,12 +315,15 @@ router.post(
     }
   }
 );
+*/
 
+/*
 /**
  * @route POST /api/sessions/:sessionId/messages/send-reaction
  * @desc Send a reaction to a message
  * @scope messages:send
  */
+/*
 router.post(
   '/:sessionId/messages/send-reaction',
   requireScope('messages:send'),
@@ -341,6 +349,7 @@ router.post(
     }
   }
 );
+*/
 
 /**
  * @route GET /api/sessions/:sessionId/messages
