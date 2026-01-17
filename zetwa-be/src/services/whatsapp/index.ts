@@ -211,6 +211,12 @@ export class WhatsAppService {
           timeout: 60000, // 60 second timeout for puppeteer operations
         },
         qrMaxRetries: 5,
+        // Using "none" webVersionCache to force using local version if available
+        // or let it fetch from WhatsApp servers but without caching issues
+        // This is often more stable than remote caching which can get outdated
+        webVersionCache: {
+          type: 'none',
+        },
         ...clientInfo,
       });
 
@@ -432,31 +438,25 @@ export class WhatsAppService {
   // ================================
 
   async destroySession(sessionId: string): Promise<void> {
-    const session = this.sessions.get(sessionId);
-
-    // Clear QR cache for this session first
-    clearSessionQRCache(sessionId);
-
-    if (session) {
+    const existingSession = this.sessions.get(sessionId);
+    if (existingSession) {
       try {
-        await session.client.logout();
+        await existingSession.client.destroy();
       } catch {
-        // Ignore logout errors
+        // Ignore errors
       }
-
-      try {
-        await session.client.destroy();
-      } catch {
-        // Ignore destroy errors
-      }
-
       this.sessions.delete(sessionId);
     }
 
-    // Remove session data
-    const sessionPath = path.join(config.whatsapp.sessionPath, `session-${sessionId}`);
-    if (fs.existsSync(sessionPath)) {
-      fs.rmSync(sessionPath, { recursive: true, force: true });
+    // Clean up session data directory
+    try {
+      const sessionDir = path.join(config.whatsapp.sessionPath, `session-${sessionId}`);
+      if (fs.existsSync(sessionDir)) {
+        fs.rmSync(sessionDir, { recursive: true, force: true });
+        logger.info({ sessionId, sessionDir }, 'Cleaned up session data directory');
+      }
+    } catch (error) {
+      logger.error({ sessionId, error }, 'Failed to clean up session data directory');
     }
 
     await prisma.waSession.update({
@@ -496,6 +496,18 @@ export class WhatsAppService {
         // Ignore errors
       }
       this.sessions.delete(sessionId);
+    }
+
+    // Force clean up session data directory to prevent "markedUnread" and other compatibility errors
+    // This ensures a fresh start with the latest library version
+    try {
+      const sessionDir = path.join(config.whatsapp.sessionPath, `session-${sessionId}`);
+      if (fs.existsSync(sessionDir)) {
+        fs.rmSync(sessionDir, { recursive: true, force: true });
+        logger.info({ sessionId, sessionDir }, 'Cleaned up session data directory');
+      }
+    } catch (error) {
+      logger.error({ sessionId, error }, 'Failed to clean up session data directory');
     }
 
     await prisma.waSession.update({

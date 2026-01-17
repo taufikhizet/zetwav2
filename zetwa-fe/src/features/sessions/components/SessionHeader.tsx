@@ -69,7 +69,7 @@ export function SessionHeader({
   }
 
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between bg-card p-6 rounded-2xl shadow-sm">
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-card p-6 rounded-2xl shadow-sm">
       <div className="flex items-start gap-5">
         {/* Session Avatar */}
         <div className={cn(
@@ -119,7 +119,7 @@ export function SessionHeader({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 self-start mt-4 md:mt-0">
+      <div className="flex items-center gap-2 mt-4 md:mt-0">
         {isConnected && (
           <Button variant="outline" size="sm" onClick={onSendMessage} className="h-9 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 border-emerald-200 shadow-sm">
             <Send className="h-4 w-4 mr-2" />

@@ -1,10 +1,14 @@
 import { useNewSession } from '../hooks/useNewSession'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { WebhookList } from '@/features/webhooks/components/WebhookList'
 import { BasicInfoCard } from '../components/new-session/BasicInfoCard'
 import { AdvancedConfigCard } from '../components/new-session/AdvancedConfigCard'
 
 export default function NewSessionPage() {
+  const navigate = useNavigate()
   const {
     // State
     name, setName,
@@ -117,6 +121,27 @@ export default function NewSessionPage() {
                       />
                    </CardContent>
                  </Card>
+
+                 {/* Action Buttons */}
+                 <div className="flex items-center justify-end gap-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => navigate('/dashboard/sessions')}
+                      disabled={createMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={createMutation.isPending || !name.trim()}
+                    >
+                      {createMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Create Session
+                    </Button>
+                 </div>
              </div>
       </div>
     </form>

@@ -103,7 +103,7 @@ export const sessionApi = {
   },
 
   sendMessage: async (sessionId: string, data: { to: string; message: string }): Promise<void> => {
-    await api.post(`/sessions/${sessionId}/messages`, data)
+    await api.post(`/sessions/${sessionId}/messages/send`, data)
   },
 
   requestPairingCode: async (sessionId: string, data: { phoneNumber: string }): Promise<{ code: string }> => {
