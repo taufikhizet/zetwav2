@@ -9,6 +9,7 @@ import {
   updateGroupSchema,
   updateGroupSettingsSchema,
   manageParticipantsSchema,
+  acceptInviteSchema,
 } from '../../schemas/groups.schema.js';
 
 interface SessionParams extends ParamsDictionary {
@@ -426,5 +427,89 @@ router.patch('/:groupId/picture', requireScope('groups:write'), async (req: Requ
     next(error);
   }
 });
+
+/**
+ * @route GET /api/sessions/:sessionId/groups/:groupId/invite-code
+ * @desc Get group invite code
+ * @scope groups:read
+ */
+router.get(
+  '/:groupId/invite-code',
+  requireScope('groups:read'),
+  async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
+    try {
+      await sessionService.getById(req.userId!, req.params.sessionId);
+
+      const code = await whatsappService.getGroupInviteCode(
+        req.params.sessionId,
+        req.params.groupId
+      );
+
+      res.json({
+        success: true,
+        data: { code },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route POST /api/sessions/:sessionId/groups/:groupId/invite-code/revoke
+ * @desc Revoke group invite code
+ * @scope groups:write
+ */
+router.post(
+  '/:groupId/invite-code/revoke',
+  requireScope('groups:write'),
+  async (req: Request<GroupParams>, res: Response, next: NextFunction) => {
+    try {
+      await sessionService.getById(req.userId!, req.params.sessionId);
+
+      const newCode = await whatsappService.revokeGroupInvite(
+        req.params.sessionId,
+        req.params.groupId
+      );
+
+      res.json({
+        success: true,
+        message: 'Invite code revoked',
+        data: { newCode },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route POST /api/sessions/:sessionId/groups/join
+ * @desc Join group via invite code
+ * @scope groups:write
+ */
+router.post(
+  '/join',
+  requireScope('groups:write'),
+  validateBody(acceptInviteSchema),
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+    try {
+      await sessionService.getById(req.userId!, req.params.sessionId);
+
+      const groupId = await whatsappService.joinGroup(
+        req.params.sessionId,
+        req.body.code
+      );
+
+      res.json({
+        success: true,
+        message: 'Joined group successfully',
+        data: { groupId },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default router;

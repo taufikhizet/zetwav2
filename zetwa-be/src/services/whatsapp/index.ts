@@ -41,6 +41,8 @@ import * as labels from './labels.js';
 import * as status from './status.js';
 import * as profile from './profile.js';
 import * as messagesExtended from './messages-extended.js';
+import * as chats from './chats.js';
+import * as contacts from './contacts.js';
 
 // Re-export types
 export type { WASession, SessionStatus, SendMessageOptions, SendMediaOptions } from './types.js';
@@ -359,6 +361,25 @@ export class WhatsAppService {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Get session screenshot (for debugging)
+   */
+  async getScreenshot(sessionId: string): Promise<Buffer | null> {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      throw new SessionNotFoundError(sessionId);
+    }
+
+    try {
+      if (session.client.pupPage && !session.client.pupPage.isClosed()) {
+        return await session.client.pupPage.screenshot({ encoding: 'binary' }) as Buffer;
+      }
+    } catch (error) {
+      logger.error({ sessionId, error }, 'Failed to take screenshot');
+    }
+    return null;
   }
 
   /**
@@ -783,6 +804,66 @@ export class WhatsAppService {
 
   async getBusinessProfile(sessionId: string) {
     return profile.getBusinessProfile(this.getSessionSafe(sessionId));
+  }
+
+  // ================================
+  // CHAT MANAGEMENT METHODS
+  // ================================
+
+  async archiveChat(sessionId: string, chatId: string) {
+    return chats.archiveChat(this.getSessionSafe(sessionId), chatId);
+  }
+
+  async unarchiveChat(sessionId: string, chatId: string) {
+    return chats.unarchiveChat(this.getSessionSafe(sessionId), chatId);
+  }
+
+  async deleteChat(sessionId: string, chatId: string) {
+    return chats.deleteChat(this.getSessionSafe(sessionId), chatId);
+  }
+
+  async pinChat(sessionId: string, chatId: string) {
+    return chats.pinChat(this.getSessionSafe(sessionId), chatId);
+  }
+
+  async unpinChat(sessionId: string, chatId: string) {
+    return chats.unpinChat(this.getSessionSafe(sessionId), chatId);
+  }
+
+  async muteChat(sessionId: string, chatId: string, duration?: Date) {
+    return chats.muteChat(this.getSessionSafe(sessionId), chatId, duration);
+  }
+
+  async unmuteChat(sessionId: string, chatId: string) {
+    return chats.unmuteChat(this.getSessionSafe(sessionId), chatId);
+  }
+
+  async markChatRead(sessionId: string, chatId: string) {
+    return chats.markChatRead(this.getSessionSafe(sessionId), chatId);
+  }
+
+  async markChatUnread(sessionId: string, chatId: string) {
+    return chats.markChatUnread(this.getSessionSafe(sessionId), chatId);
+  }
+
+  async clearChat(sessionId: string, chatId: string) {
+    return chats.clearChat(this.getSessionSafe(sessionId), chatId);
+  }
+
+  // ================================
+  // CONTACT MANAGEMENT METHODS
+  // ================================
+
+  async blockContact(sessionId: string, contactId: string) {
+    return contacts.blockContact(this.getSessionSafe(sessionId), contactId);
+  }
+
+  async unblockContact(sessionId: string, contactId: string) {
+    return contacts.unblockContact(this.getSessionSafe(sessionId), contactId);
+  }
+
+  async getContactAbout(sessionId: string, contactId: string) {
+    return contacts.getContactAbout(this.getSessionSafe(sessionId), contactId);
   }
 
   // ================================

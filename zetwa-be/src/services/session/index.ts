@@ -67,6 +67,7 @@ class SessionService {
   getStatus = operations.getStatus;
   requestPairingCode = operations.requestPairingCode;
   getMeInfo = operations.getMeInfo;
+  getScreenshot = operations.getScreenshot;
 
   // ================================
   // Webhook Management

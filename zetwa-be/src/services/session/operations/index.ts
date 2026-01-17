@@ -7,7 +7,7 @@
 export { create, createWebhooksFromConfig } from './create.js';
 
 // Read operations  
-export { list, getById, getStatus, getMeInfo } from './read.js';
+export { list, getById, getStatus, getMeInfo, getScreenshot } from './read.js';
 
 // Update operations
 export { update } from './update.js';

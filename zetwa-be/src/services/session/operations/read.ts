@@ -236,3 +236,22 @@ export async function getMeInfo(userId: string, sessionId: string) {
     profilePicUrl: session.profilePicUrl,
   };
 }
+
+/**
+ * Get session screenshot
+ */
+export async function getScreenshot(userId: string, sessionId: string): Promise<Buffer | null> {
+  const session = await prisma.waSession.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session) {
+    throw new NotFoundError('Session not found');
+  }
+
+  if (session.userId !== userId) {
+    throw new ForbiddenError('Access denied');
+  }
+
+  return whatsappService.getScreenshot(sessionId);
+}

@@ -16,6 +16,7 @@ import {
   SessionSettingsTab,
   SessionInfoTab,
   WebhooksTab,
+  SessionPlaygroundTab,
 } from '../components'
 
 import {
@@ -132,9 +133,15 @@ export default function SessionDetailPage() {
 
         {/* Right Column: Detailed Config & Webhooks */}
         <div className="lg:col-span-2 space-y-6">
-          <Tabs defaultValue="settings" className="w-full">
+          <Tabs defaultValue="playground" className="w-full">
             <div className="flex items-center justify-between mb-6">
-              <TabsList className="grid w-full max-w-md grid-cols-2 p-1 bg-white dark:bg-secondary/20 rounded-xl">
+              <TabsList className="grid w-full max-w-xl grid-cols-3 p-1 bg-white dark:bg-secondary/20 rounded-xl">
+                <TabsTrigger 
+                  value="playground" 
+                  className="rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
+                >
+                  Features
+                </TabsTrigger>
                 <TabsTrigger 
                   value="settings" 
                   className="rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
@@ -149,6 +156,10 @@ export default function SessionDetailPage() {
                 </TabsTrigger>
               </TabsList>
             </div>
+
+            <TabsContent value="playground" className="mt-0 space-y-6">
+              <SessionPlaygroundTab sessionId={sessionId!} isOnline={isConnected} />
+            </TabsContent>
 
             <TabsContent value="settings" className="mt-0 space-y-6">
               <SessionSettingsTab 

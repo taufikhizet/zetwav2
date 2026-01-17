@@ -28,8 +28,14 @@ export const groupIdSchema = z.object({
   groupId: z.string().min(1, 'Group ID is required'),
 });
 
+// Accept invite schema
+export const acceptInviteSchema = z.object({
+  code: z.string().min(1, 'Invite code is required'),
+});
+
 // Type exports
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type UpdateGroupInput = z.infer<typeof updateGroupSchema>;
 export type UpdateGroupSettingsInput = z.infer<typeof updateGroupSettingsSchema>;
 export type ManageParticipantsInput = z.infer<typeof manageParticipantsSchema>;
+export type AcceptInviteInput = z.infer<typeof acceptInviteSchema>;

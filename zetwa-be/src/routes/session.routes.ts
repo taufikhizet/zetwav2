@@ -308,6 +308,30 @@ router.post('/:sessionId/logout', requireScope('sessions:write'), async (req: Re
   }
 });
 
+/**
+ * @route GET /api/sessions/:sessionId/screenshot
+ * @desc Get session screenshot
+ * @scope sessions:read
+ */
+router.get('/:sessionId/screenshot', requireScope('sessions:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+  try {
+    const screenshot = await sessionService.getScreenshot(req.userId!, req.params.sessionId);
+
+    if (!screenshot) {
+      res.status(404).json({
+        success: false,
+        message: 'Screenshot not available (session might be closed or headless)',
+      });
+      return;
+    }
+
+    res.setHeader('Content-Type', 'image/png');
+    res.send(screenshot);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ================================
 // Webhook Routes
 // ================================

@@ -2,8 +2,7 @@ import { api, type ApiResponse } from '@/lib/api'
 import type { 
   Session, 
   CreateSessionInput, 
-  UpdateSessionInput, 
-  QRCodeResponse, 
+  UpdateSessionInput
 } from '../types/session.types'
 
 // Re-export types for convenience
@@ -16,13 +15,11 @@ export interface Webhook {
   events: string[]
   isActive: boolean
   secret?: string | null
-  // New dedicated columns from schema update
   retryAttempts: number
   retryDelay: number
   retryPolicy: string
   timeout: number
   customHeaders?: Array<{ name: string; value: string }> | null
-  // Retries object (transformed from backend for easy access)
   retries?: {
     attempts: number
     delaySeconds: number
@@ -32,10 +29,7 @@ export interface Webhook {
   _count?: {
     logs: number
   }
-  // Legacy fields (for backward compat - deprecated)
-  /** @deprecated Use retryAttempts instead */
   retryCount?: number
-  /** @deprecated Use customHeaders instead */
   headers?: Record<string, unknown> | null
 }
 
@@ -46,13 +40,11 @@ export interface CreateWebhookInput {
   headers?: Record<string, string>
   secret?: string
   timeout?: number
-  /** Retry configuration */
   retries?: {
     attempts?: number
     delaySeconds?: number
     policy?: 'linear' | 'exponential' | 'constant'
   }
-  /** Custom headers to send with webhook */
   customHeaders?: Array<{ name: string; value: string }>
 }
 
@@ -102,8 +94,231 @@ export const sessionApi = {
     await api.post(`/sessions/${sessionId}/logout`)
   },
 
-  sendMessage: async (sessionId: string, data: { to: string; message: string }): Promise<void> => {
-    await api.post(`/sessions/${sessionId}/messages/send`, data)
+  // Messages
+  sendMessage: async (sessionId: string, data: { to: string; message: string }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/messages/send`, data)
+    return response.data
+  },
+
+  sendMedia: async (sessionId: string, data: { to: string; mediaUrl?: string; mediaBase64?: string; mimetype?: string; filename?: string; caption?: string }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/messages/send-media`, data)
+    return response.data
+  },
+
+  forwardMessage: async (sessionId: string, data: { messageId: string; to: string }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/messages/forward`, data)
+    return response.data
+  },
+
+  deleteMessage: async (sessionId: string, messageId: string, forEveryone: boolean = true): Promise<any> => {
+    const response = await api.delete(`/sessions/${sessionId}/messages/${messageId}`, {
+      params: { forEveryone }
+    })
+    return response.data
+  },
+
+  getMessages: async (sessionId: string, params: { page?: number; limit?: number; chatId?: string } = {}): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/messages`, { params })
+    return response.data.data
+  },
+
+  // Chats
+  getChats: async (sessionId: string, live: boolean = false): Promise<any[]> => {
+    const endpoint = live ? `/sessions/${sessionId}/chats/live` : `/sessions/${sessionId}/chats`
+    const response = await api.get<ApiResponse<any[]>>(endpoint)
+    return response.data.data
+  },
+
+  archiveChat: async (sessionId: string, chatId: string, archive: boolean): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/chats/${chatId}/archive`, { archive })
+  },
+
+  deleteChat: async (sessionId: string, chatId: string): Promise<void> => {
+    await api.delete(`/sessions/${sessionId}/chats/${chatId}`)
+  },
+
+  pinChat: async (sessionId: string, chatId: string, pin: boolean): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/chats/${chatId}/pin`, { pin })
+  },
+
+  muteChat: async (sessionId: string, chatId: string, duration?: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/chats/${chatId}/mute`, { duration })
+  },
+
+  unmuteChat: async (sessionId: string, chatId: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/chats/${chatId}/unmute`)
+  },
+
+  markChatRead: async (sessionId: string, chatId: string, read: boolean): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/chats/${chatId}/mark-read`, { read })
+  },
+
+  // Contacts
+  getContacts: async (sessionId: string, live: boolean = false): Promise<any[]> => {
+    const endpoint = live ? `/sessions/${sessionId}/contacts/live` : `/sessions/${sessionId}/contacts`
+    const response = await api.get<ApiResponse<any[]>>(endpoint)
+    return response.data.data
+  },
+
+  blockContact: async (sessionId: string, contactId: string, block: boolean): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/contacts/${contactId}/block`, { block })
+  },
+
+  checkNumber: async (sessionId: string, number: string): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/check-number/${number}`)
+    return response.data.data
+  },
+
+  getContactAbout: async (sessionId: string, contactId: string): Promise<string | null> => {
+    const response = await api.get(`/sessions/${sessionId}/contacts/${contactId}/about`)
+    return response.data.data.about
+  },
+
+  getContactProfilePicture: async (sessionId: string, contactId: string): Promise<string | null> => {
+    const response = await api.get(`/sessions/${sessionId}/contacts/${contactId}/profile-picture`)
+    return response.data.data.profilePicUrl
+  },
+
+  getMe: async (sessionId: string): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/me`)
+    return response.data.data
+  },
+
+  // Groups
+  getGroups: async (sessionId: string): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(`/sessions/${sessionId}/groups`)
+    return response.data.data
+  },
+
+  getGroupInviteCode: async (sessionId: string, groupId: string): Promise<string> => {
+    const response = await api.get(`/sessions/${sessionId}/groups/${groupId}/invite-code`)
+    return response.data.data.code
+  },
+
+  revokeGroupInviteCode: async (sessionId: string, groupId: string): Promise<string> => {
+    const response = await api.post(`/sessions/${sessionId}/groups/${groupId}/invite-code/revoke`)
+    return response.data.data.newCode
+  },
+
+  joinGroup: async (sessionId: string, code: string): Promise<string> => {
+    const response = await api.post(`/sessions/${sessionId}/groups/join`, { code })
+    return response.data.data.groupId
+  },
+
+  getGroup: async (sessionId: string, groupId: string): Promise<any> => {
+    const response = await api.get<ApiResponse<any>>(`/sessions/${sessionId}/groups/${groupId}`)
+    return response.data.data
+  },
+
+  createGroup: async (sessionId: string, data: { name: string; participants: string[] }): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>(`/sessions/${sessionId}/groups`, data)
+    return response.data.data
+  },
+
+  // Chat Actions
+  clearChat: async (sessionId: string, chatId: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/chats/${chatId}/clear`)
+  },
+
+  // Session Actions
+  getScreenshot: async (sessionId: string): Promise<Blob> => {
+    const response = await api.get(`/sessions/${sessionId}/screenshot`, { responseType: 'blob' })
+    return response.data
+  },
+
+  // Presence
+  setPresence: async (sessionId: string, data: { presence: string; chatId?: string }): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/presence`, data)
+  },
+
+  subscribePresence: async (sessionId: string, contactId: string): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/presence/subscribe`, { contactId })
+    return response.data
+  },
+
+  getPresence: async (sessionId: string, contactId: string): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/presence/${contactId}`)
+    return response.data.data
+  },
+
+  // Extended Messages
+  sendLocation: async (sessionId: string, data: { to: string; latitude: number; longitude: number; description?: string; url?: string }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/messages/send-location`, data)
+    return response.data
+  },
+
+  sendContact: async (sessionId: string, data: { to: string; contact: { name: string; phone: string; organization?: string; email?: string } }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/messages/send-contact`, data)
+    return response.data
+  },
+
+  sendPoll: async (sessionId: string, data: { to: string; poll: { name: string; options: string[]; multipleAnswers?: boolean } }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/messages/send-poll`, data)
+    return response.data
+  },
+
+  // Labels
+  getLabels: async (sessionId: string): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(`/sessions/${sessionId}/labels`)
+    return response.data.data
+  },
+
+  createLabel: async (sessionId: string, data: { name: string; color?: string }): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>(`/sessions/${sessionId}/labels`, data)
+    return response.data.data
+  },
+
+  updateLabel: async (sessionId: string, labelId: string, data: { name?: string; color?: string }): Promise<any> => {
+    const response = await api.patch<ApiResponse<any>>(`/sessions/${sessionId}/labels/${labelId}`, data)
+    return response.data.data
+  },
+
+  deleteLabel: async (sessionId: string, labelId: string): Promise<void> => {
+    await api.delete(`/sessions/${sessionId}/labels/${labelId}`)
+  },
+
+  getChatsByLabel: async (sessionId: string, labelId: string): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(`/sessions/${sessionId}/labels/${labelId}/chats`)
+    return response.data.data
+  },
+
+  assignLabel: async (sessionId: string, data: { labelId: string; chatId: string }): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/labels/assign`, data)
+  },
+
+  unassignLabel: async (sessionId: string, data: { labelId: string; chatId: string }): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/labels/unassign`, data)
+  },
+
+  // Status
+  getMyStatuses: async (sessionId: string): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(`/sessions/${sessionId}/status`)
+    return response.data.data
+  },
+
+  getContactStatuses: async (sessionId: string): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(`/sessions/${sessionId}/status/contacts`)
+    return response.data.data
+  },
+
+  postTextStatus: async (sessionId: string, data: { text: string; backgroundColor?: string; font?: number }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/status/text`, data)
+    return response.data
+  },
+
+  postMediaStatus: async (sessionId: string, data: { mediaUrl?: string; mediaBase64?: string; mimetype: string; caption?: string }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/status/media`, data)
+    return response.data
+  },
+
+  deleteStatus: async (sessionId: string, statusId: string): Promise<void> => {
+    await api.delete(`/sessions/${sessionId}/status/${statusId}`)
+  },
+
+  // Profile
+  getProfile: async (sessionId: string): Promise<any> => {
+    const response = await api.get<ApiResponse<any>>(`/sessions/${sessionId}/profile`)
+    return response.data.data
   },
 
   requestPairingCode: async (sessionId: string, data: { phoneNumber: string }): Promise<{ code: string }> => {
@@ -111,21 +326,16 @@ export const sessionApi = {
     return response.data.data
   },
 
-  /** Get QR code with optional format (image or raw) */
-  getQR: async (sessionId: string, format: 'image' | 'raw' = 'image'): Promise<QRCodeResponse> => {
-    const response = await api.get<ApiResponse<QRCodeResponse>>(
+  getQR: async (sessionId: string, format: 'image' | 'raw' = 'image'): Promise<any> => {
+    const response = await api.get(
       `/sessions/${sessionId}/qr`,
       { params: { format } }
     )
     return response.data.data
   },
 
-  /** 
-   * Get QR code from auth endpoint - SIMPLIFIED version
-   * This is the recommended endpoint for getting QR codes.
-   */
-  getAuthQR: async (sessionId: string, params: { format?: 'image' | 'raw' } = {}): Promise<QRCodeResponse> => {
-    const response = await api.get<ApiResponse<QRCodeResponse>>(
+  getAuthQR: async (sessionId: string, params: { format?: 'image' | 'raw' } = {}): Promise<any> => {
+    const response = await api.get(
       `/sessions/${sessionId}/qr`,
       { params }
     )
