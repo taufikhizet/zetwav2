@@ -9,19 +9,20 @@ import { logger } from '../../../utils/logger.js';
 import { getById } from './read.js';
 
 /**
- * Delete session (soft delete)
+ * Delete session (HARD delete)
  */
 export async function remove(userId: string, sessionId: string) {
   await getById(userId, sessionId);
 
-  await whatsappService.destroySession(sessionId);
+  // Perform true logout and cleanup
+  await whatsappService.destroySession(sessionId, true);
 
-  await prisma.waSession.update({
+  // Hard delete from database
+  await prisma.waSession.delete({
     where: { id: sessionId },
-    data: { isActive: false },
   });
 
-  logger.info({ sessionId, userId }, 'Session deleted');
+  logger.info({ sessionId, userId }, 'Session permanently deleted');
 }
 
 /**
@@ -30,7 +31,8 @@ export async function remove(userId: string, sessionId: string) {
 export async function logout(userId: string, sessionId: string) {
   await getById(userId, sessionId);
 
-  await whatsappService.destroySession(sessionId);
+  // Perform true logout
+  await whatsappService.destroySession(sessionId, true);
 
   return {
     status: 'LOGGED_OUT',

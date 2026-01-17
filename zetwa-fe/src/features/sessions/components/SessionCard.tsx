@@ -154,7 +154,7 @@ export function SessionCard({
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onLogout(session.id)} disabled={isLogoutPending} className="cursor-pointer rounded-lg px-2 py-1.5 text-xs">
                         <LogOut className="mr-2 h-3.5 w-3.5" /> 
-                        Logout
+                        Logout WhatsApp
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="my-1" />
                     <DropdownMenuItem 
@@ -221,7 +221,7 @@ export function SessionCard({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onLogout(session.id)} disabled={isLogoutPending} className="cursor-pointer rounded-xl px-3 py-2">
                     <LogOut className="mr-2 h-4 w-4" /> 
-                    Logout Device
+                    Logout WhatsApp
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="my-1" />
                 <DropdownMenuItem 

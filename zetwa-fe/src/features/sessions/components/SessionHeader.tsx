@@ -141,7 +141,7 @@ export function SessionHeader({
             {isConnected && (
               <DropdownMenuItem onClick={onLogout}>
                 <LogOut className="mr-2 h-4 w-4 text-muted-foreground" />
-                Logout Session
+                Logout WhatsApp
               </DropdownMenuItem>
             )}
             {isConnected && <DropdownMenuSeparator />}

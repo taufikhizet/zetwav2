@@ -431,13 +431,28 @@ export class WhatsAppService {
   // SESSION MANAGEMENT
   // ================================
 
-  async destroySession(sessionId: string): Promise<void> {
+  async destroySession(sessionId: string, shouldLogout: boolean = false): Promise<void> {
     const existingSession = this.sessions.get(sessionId);
     if (existingSession) {
       try {
+        if (shouldLogout) {
+          logger.info({ sessionId }, 'Initiating WhatsApp logout...');
+          try {
+            if (existingSession.client.pupPage && !existingSession.client.pupPage.isClosed()) {
+              await existingSession.client.logout();
+              // Wait for the logout to propagate and browser to close
+              // whatsapp-web.js logout() closes the browser but we should give it a moment
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            } else {
+              logger.warn({ sessionId }, 'Puppeteer page is closed or missing, skipping logout');
+            }
+          } catch (err) {
+            logger.warn({ sessionId, error: err instanceof Error ? err.message : err }, 'Logout failed');
+          }
+        }
         await existingSession.client.destroy();
-      } catch {
-        // Ignore errors
+      } catch (error) {
+        logger.warn({ sessionId, error }, 'Error destroying session client');
       }
       this.sessions.delete(sessionId);
     }
@@ -446,6 +461,8 @@ export class WhatsAppService {
     try {
       const sessionDir = path.join(config.whatsapp.sessionPath, `session-${sessionId}`);
       if (fs.existsSync(sessionDir)) {
+        // Wait a bit to ensure file locks are released
+        await new Promise(resolve => setTimeout(resolve, 100));
         fs.rmSync(sessionDir, { recursive: true, force: true });
         logger.info({ sessionId, sessionDir }, 'Cleaned up session data directory');
       }
@@ -453,19 +470,36 @@ export class WhatsAppService {
       logger.error({ sessionId, error }, 'Failed to clean up session data directory');
     }
 
-    await prisma.waSession.update({
-      where: { id: sessionId },
-      data: {
-        status: 'LOGGED_OUT',
-        disconnectedAt: new Date(),
-        phoneNumber: null,
-        pushName: null,
-        profilePicUrl: null,
-        qrCode: null,
-        lastQrAt: null,
-        connectedAt: null,
-      },
-    });
+    // Only update status if NOT deleting (checked by caller via Prisma delete)
+    // But here we don't know if the caller will delete it.
+    // So we update it to LOGGED_OUT. If the caller deletes it, this update is harmless (or might fail if race condition, but unlikely).
+    // Actually, if we are going to delete it, we shouldn't update it?
+    // The previous code updated it.
+    // Let's keep the update. If the caller deletes it immediately after, it's fine.
+    
+    try {
+      // Check if session still exists before updating (it might be deleted by the caller in parallel, although we are in control here)
+      // Prisma update will throw if record doesn't exist.
+      // We can use updateMany to avoid error if it doesn't exist, or just try/catch.
+      await prisma.waSession.update({
+        where: { id: sessionId },
+        data: {
+          status: 'LOGGED_OUT',
+          disconnectedAt: new Date(),
+          phoneNumber: null,
+          pushName: null,
+          profilePicUrl: null,
+          qrCode: null,
+          lastQrAt: null,
+          connectedAt: null,
+          // isActive: false // Also mark inactive - REMOVED per user request: Logout should not disable the session config
+        },
+      });
+    } catch (error) {
+      // If record not found, it might have been deleted already.
+      // Or if this is called during a delete operation that happens in a transaction?
+      // For now, ignore update error if record missing.
+    }
 
     logger.info({ sessionId }, 'Session destroyed');
   }

@@ -94,7 +94,7 @@ export function ApiKeysPage() {
 
 
       {/* Stats Cards */}
-      {stats && <ApiKeyStatsCards stats={stats} />}
+      {apiKeys.length > 0 && stats && <ApiKeyStatsCards stats={stats} />}
 
       {/* Filters & Actions */}
       {apiKeys.length > 0 && (

@@ -1,6 +1,6 @@
 import { 
   Book, 
-  Key, 
+  KeyRound, 
   MessageSquare, 
   Smartphone, 
   Users, 
@@ -15,7 +15,7 @@ import {
 
 export const DOC_SECTIONS = [
   { id: 'quickstart', label: 'Quick Start', icon: Book },
-  { id: 'auth', label: 'Authentication', icon: Key },
+  { id: 'auth', label: 'Authentication', icon: KeyRound },
   { id: 'sessions', label: 'Sessions', icon: Smartphone },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
   { id: 'extended-messages', label: 'Extended Messages', icon: MessageCirclePlus },
@@ -26,7 +26,7 @@ export const DOC_SECTIONS = [
   { id: 'status', label: 'Status/Stories', icon: CircleDot },
   { id: 'profile', label: 'Profile', icon: UserCircle },
   { id: 'webhooks', label: 'Webhooks', icon: Webhook },
-  { id: 'apikeys', label: 'API Keys', icon: Key },
+  { id: 'apikeys', label: 'API Keys', icon: KeyRound },
 ] as const
 
 export type DocSectionId = typeof DOC_SECTIONS[number]['id']

@@ -264,7 +264,7 @@ export default function SessionDetailPage() {
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending || (session.phoneNumber ? logoutConfirmation !== session.phoneNumber : false)}
             >
-              {logoutMutation.isPending ? 'Logging out...' : 'Logout Session'}
+              {logoutMutation.isPending ? 'Logging out...' : 'Logout WhatsApp'}
             </Button>
           </DialogFooter>
         </DialogContent>

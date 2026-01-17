@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   Smartphone,
-  Key,
+  KeyRound,
   Menu,
   User,
   Bell,
@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils'
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Sessions', href: '/dashboard/sessions', icon: Smartphone },
-  { name: 'API Keys', href: '/dashboard/api-keys', icon: Key },
+  { name: 'API Keys', href: '/dashboard/api-keys', icon: KeyRound },
 ]
 
 const bottomNavigation = [

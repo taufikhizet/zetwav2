@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import {
   Smartphone,
-  Key,
+  KeyRound,
   MessageSquare,
   Webhook,
   Plus,
@@ -39,7 +39,7 @@ export function useDashboardStats() {
     {
       label: 'New API Key',
       description: 'Create access key',
-      icon: Key,
+      icon: KeyRound,
       href: '/dashboard/api-keys',
     },
     {
@@ -76,7 +76,7 @@ export function useDashboardStats() {
       title: 'Active API Keys',
       value: activeApiKeys,
       subtitle: `Total ${apiKeys.length} keys`,
-      icon: Key,
+      icon: KeyRound,
       href: '/dashboard/api-keys',
       color: 'orange',
     },

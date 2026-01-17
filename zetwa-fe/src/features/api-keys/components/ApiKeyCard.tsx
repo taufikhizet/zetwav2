@@ -3,12 +3,10 @@
  */
 
 import {
-  Key,
+  KeyRound,
   Calendar,
-  Activity,
   AlertTriangle,
   Hash,
-  Globe,
   Shield,
   RefreshCw,
   Trash2,
@@ -37,8 +35,6 @@ import type { ApiKey } from '../types'
 import { 
   isExpired, 
   formatRelativeDate, 
-  formatExpirationDate, 
-  getScopeBadgeVariant, 
   formatUsageCount 
 } from '../utils'
 
@@ -86,7 +82,7 @@ export function ApiKeyCard({
           {/* Icon & Basic Info */}
           <div className="flex items-center gap-4 flex-1 w-full sm:w-auto">
             <div className={`p-2.5 rounded-xl shrink-0 ${isDisabled ? 'bg-muted' : 'bg-primary/10'}`}>
-              <Key className={`h-5 w-5 ${isDisabled ? 'text-muted-foreground' : 'text-primary'}`} />
+              <KeyRound className={`h-5 w-5 ${isDisabled ? 'text-muted-foreground' : 'text-primary'}`} />
             </div>
             <div className="space-y-1 min-w-0 flex-1">
               <div className="flex items-center gap-2">
@@ -177,131 +173,84 @@ export function ApiKeyCard({
 
   return (
     <Card className={`transition-all ${isDisabled ? 'opacity-60 bg-muted/30' : 'hover:shadow-md hover:-translate-y-1'}`}>
-      <CardContent className="p-5">
-        <div className="flex items-start gap-4">
-          {/* Icon */}
-          <div className={`p-2.5 rounded-xl ${isDisabled ? 'bg-muted' : 'bg-primary/10'}`}>
-            <Key className={`h-5 w-5 ${isDisabled ? 'text-muted-foreground' : 'text-primary'}`} />
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0 space-y-3">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-semibold text-base truncate">{apiKey.name}</h3>
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-xl ${isDisabled ? 'bg-muted' : 'bg-primary/10'}`}>
+                <KeyRound className={`h-5 w-5 ${isDisabled ? 'text-muted-foreground' : 'text-primary'}`} />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg">{apiKey.name}</h3>
                   {getStatusBadge()}
                 </div>
-                {apiKey.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-1">
-                    {apiKey.description}
-                  </p>
-                )}
               </div>
+            </div>
+            
+            <div className="space-y-2">
+              <code className="block bg-muted/50 px-3 py-1.5 rounded-md font-mono text-sm border">
+                {apiKey.keyPreview.replace('...', '••••')}
+              </code>
+              {apiKey.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {apiKey.description}
+                </p>
+              )}
+            </div>
+          </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-2 flex-shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="-mr-2 h-8 w-8 text-muted-foreground hover:text-foreground">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => onEditScopes(apiKey)}>
+                <Shield className="mr-2 h-4 w-4" />
+                Edit Scopes
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onRegenerate(apiKey)}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Regenerate Key
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => onDelete(apiKey)} 
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> 
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="mt-6 pt-4 border-t grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            <span>{formatRelativeDate(apiKey.createdAt)}</span>
+          </div>
+          <div className="flex items-center gap-2 justify-end">
+             <div className="flex items-center gap-2 mr-2">
+                <span className="text-xs">{apiKey.isActive ? 'Active' : 'Inactive'}</span>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={apiKey.isActive}
-                          onCheckedChange={(checked) => onToggleActive?.(apiKey.id, checked)}
-                          disabled={isUpdating || !onToggleActive}
-                        />
-                      </div>
+                      <Switch
+                        checked={apiKey.isActive}
+                        onCheckedChange={(checked) => onToggleActive?.(apiKey.id, checked)}
+                        disabled={isUpdating || !onToggleActive}
+                        className="scale-75 origin-right"
+                      />
                     </TooltipTrigger>
                     <TooltipContent>
                       {apiKey.isActive ? 'Deactivate key' : 'Activate key'}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => onEditScopes(apiKey)}>
-                      <Shield className="mr-2 h-4 w-4" />
-                      Edit Scopes
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onRegenerate(apiKey)}>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Regenerate Key
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={() => onDelete(apiKey)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-
-            {/* Key Display - Masked preview only */}
-            <div className="flex items-center">
-              <code className="flex-1 bg-muted/50 px-3 py-2 rounded-lg font-mono text-sm truncate border">
-                {apiKey.keyPreview.replace('...', '••••••••••••••••••••••••')}
-              </code>
-            </div>
-
-            {/* Scopes */}
-            <div className="flex flex-wrap gap-1.5">
-              {apiKey.scopes.slice(0, 4).map((scope) => (
-                <Badge key={scope} variant={getScopeBadgeVariant(scope)} className="text-xs font-normal">
-                  {scope}
-                </Badge>
-              ))}
-              {apiKey.scopes.length > 4 && (
-                <Badge variant="outline" className="text-xs font-normal">
-                  +{apiKey.scopes.length - 4} more
-                </Badge>
-              )}
-            </div>
-
-            {/* Meta Info */}
-            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap pt-1 border-t">
-              <span className="flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
-                Created {formatRelativeDate(apiKey.createdAt)}
-              </span>
-
-              {apiKey.expiresAt && (
-                <span className="flex items-center gap-1.5">
-                  <Activity className="h-3.5 w-3.5" />
-                  {expired ? 'Expired' : 'Expires'} {expired ? formatRelativeDate(apiKey.expiresAt) : formatExpirationDate(apiKey.expiresAt)}
-                </span>
-              )}
-
-              {apiKey.usageCount > 0 && (
-                <span className="flex items-center gap-1.5">
-                  <Hash className="h-3.5 w-3.5" />
-                  {formatUsageCount(apiKey.usageCount)} requests
-                </span>
-              )}
-
-              {apiKey.lastUsedAt && (
-                <span className="flex items-center gap-1.5">
-                  Last used {formatRelativeDate(apiKey.lastUsedAt)}
-                </span>
-              )}
-
-              {apiKey.lastIpAddress && (
-                <span className="flex items-center gap-1.5">
-                  <Globe className="h-3.5 w-3.5" />
-                  {apiKey.lastIpAddress}
-                </span>
-              )}
-            </div>
+             </div>
           </div>
         </div>
       </CardContent>
