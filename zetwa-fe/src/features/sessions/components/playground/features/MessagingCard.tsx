@@ -1,18 +1,19 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Send, Image, Loader2, Forward, Trash2, MapPin, Contact, BarChart2, Plus, X } from 'lucide-react'
+import { Send, Image, Loader2, Forward, Trash2, MapPin, Contact, BarChart2, Plus, X, MessageSquare, Paperclip, AlertCircle } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../ApiExample'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 interface MessagingCardProps {
   sessionId: string
@@ -177,415 +178,473 @@ export function MessagingCard({ sessionId }: MessagingCardProps) {
   }
 
   return (
-    <div className="h-full">
-      <CardHeader>
-        <CardTitle>Messaging</CardTitle>
-        <CardDescription>Send, forward, and manage messages.</CardDescription>
+    <div className="h-full flex flex-col space-y-4">
+      <CardHeader className="px-0 pt-0 pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <MessageSquare className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-xl">Messaging</CardTitle>
+              <CardDescription>Send messages, media, and interactive content</CardDescription>
+            </div>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-2">
-            <TabsTrigger value="text">Text</TabsTrigger>
-            <TabsTrigger value="media">Media</TabsTrigger>
-            <TabsTrigger value="location">Location</TabsTrigger>
-            <TabsTrigger value="contact">Contact</TabsTrigger>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+        <div className="flex items-center justify-between mb-4">
+           <TabsList className="flex w-full flex-wrap h-auto gap-1 bg-muted/50 p-1 justify-start">
+            <TabsTrigger value="text" className="flex-1 min-w-[70px]">Text</TabsTrigger>
+            <TabsTrigger value="media" className="flex-1 min-w-[70px]">Media</TabsTrigger>
+            <TabsTrigger value="location" className="flex-1 min-w-[70px]">Location</TabsTrigger>
+            <TabsTrigger value="contact" className="flex-1 min-w-[70px]">Contact</TabsTrigger>
+            <TabsTrigger value="poll" className="flex-1 min-w-[70px]">Poll</TabsTrigger>
+            <TabsTrigger value="forward" className="flex-1 min-w-[70px]">Forward</TabsTrigger>
+            <TabsTrigger value="delete" className="flex-1 min-w-[70px]">Delete</TabsTrigger>
           </TabsList>
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="poll">Poll</TabsTrigger>
-            <TabsTrigger value="forward">Forward</TabsTrigger>
-            <TabsTrigger value="delete">Delete</TabsTrigger>
-          </TabsList>
+        </div>
 
-          <TabsContent value="text" className="space-y-4">
-            <div className="grid gap-2">
-              <Label>Phone Number</Label>
-              <Input 
-                placeholder="e.g. 6281234567890" 
-                value={textTo}
-                onChange={(e) => setTextTo(e.target.value)}
-              />
-              <p className="text-[11px] text-muted-foreground">Include country code without + or spaces.</p>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label>Message</Label>
-              <Textarea 
-                placeholder="Type your message..." 
-                className="min-h-[100px]"
-                value={textBody}
-                onChange={(e) => setTextBody(e.target.value)}
-              />
-            </div>
-
-            <Button 
-              className="w-full" 
-              onClick={() => sendTextMutation.mutate()}
-              disabled={!textTo || !textBody || sendTextMutation.isPending}
-            >
-              {sendTextMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="mr-2 h-4 w-4" />
-              )}
-              Send Text
-            </Button>
-
-            <ApiExample 
-              method="POST" 
-              url={`/api/sessions/${sessionId}/messages/send`}
-              body={{
-                to: textTo || "6281234567890",
-                message: textBody || "Hello from API!"
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="media" className="space-y-4">
-            <div className="grid gap-2">
-              <Label>Phone Number</Label>
-              <Input 
-                placeholder="e.g. 6281234567890" 
-                value={mediaTo}
-                onChange={(e) => setMediaTo(e.target.value)}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Media URL</Label>
-              <Input 
-                placeholder="https://example.com/image.jpg" 
-                value={mediaUrl}
-                onChange={(e) => setMediaUrl(e.target.value)}
-              />
-              <p className="text-[11px] text-muted-foreground">Direct link to image, video, or document.</p>
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Caption (Optional)</Label>
-              <Input 
-                placeholder="Check this out!" 
-                value={mediaCaption}
-                onChange={(e) => setMediaCaption(e.target.value)}
-              />
-            </div>
-
-            <Button 
-              className="w-full" 
-              onClick={() => sendMediaMutation.mutate()}
-              disabled={!mediaTo || !mediaUrl || sendMediaMutation.isPending}
-            >
-              {sendMediaMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Image className="mr-2 h-4 w-4" />
-              )}
-              Send Media
-            </Button>
-
-            <ApiExample 
-              method="POST" 
-              url={`/api/sessions/${sessionId}/messages/send-media`}
-              body={{
-                to: mediaTo || "6281234567890",
-                mediaUrl: mediaUrl || "https://example.com/image.jpg",
-                caption: mediaCaption || "Look at this!"
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="location" className="space-y-4">
-            <div className="grid gap-2">
-              <Label>Phone Number</Label>
-              <Input 
-                placeholder="e.g. 6281234567890" 
-                value={locationTo}
-                onChange={(e) => setLocationTo(e.target.value)}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>Latitude</Label>
-                <Input 
-                  placeholder="-6.200000" 
-                  value={latitude}
-                  onChange={(e) => setLatitude(e.target.value)}
-                  type="number"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>Longitude</Label>
-                <Input 
-                  placeholder="106.816666" 
-                  value={longitude}
-                  onChange={(e) => setLongitude(e.target.value)}
-                  type="number"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Description (Optional)</Label>
-              <Input 
-                placeholder="My Current Location" 
-                value={locationDesc}
-                onChange={(e) => setLocationDesc(e.target.value)}
-              />
-            </div>
-
-            <Button 
-              className="w-full" 
-              onClick={() => sendLocationMutation.mutate()}
-              disabled={!locationTo || !latitude || !longitude || sendLocationMutation.isPending}
-            >
-              {sendLocationMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <MapPin className="mr-2 h-4 w-4" />
-              )}
-              Send Location
-            </Button>
-
-            <ApiExample 
-              method="POST" 
-              url={`/api/sessions/${sessionId}/messages/send-location`}
-              body={{
-                to: locationTo || "6281234567890",
-                latitude: parseFloat(latitude) || -6.2,
-                longitude: parseFloat(longitude) || 106.8,
-                description: locationDesc || "Jakarta"
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="contact" className="space-y-4">
-            <div className="grid gap-2">
-              <Label>Phone Number (Recipient)</Label>
-              <Input 
-                placeholder="e.g. 6281234567890" 
-                value={contactTo}
-                onChange={(e) => setContactTo(e.target.value)}
-              />
-            </div>
-            
-            <div className="p-4 border rounded-md space-y-4 bg-muted/20">
-              <h4 className="font-medium text-sm flex items-center gap-2">
-                <Contact className="h-4 w-4" /> Contact Details
-              </h4>
-              <div className="grid gap-2">
-                <Label>Name</Label>
-                <Input 
-                  placeholder="John Doe" 
-                  value={contactName}
-                  onChange={(e) => setContactName(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>Phone Number</Label>
-                <Input 
-                  placeholder="628111222333" 
-                  value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>Organization (Optional)</Label>
-                <Input 
-                  placeholder="Zetwa Inc." 
-                  value={contactOrg}
-                  onChange={(e) => setContactOrg(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <Button 
-              className="w-full" 
-              onClick={() => sendContactMutation.mutate()}
-              disabled={!contactTo || !contactName || !contactPhone || sendContactMutation.isPending}
-            >
-              {sendContactMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Contact className="mr-2 h-4 w-4" />
-              )}
-              Send Contact
-            </Button>
-
-            <ApiExample 
-              method="POST" 
-              url={`/api/sessions/${sessionId}/messages/send-contact`}
-              body={{
-                to: contactTo || "6281234567890",
-                contact: {
-                  name: contactName || "John Doe",
-                  phone: contactPhone || "628111222333",
-                  organization: contactOrg || "Zetwa Inc."
-                }
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="poll" className="space-y-4">
-            <div className="grid gap-2">
-              <Label>Phone Number</Label>
-              <Input 
-                placeholder="e.g. 6281234567890" 
-                value={pollTo}
-                onChange={(e) => setPollTo(e.target.value)}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label>Poll Question</Label>
-              <Input 
-                placeholder="What is your favorite color?" 
-                value={pollName}
-                onChange={(e) => setPollName(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Options</Label>
-              {pollOptions.map((option, index) => (
-                <div key={index} className="flex gap-2">
-                  <Input 
-                    placeholder={`Option ${index + 1}`}
-                    value={option}
-                    onChange={(e) => handlePollOptionChange(index, e.target.value)}
-                  />
-                  {pollOptions.length > 2 && (
-                    <Button variant="ghost" size="icon" onClick={() => handleRemovePollOption(index)}>
-                      <X className="h-4 w-4 text-muted-foreground" />
+        <div className="flex-1 flex flex-col min-h-0">
+            <TabsContent value="text" className="mt-0 space-y-6">
+              <div className="rounded-xl border bg-card p-6 shadow-sm">
+                 <div className="grid gap-6">
+                    <div className="grid gap-2">
+                      <Label>Phone Number</Label>
+                      <Input 
+                        placeholder="e.g. 6281234567890" 
+                        value={textTo}
+                        onChange={(e) => setTextTo(e.target.value)}
+                        className="font-mono"
+                      />
+                      <p className="text-[11px] text-muted-foreground">Include country code without + or spaces.</p>
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label>Message</Label>
+                      <Textarea 
+                        placeholder="Type your message..." 
+                        className="min-h-[120px] resize-y"
+                        value={textBody}
+                        onChange={(e) => setTextBody(e.target.value)}
+                      />
+                    </div>
+        
+                    <Button 
+                      className="w-full" 
+                      onClick={() => sendTextMutation.mutate()}
+                      disabled={!textTo || !textBody || sendTextMutation.isPending}
+                    >
+                      {sendTextMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="mr-2 h-4 w-4" />
+                      )}
+                      Send Text Message
                     </Button>
-                  )}
-                </div>
-              ))}
-              <Button variant="outline" size="sm" onClick={handleAddPollOption} className="w-full">
-                <Plus className="mr-2 h-3 w-3" /> Add Option
-              </Button>
-            </div>
+                 </div>
+              </div>
 
-            <div className="flex items-center space-x-2 pt-2">
-              <Switch 
-                id="multiple" 
-                checked={pollMultiple}
-                onCheckedChange={setPollMultiple}
+              <ApiExample 
+                method="POST" 
+                url={`/api/sessions/${sessionId}/messages/send`}
+                body={{
+                  to: textTo || "6281234567890",
+                  message: textBody || "Hello from API!"
+                }}
               />
-              <Label htmlFor="multiple">Allow Multiple Answers</Label>
-            </div>
+            </TabsContent>
 
-            <Button 
-              className="w-full" 
-              onClick={() => sendPollMutation.mutate()}
-              disabled={!pollTo || !pollName || pollOptions.filter(o => o).length < 2 || sendPollMutation.isPending}
-            >
-              {sendPollMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <BarChart2 className="mr-2 h-4 w-4" />
-              )}
-              Send Poll
-            </Button>
+            <TabsContent value="media" className="mt-0 space-y-6">
+              <div className="rounded-xl border bg-card p-6 shadow-sm">
+                 <div className="grid gap-6">
+                    <div className="grid gap-2">
+                      <Label>Phone Number</Label>
+                      <Input 
+                        placeholder="e.g. 6281234567890" 
+                        value={mediaTo}
+                        onChange={(e) => setMediaTo(e.target.value)}
+                        className="font-mono"
+                      />
+                    </div>
+        
+                    <div className="grid gap-2">
+                      <Label>Media URL</Label>
+                      <div className="relative">
+                        <Paperclip className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          className="pl-9"
+                          placeholder="https://example.com/image.jpg" 
+                          value={mediaUrl}
+                          onChange={(e) => setMediaUrl(e.target.value)}
+                        />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">Direct link to image, video, or document.</p>
+                    </div>
+        
+                    <div className="grid gap-2">
+                      <Label>Caption (Optional)</Label>
+                      <Input 
+                        placeholder="Check this out!" 
+                        value={mediaCaption}
+                        onChange={(e) => setMediaCaption(e.target.value)}
+                      />
+                    </div>
+        
+                    <Button 
+                      className="w-full" 
+                      onClick={() => sendMediaMutation.mutate()}
+                      disabled={!mediaTo || !mediaUrl || sendMediaMutation.isPending}
+                    >
+                      {sendMediaMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Image className="mr-2 h-4 w-4" />
+                      )}
+                      Send Media
+                    </Button>
+                 </div>
+              </div>
 
-            <ApiExample 
-              method="POST" 
-              url={`/api/sessions/${sessionId}/messages/send-poll`}
-              body={{
-                to: pollTo || "6281234567890",
-                poll: {
-                  name: pollName || "Question?",
-                  options: pollOptions.filter(o => o) || ["Yes", "No"],
-                  multipleAnswers: pollMultiple
-                }
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="forward" className="space-y-4">
-            <div className="grid gap-2">
-              <Label>Message ID</Label>
-              <Input 
-                placeholder="ID of message to forward" 
-                value={forwardMessageId}
-                onChange={(e) => setForwardMessageId(e.target.value)}
+              <ApiExample 
+                method="POST" 
+                url={`/api/sessions/${sessionId}/messages/send-media`}
+                body={{
+                  to: mediaTo || "6281234567890",
+                  mediaUrl: mediaUrl || "https://example.com/image.jpg",
+                  caption: mediaCaption || "Look at this!"
+                }}
               />
-            </div>
-            
-            <div className="grid gap-2">
-              <Label>Forward To</Label>
-              <Input 
-                placeholder="e.g. 6281234567890" 
-                value={forwardTo}
-                onChange={(e) => setForwardTo(e.target.value)}
+            </TabsContent>
+
+            <TabsContent value="location" className="mt-0 space-y-6">
+              <div className="rounded-xl border bg-card p-6 shadow-sm">
+                 <div className="grid gap-6">
+                    <div className="grid gap-2">
+                      <Label>Phone Number</Label>
+                      <Input 
+                        placeholder="e.g. 6281234567890" 
+                        value={locationTo}
+                        onChange={(e) => setLocationTo(e.target.value)}
+                        className="font-mono"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label>Latitude</Label>
+                        <Input 
+                          placeholder="-6.200000" 
+                          value={latitude}
+                          onChange={(e) => setLatitude(e.target.value)}
+                          type="number"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Longitude</Label>
+                        <Input 
+                          placeholder="106.816666" 
+                          value={longitude}
+                          onChange={(e) => setLongitude(e.target.value)}
+                          type="number"
+                        />
+                      </div>
+                    </div>
+        
+                    <div className="grid gap-2">
+                      <Label>Description (Optional)</Label>
+                      <Input 
+                        placeholder="My Current Location" 
+                        value={locationDesc}
+                        onChange={(e) => setLocationDesc(e.target.value)}
+                      />
+                    </div>
+        
+                    <Button 
+                      className="w-full" 
+                      onClick={() => sendLocationMutation.mutate()}
+                      disabled={!locationTo || !latitude || !longitude || sendLocationMutation.isPending}
+                    >
+                      {sendLocationMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <MapPin className="mr-2 h-4 w-4" />
+                      )}
+                      Send Location
+                    </Button>
+                 </div>
+              </div>
+
+              <ApiExample 
+                method="POST" 
+                url={`/api/sessions/${sessionId}/messages/send-location`}
+                body={{
+                  to: locationTo || "6281234567890",
+                  latitude: parseFloat(latitude) || -6.2,
+                  longitude: parseFloat(longitude) || 106.8,
+                  description: locationDesc || "Jakarta"
+                }}
               />
-            </div>
+            </TabsContent>
 
-            <Button 
-              className="w-full" 
-              onClick={() => forwardMessageMutation.mutate()}
-              disabled={!forwardMessageId || !forwardTo || forwardMessageMutation.isPending}
-            >
-              {forwardMessageMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Forward className="mr-2 h-4 w-4" />
-              )}
-              Forward Message
-            </Button>
+            <TabsContent value="contact" className="mt-0 space-y-6">
+              <div className="rounded-xl border bg-card p-6 shadow-sm">
+                 <div className="grid gap-6">
+                    <div className="grid gap-2">
+                      <Label>Recipient Phone Number</Label>
+                      <Input 
+                        placeholder="e.g. 6281234567890" 
+                        value={contactTo}
+                        onChange={(e) => setContactTo(e.target.value)}
+                        className="font-mono"
+                      />
+                    </div>
+                    
+                    <div className="p-4 border rounded-lg space-y-4 bg-muted/20">
+                      <h4 className="font-medium text-sm flex items-center gap-2">
+                        <Contact className="h-4 w-4" /> Contact Card Details
+                      </h4>
+                      <div className="grid gap-2">
+                        <Label>Name</Label>
+                        <Input 
+                          placeholder="John Doe" 
+                          value={contactName}
+                          onChange={(e) => setContactName(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Phone Number</Label>
+                        <Input 
+                          placeholder="628111222333" 
+                          value={contactPhone}
+                          onChange={(e) => setContactPhone(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Organization (Optional)</Label>
+                        <Input 
+                          placeholder="Zetwa Inc." 
+                          value={contactOrg}
+                          onChange={(e) => setContactOrg(e.target.value)}
+                        />
+                      </div>
+                    </div>
+        
+                    <Button 
+                      className="w-full" 
+                      onClick={() => sendContactMutation.mutate()}
+                      disabled={!contactTo || !contactName || !contactPhone || sendContactMutation.isPending}
+                    >
+                      {sendContactMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Contact className="mr-2 h-4 w-4" />
+                      )}
+                      Send Contact
+                    </Button>
+                 </div>
+              </div>
 
-            <ApiExample 
-              method="POST" 
-              url={`/api/sessions/${sessionId}/messages/forward`}
-              body={{
-                messageId: forwardMessageId || "false_000000@c.us_3EB0...",
-                to: forwardTo || "6281234567890"
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="delete" className="space-y-4">
-            <div className="grid gap-2">
-              <Label>Message ID</Label>
-              <Input 
-                placeholder="ID of message to delete" 
-                value={deleteMessageId}
-                onChange={(e) => setDeleteMessageId(e.target.value)}
+              <ApiExample 
+                method="POST" 
+                url={`/api/sessions/${sessionId}/messages/send-contact`}
+                body={{
+                  to: contactTo || "6281234567890",
+                  contact: {
+                    name: contactName || "John Doe",
+                    phone: contactPhone || "628111222333",
+                    organization: contactOrg || "Zetwa Inc."
+                  }
+                }}
               />
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="forEveryone" 
-                checked={deleteForEveryone}
-                onCheckedChange={(checked) => setDeleteForEveryone(checked as boolean)}
+            </TabsContent>
+
+            <TabsContent value="poll" className="mt-0 space-y-6">
+              <div className="rounded-xl border bg-card p-6 shadow-sm">
+                 <div className="grid gap-6">
+                    <div className="grid gap-2">
+                      <Label>Phone Number</Label>
+                      <Input 
+                        placeholder="e.g. 6281234567890" 
+                        value={pollTo}
+                        onChange={(e) => setPollTo(e.target.value)}
+                        className="font-mono"
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label>Poll Question</Label>
+                      <Input 
+                        placeholder="What is your favorite color?" 
+                        value={pollName}
+                        onChange={(e) => setPollName(e.target.value)}
+                      />
+                    </div>
+        
+                    <div className="space-y-3">
+                      <Label>Options</Label>
+                      {pollOptions.map((option, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Input 
+                            placeholder={`Option ${index + 1}`}
+                            value={option}
+                            onChange={(e) => handlePollOptionChange(index, e.target.value)}
+                          />
+                          {pollOptions.length > 2 && (
+                            <Button variant="ghost" size="icon" onClick={() => handleRemovePollOption(index)}>
+                              <X className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      <Button variant="outline" size="sm" onClick={handleAddPollOption} className="w-full">
+                        <Plus className="mr-2 h-3 w-3" /> Add Option
+                      </Button>
+                    </div>
+        
+                    <div className="flex items-center space-x-2 pt-2">
+                      <Switch 
+                        id="multiple" 
+                        checked={pollMultiple}
+                        onCheckedChange={setPollMultiple}
+                      />
+                      <Label htmlFor="multiple">Allow Multiple Answers</Label>
+                    </div>
+        
+                    <Button 
+                      className="w-full" 
+                      onClick={() => sendPollMutation.mutate()}
+                      disabled={!pollTo || !pollName || pollOptions.filter(o => o).length < 2 || sendPollMutation.isPending}
+                    >
+                      {sendPollMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <BarChart2 className="mr-2 h-4 w-4" />
+                      )}
+                      Send Poll
+                    </Button>
+                 </div>
+              </div>
+
+              <ApiExample 
+                method="POST" 
+                url={`/api/sessions/${sessionId}/messages/send-poll`}
+                body={{
+                  to: pollTo || "6281234567890",
+                  poll: {
+                    name: pollName || "Question?",
+                    options: pollOptions.filter(o => o) || ["Yes", "No"],
+                    multipleAnswers: pollMultiple
+                  }
+                }}
               />
-              <Label htmlFor="forEveryone" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Delete for everyone (revoke)
-              </Label>
-            </div>
+            </TabsContent>
 
-            <Button 
-              className="w-full" 
-              variant="destructive"
-              onClick={() => deleteMessageMutation.mutate()}
-              disabled={!deleteMessageId || deleteMessageMutation.isPending}
-            >
-              {deleteMessageMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="mr-2 h-4 w-4" />
-              )}
-              Delete Message
-            </Button>
+            <TabsContent value="forward" className="mt-0 space-y-6">
+              <div className="rounded-xl border bg-card p-6 shadow-sm">
+                 <div className="grid gap-6">
+                    <div className="grid gap-2">
+                      <Label>Message ID</Label>
+                      <Input 
+                        placeholder="ID of message to forward" 
+                        value={forwardMessageId}
+                        onChange={(e) => setForwardMessageId(e.target.value)}
+                        className="font-mono"
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label>Forward To</Label>
+                      <Input 
+                        placeholder="e.g. 6281234567890" 
+                        value={forwardTo}
+                        onChange={(e) => setForwardTo(e.target.value)}
+                        className="font-mono"
+                      />
+                    </div>
+        
+                    <Button 
+                      className="w-full" 
+                      onClick={() => forwardMessageMutation.mutate()}
+                      disabled={!forwardMessageId || !forwardTo || forwardMessageMutation.isPending}
+                    >
+                      {forwardMessageMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Forward className="mr-2 h-4 w-4" />
+                      )}
+                      Forward Message
+                    </Button>
+                 </div>
+              </div>
 
-            <ApiExample 
-              method="DELETE" 
-              url={`/api/sessions/${sessionId}/messages/${deleteMessageId || 'false_000000@c.us_3EB0...'}`}
-              description="Delete a message. Add ?forEveryone=true to revoke it."
-            />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
+              <ApiExample 
+                method="POST" 
+                url={`/api/sessions/${sessionId}/messages/forward`}
+                body={{
+                  messageId: forwardMessageId || "false_000000@c.us_3EB0...",
+                  to: forwardTo || "6281234567890"
+                }}
+              />
+            </TabsContent>
+
+            <TabsContent value="delete" className="mt-0 space-y-6">
+              <div className="rounded-xl border bg-card p-6 shadow-sm">
+                 <div className="grid gap-6">
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Warning</AlertTitle>
+                      <AlertDescription>
+                        Deleting a message for everyone (Revoke) only works within a limited time window after sending.
+                      </AlertDescription>
+                    </Alert>
+        
+                    <div className="grid gap-2">
+                      <Label>Message ID</Label>
+                      <Input 
+                        placeholder="ID of message to delete" 
+                        value={deleteMessageId}
+                        onChange={(e) => setDeleteMessageId(e.target.value)}
+                        className="font-mono"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="forEveryone" 
+                        checked={deleteForEveryone}
+                        onCheckedChange={(checked) => setDeleteForEveryone(checked as boolean)}
+                      />
+                      <Label htmlFor="forEveryone" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Delete for everyone (revoke)
+                      </Label>
+                    </div>
+        
+                    <Button 
+                      className="w-full" 
+                      variant="destructive"
+                      onClick={() => deleteMessageMutation.mutate()}
+                      disabled={!deleteMessageId || deleteMessageMutation.isPending}
+                    >
+                      {deleteMessageMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-2 h-4 w-4" />
+                      )}
+                      Delete Message
+                    </Button>
+                 </div>
+              </div>
+
+              <ApiExample 
+                method="DELETE" 
+                url={`/api/sessions/${sessionId}/messages/${deleteMessageId || 'false_000000@c.us_3EB0...'}`}
+                description="Delete a message. Add ?forEveryone=true to revoke it."
+              />
+            </TabsContent>
+        </div>
+      </Tabs>
     </div>
   )
 }

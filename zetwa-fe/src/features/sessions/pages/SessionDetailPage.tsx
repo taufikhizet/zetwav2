@@ -107,31 +107,7 @@ export default function SessionDetailPage() {
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Status & Quick Info */}
-        <div className="space-y-6">
-          {/* QR/Auth Section - Always show when not connected */}
-          {!isConnected && (
-            <QRCodeSection
-              sessionId={sessionId!}
-              socketQR={qrCode}
-              pairingCode={pairingCode}
-              status={status}
-              isRestarting={restartMutation.isPending}
-              onRequestPairingCode={(phone: string) => pairingCodeMutation.mutate(phone)}
-              onRestart={() => restartMutation.mutate()}
-              isPairingPending={pairingCodeMutation.isPending}
-              isRestartPending={restartMutation.isPending}
-              isConnected={isConnected}
-              onStart={() => restartMutation.mutate()}
-              isStartPending={restartMutation.isPending}
-            />
-          )}
-
-          {/* Session Info Summary */}
-          <SessionInfoTab session={session} />
-        </div>
-
-        {/* Right Column: Detailed Config & Webhooks */}
+        {/* Left Column: Detailed Config & Webhooks */}
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="playground" className="w-full">
             <div className="flex items-center justify-between mb-6">
@@ -183,6 +159,30 @@ export default function SessionDetailPage() {
                />
             </TabsContent>
           </Tabs>
+        </div>
+
+        {/* Right Column: Status & Quick Info */}
+        <div className="space-y-6">
+          {/* QR/Auth Section - Always show when not connected */}
+          {!isConnected && (
+            <QRCodeSection
+              sessionId={sessionId!}
+              socketQR={qrCode}
+              pairingCode={pairingCode}
+              status={status}
+              isRestarting={restartMutation.isPending}
+              onRequestPairingCode={(phone: string) => pairingCodeMutation.mutate(phone)}
+              onRestart={() => restartMutation.mutate()}
+              isPairingPending={pairingCodeMutation.isPending}
+              isRestartPending={restartMutation.isPending}
+              isConnected={isConnected}
+              onStart={() => restartMutation.mutate()}
+              isStartPending={restartMutation.isPending}
+            />
+          )}
+
+          {/* Session Info Summary */}
+          <SessionInfoTab session={session} />
         </div>
       </div>
 
