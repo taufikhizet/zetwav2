@@ -215,6 +215,40 @@ export interface TimeoutEventPayload {
   reason?: string;
 }
 
+export interface GroupJoinEventPayload {
+  sessionId: string;
+  groupId: string;
+  participants: string[];
+  type: string;
+}
+
+export interface GroupLeaveEventPayload {
+  sessionId: string;
+  groupId: string;
+  participant: string;
+  type: string;
+}
+
+export interface GroupUpdateEventPayload {
+  sessionId: string;
+  groupId: string;
+  update: string; // subject, description, picture
+  value?: string;
+  author?: string;
+}
+
+export interface CallEventPayload {
+  sessionId: string;
+  call: any; // TODO: Define strict Call type
+}
+
+export interface ReactionEventPayload {
+  sessionId: string;
+  messageId: string;
+  reaction: string;
+  senderId: string;
+}
+
 /**
  * Event emitter interface for WhatsApp events - using object payloads
  */
@@ -230,6 +264,12 @@ export interface WhatsAppEventMap {
   message_sent: MessageEventPayload;
   message_ack: MessageAckEventPayload;
   state_change: StateChangeEventPayload;
+  // New events
+  group_join: GroupJoinEventPayload;
+  group_leave: GroupLeaveEventPayload;
+  group_update: GroupUpdateEventPayload;
+  call: CallEventPayload;
+  message_reaction: ReactionEventPayload;
 }
 
 export type WhatsAppEventName = keyof WhatsAppEventMap;

@@ -249,4 +249,74 @@ export function setupEventHandlers(
       updateSessionStatus(sessionId, status);
     }
   });
+
+  // Group Join (Participant Added)
+  client.on('group_join', (notification) => {
+    logger.debug({ sessionId, groupId: notification.chatId, type: notification.type }, 'Group participant joined');
+    const payload = {
+      sessionId,
+      groupId: notification.chatId,
+      participants: notification.recipientIds,
+      type: notification.type,
+    };
+    events.emit('group_join', payload);
+    webhookService.emit(sessionId, 'group.join', payload);
+  });
+
+  // Group Leave (Participant Removed/Left)
+  client.on('group_leave', (notification) => {
+    logger.debug({ sessionId, groupId: notification.chatId, type: notification.type }, 'Group participant left');
+    const payload = {
+      sessionId,
+      groupId: notification.chatId,
+      participant: notification.recipientIds[0] || 'unknown', // Usually one person leaves
+      type: notification.type,
+    };
+    events.emit('group_leave', payload);
+    webhookService.emit(sessionId, 'group.leave', payload);
+  });
+
+  // Group Update (Subject, Desc, etc.)
+  client.on('group_update', (notification) => {
+    logger.debug({ sessionId, groupId: notification.chatId, type: notification.type }, 'Group updated');
+    const payload = {
+      sessionId,
+      groupId: notification.chatId,
+      update: notification.type,
+      value: notification.body,
+      author: notification.author,
+    };
+    events.emit('group_update', payload);
+    webhookService.emit(sessionId, 'group.update', payload);
+  });
+
+  // Incoming Call
+  client.on('incoming_call', (call) => {
+    logger.debug({ sessionId, from: call.from }, 'Incoming call received');
+    const payload = {
+      sessionId,
+      call: {
+        id: call.id,
+        from: call.from,
+        isVideo: call.isVideo,
+        isGroup: call.isGroup,
+        timestamp: call.timestamp,
+      },
+    };
+    events.emit('call', payload);
+    webhookService.emit(sessionId, 'call.received', payload);
+  });
+
+  // Message Reaction
+  client.on('message_reaction', async (reaction) => {
+    logger.debug({ sessionId, messageId: reaction.msgId.id, reaction: reaction.reaction }, 'Message reaction received');
+    const payload = {
+      sessionId,
+      messageId: reaction.msgId._serialized,
+      reaction: reaction.reaction,
+      senderId: reaction.senderId,
+    };
+    events.emit('message_reaction', payload);
+    webhookService.emit(sessionId, 'message.reaction', payload);
+  });
 }

@@ -39,8 +39,22 @@ export async function createLabel(
     throw new SessionNotConnectedError(session.sessionId);
   }
 
-  // whatsapp-web.js doesn't have createLabel - this would need custom implementation
-  throw new BadRequestError('Creating labels is not supported in the current WhatsApp Web version');
+  // @ts-ignore
+  if (typeof session.client.createLabel !== 'function') {
+    throw new BadRequestError('Creating labels is not supported in the current WhatsApp Web version');
+  }
+
+  try {
+    // @ts-ignore
+    const label = await session.client.createLabel(name, color); // Some versions accept color
+    return {
+      id: label.id,
+      name: label.name,
+    };
+  } catch (error: any) {
+    logger.error({ sessionId: session.sessionId, error }, 'Failed to create label');
+    throw new BadRequestError(error.message || 'Failed to create label');
+  }
 }
 
 /**
@@ -79,8 +93,35 @@ export async function updateLabel(
     throw new SessionNotConnectedError(session.sessionId);
   }
 
-  // whatsapp-web.js doesn't have updateLabel - this would need custom implementation
-  throw new BadRequestError('Updating labels is not supported in the current WhatsApp Web version');
+  // @ts-ignore
+  // Note: updateLabel might not be directly available, usually we get the label object and call save/update on it
+  // Or client.updateLabel(id, updates)
+  
+  try {
+    const label = await session.client.getLabelById(labelId);
+    if (!label) throw new Error('Label not found');
+
+    // @ts-ignore
+    if (typeof label.save === 'function') {
+      // @ts-ignore
+      if (updates.name) label.name = updates.name;
+      // @ts-ignore
+      if (updates.color) label.hexColor = `#${updates.color.toString(16).padStart(6, '0')}`;
+      
+      // @ts-ignore
+      await label.save();
+      
+      return {
+        id: label.id,
+        name: label.name,
+      };
+    } else {
+        throw new Error('Label update not supported');
+    }
+  } catch (error: any) {
+    logger.error({ sessionId: session.sessionId, error }, 'Failed to update label');
+    throw new BadRequestError(error.message || 'Failed to update label');
+  }
 }
 
 /**
@@ -91,8 +132,30 @@ export async function deleteLabel(session: WASession, labelId: string): Promise<
     throw new SessionNotConnectedError(session.sessionId);
   }
 
-  // whatsapp-web.js doesn't have deleteLabel - this would need custom implementation
-  throw new BadRequestError('Deleting labels is not supported in the current WhatsApp Web version');
+  try {
+    // @ts-ignore
+    if (typeof session.client.deleteLabel === 'function') {
+         // @ts-ignore
+         await session.client.deleteLabel(labelId);
+         return;
+    }
+    
+    // Alternative: get label and call delete
+    const label = await session.client.getLabelById(labelId);
+    if (label) {
+        // @ts-ignore
+        if (typeof label.delete === 'function') {
+             // @ts-ignore
+             await label.delete();
+             return;
+        }
+    }
+    
+    throw new Error('Delete label not supported');
+  } catch (error: any) {
+    logger.error({ sessionId: session.sessionId, error }, 'Failed to delete label');
+    throw new BadRequestError(error.message || 'Failed to delete label');
+  }
 }
 
 /**

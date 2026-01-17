@@ -43,6 +43,9 @@ import * as profile from './profile.js';
 import * as messagesExtended from './messages-extended.js';
 import * as chats from './chats.js';
 import * as contacts from './contacts.js';
+import * as channels from './channels.js';
+import * as waEvents from './events.js';
+import * as calls from './calls.js';
 
 // Re-export types
 export type { WASession, SessionStatus, SendMessageOptions, SendMediaOptions } from './types.js';
@@ -443,7 +446,7 @@ export class WhatsAppService {
     sessionId: string,
     to: string,
     media: MessageMedia,
-    options?: SendMediaOptions
+    options?: SendMediaOptions & { sendAudioAsVoice?: boolean }
   ): Promise<Message> {
     return messaging.sendMedia(this.getSessionSafe(sessionId), to, media, options);
   }
@@ -595,6 +598,62 @@ export class WhatsAppService {
       throw new SessionNotConnectedError(sessionId);
     }
     return session.client.getContacts();
+  }
+
+  // ================================
+  // CHANNELS (NEWSLETTERS)
+  // ================================
+
+  async listChannels(sessionId: string): Promise<any[]> {
+    return channels.listChannels(this.getSessionSafe(sessionId));
+  }
+
+  async createChannel(
+    sessionId: string, 
+    name: string, 
+    description?: string, 
+    picture?: string
+  ): Promise<any> {
+    return channels.createChannel(this.getSessionSafe(sessionId), name, description, picture);
+  }
+
+  async deleteChannel(sessionId: string, id: string): Promise<void> {
+    return channels.deleteChannel(this.getSessionSafe(sessionId), id);
+  }
+
+  async getChannel(sessionId: string, id: string): Promise<any> {
+    return channels.getChannel(this.getSessionSafe(sessionId), id);
+  }
+
+  // ================================
+  // EVENTS (CALENDAR)
+  // ================================
+
+  async sendEvent(
+    sessionId: string,
+    to: string,
+    eventData: {
+      name: string;
+      description?: string;
+      startTime: number;
+      endTime?: number;
+      location?: {
+        latitude: number;
+        longitude: number;
+        name?: string;
+      };
+      canceled?: boolean;
+    }
+  ): Promise<any> {
+    return waEvents.sendEvent(this.getSessionSafe(sessionId), to, eventData);
+  }
+
+  // ================================
+  // CALLS
+  // ================================
+
+  async rejectCall(sessionId: string, callId: string): Promise<void> {
+    return calls.rejectCall(this.getSessionSafe(sessionId), callId);
   }
 
   async isRegistered(sessionId: string, number: string): Promise<boolean> {
@@ -871,23 +930,25 @@ export class WhatsAppService {
   // ================================
 
   async sendReaction(sessionId: string, messageId: string, reaction: string) {
-    return messagesExtended.sendReaction(this.getSessionSafe(sessionId), messageId, reaction);
+    return messaging.sendReaction(this.getSessionSafe(sessionId), messageId, reaction);
   }
 
   async removeReaction(sessionId: string, messageId: string) {
     return messagesExtended.removeReaction(this.getSessionSafe(sessionId), messageId);
   }
 
-  async sendLocation(sessionId: string, to: string, latitude: number, longitude: number, description?: string, url?: string) {
-    return messagesExtended.sendLocation(this.getSessionSafe(sessionId), to, latitude, longitude, description, url);
+  async sendLocation(sessionId: string, to: string, latitude: number, longitude: number, description?: string, options?: { quotedMessageId?: string }) {
+    // Use messaging.ts implementation which uses newer classes
+    return messaging.sendLocation(this.getSessionSafe(sessionId), to, latitude, longitude, description, options);
   }
 
-  async sendContact(sessionId: string, to: string, contact: ContactInfo) {
-    return messagesExtended.sendContact(this.getSessionSafe(sessionId), to, contact);
+  async sendContact(sessionId: string, to: string, contactId: string, options?: { quotedMessageId?: string }) {
+    // Use messaging.ts implementation
+    return messaging.sendContact(this.getSessionSafe(sessionId), to, contactId, options);
   }
 
-  async sendPoll(sessionId: string, to: string, name: string, options: string[], allowMultipleAnswers: boolean) {
-    return messagesExtended.sendPoll(this.getSessionSafe(sessionId), to, name, options, allowMultipleAnswers);
+  async sendPoll(sessionId: string, to: string, name: string, options: string[], settings?: { selectableCount?: number; quotedMessageId?: string }) {
+    return messaging.sendPoll(this.getSessionSafe(sessionId), to, name, options, settings);
   }
 
   async sendButtons(sessionId: string, to: string, body: string, buttons: MessageButton[], title?: string, footer?: string) {

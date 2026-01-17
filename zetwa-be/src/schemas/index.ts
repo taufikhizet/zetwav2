@@ -212,25 +212,118 @@ export const updateWebhookSchema = z.object({
   customHeaders: z.array(customHeaderSchema).optional(),
 });
 
-// Message schemas
+// ================================
+// Messaging Schemas (Expanded)
+// ================================
+
 export const sendMessageSchema = z.object({
-  to: z.string().min(1, 'Recipient is required'),
-  message: z.string().min(1, 'Message is required').max(65536),
+  to: z.string().min(1, 'Recipient (to) is required'),
+  message: z.string().min(1, 'Message content is required'),
   quotedMessageId: z.string().optional(),
   mentions: z.array(z.string()).optional(),
 });
 
 export const sendMediaSchema = z.object({
-  to: z.string().min(1, 'Recipient is required'),
-  mediaUrl: z.string().url().optional(),
+  to: z.string().min(1, 'Recipient (to) is required'),
+  mediaUrl: z.string().url('Invalid media URL').optional(),
   mediaBase64: z.string().optional(),
   mimetype: z.string().optional(),
   filename: z.string().optional(),
-  caption: z.string().max(1024).optional(),
-}).refine(
-  (data) => data.mediaUrl || data.mediaBase64,
-  'Either mediaUrl or mediaBase64 is required'
-);
+  caption: z.string().optional(),
+  quotedMessageId: z.string().optional(),
+});
+
+export const sendVoiceSchema = z.object({
+  to: z.string().min(1, 'Recipient (to) is required'),
+  mediaUrl: z.string().url('Invalid media URL').optional(),
+  mediaBase64: z.string().optional(),
+  mimetype: z.string().optional(), // usually audio/ogg; codecs=opus
+  ptt: z.boolean().default(true), // Push-to-Talk (voice note)
+  quotedMessageId: z.string().optional(),
+});
+
+export const sendPollSchema = z.object({
+  to: z.string().min(1, 'Recipient (to) is required'),
+  name: z.string().min(1, 'Poll question is required'),
+  options: z.array(z.string()).min(2, 'At least 2 options are required'),
+  selectableCount: z.number().int().min(1).optional(),
+  quotedMessageId: z.string().optional(),
+});
+
+export const sendLocationSchema = z.object({
+  to: z.string().min(1, 'Recipient (to) is required'),
+  latitude: z.number(),
+  longitude: z.number(),
+  title: z.string().optional(), // Description/Address
+  quotedMessageId: z.string().optional(),
+});
+
+export const sendContactSchema = z.object({
+  to: z.string().min(1, 'Recipient (to) is required'),
+  contactId: z.string().min(1, 'Contact ID (phone number) is required'),
+  quotedMessageId: z.string().optional(),
+});
+
+export const sendReactionSchema = z.object({
+  messageId: z.string().min(1, 'Message ID is required'),
+  reaction: z.string().min(1, 'Emoji is required'), // e.g., '❤️', '👍'
+});
+
+export const editMessageSchema = z.object({
+  messageId: z.string().min(1, 'Message ID is required'),
+  newBody: z.string().min(1, 'New message content is required'),
+});
+
+// Query schema for listing messages
+export const messageQuerySchema = z.object({
+  page: z.string().regex(/^\d+$/).transform(Number).default('1'),
+  limit: z.string().regex(/^\d+$/).transform(Number).default('20'),
+  direction: z.enum(['asc', 'desc']).default('desc'),
+  type: z.string().optional(),
+  chatId: z.string().optional(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
+});
+
+// ================================
+// Channel (Newsletter) Schemas
+// ================================
+
+export const createChannelSchema = z.object({
+  name: z.string().min(1, 'Channel name is required'),
+  description: z.string().optional(),
+  picture: z.string().optional(), // Base64 or URL
+});
+
+export const listChannelsQuerySchema = z.object({
+  role: z.enum(['subscriber', 'owner', 'admin', 'guest']).optional(),
+});
+
+// ================================
+// Event (Calendar) Schemas
+// ================================
+
+export const createEventSchema = z.object({
+  to: z.string().min(1, 'Recipient/Group ID is required'),
+  name: z.string().min(1, 'Event name is required'),
+  description: z.string().optional(),
+  startTime: z.number().int().min(Date.now(), 'Start time must be in the future'), // Timestamp
+  endTime: z.number().int().optional(), // Timestamp
+  location: z.object({
+    latitude: z.number(),
+    longitude: z.number(),
+    name: z.string().optional(),
+  }).optional(),
+  canceled: z.boolean().optional(),
+});
+
+// ================================
+// Call Schemas
+// ================================
+
+export const rejectCallSchema = z.object({
+  callId: z.string().min(1, 'Call ID is required'),
+});
 
 // ============================================
 // API KEY SCHEMAS
@@ -252,6 +345,9 @@ export const API_KEY_SCOPE_VALUES = [
   'media:write',
   'webhooks:read',
   'webhooks:write',
+  'calls:write',
+  'channels:read',
+  'channels:write',
 ] as const;
 
 export const apiKeyScopeSchema = z.enum(API_KEY_SCOPE_VALUES);
@@ -300,16 +396,6 @@ export const updateApiKeyScopesSchema = z.object({
 export const paginationSchema = z.object({
   page: z.string().transform(Number).default('1'),
   limit: z.string().transform(Number).default('20'),
-});
-
-export const messageQuerySchema = z.object({
-  page: z.string().transform(Number).default('1'),
-  limit: z.string().transform(Number).default('50'),
-  direction: z.enum(['INCOMING', 'OUTGOING']).optional(),
-  type: z.enum(['TEXT', 'IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT', 'STICKER', 'LOCATION', 'CONTACT']).optional(),
-  chatId: z.string().optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
 });
 
 // Type exports

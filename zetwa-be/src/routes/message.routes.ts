@@ -8,7 +8,16 @@ import { prisma } from '../lib/prisma.js';
 import { authenticateAny, requireScope } from '../middleware/auth.middleware.js';
 import { validateBody } from '../middleware/validate.middleware.js';
 import { messageLimiter } from '../middleware/rate-limit.middleware.js';
-import { sendMessageSchema, sendMediaSchema, messageQuerySchema } from '../schemas/index.js';
+import { 
+  sendMessageSchema, 
+  sendMediaSchema, 
+  messageQuerySchema,
+  sendPollSchema,
+  sendLocationSchema,
+  sendContactSchema,
+  sendVoiceSchema,
+  sendReactionSchema
+} from '../schemas/index.js';
 import { BadRequestError } from '../utils/errors.js';
 
 interface SessionParams extends ParamsDictionary {
@@ -82,7 +91,7 @@ router.post(
       // Verify session ownership
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const { to, mediaUrl, mediaBase64, mimetype, filename, caption } = req.body;
+      const { to, mediaUrl, mediaBase64, mimetype, filename, caption, quotedMessageId } = req.body;
 
       let media: MessageMedia;
 
@@ -114,7 +123,7 @@ router.post(
         req.params.sessionId,
         to,
         media,
-        { caption }
+        { caption, quotedMessageId }
       );
 
       res.json({
@@ -125,6 +134,207 @@ router.post(
           to: sentMessage.to,
           timestamp: sentMessage.timestamp,
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route POST /api/sessions/:sessionId/messages/send-voice
+ * @desc Send a voice message (PTT)
+ * @scope messages:send, media:write
+ */
+router.post(
+  '/:sessionId/messages/send-voice',
+  requireScope('messages:send', 'media:write'),
+  messageLimiter,
+  validateBody(sendVoiceSchema),
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+    try {
+      // Verify session ownership
+      await sessionService.getById(req.userId!, req.params.sessionId);
+
+      const { to, mediaUrl, mediaBase64, mimetype, quotedMessageId } = req.body;
+
+      let media: MessageMedia;
+
+      if (mediaUrl) {
+        try {
+          const response = await axios.get(mediaUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000,
+          });
+          const contentType = response.headers['content-type'] || mimetype || 'audio/ogg';
+          const base64 = Buffer.from(response.data).toString('base64');
+          media = new MessageMedia(contentType, base64);
+        } catch (error) {
+          throw new BadRequestError('Failed to download media from URL');
+        }
+      } else if (mediaBase64) {
+        media = new MessageMedia(mimetype || 'audio/ogg', mediaBase64);
+      } else {
+        throw new BadRequestError('Either mediaUrl or mediaBase64 is required');
+      }
+
+      const sentMessage = await whatsappService.sendMedia(
+        req.params.sessionId,
+        to,
+        media,
+        { quotedMessageId, sendAudioAsVoice: true }
+      );
+
+      res.json({
+        success: true,
+        message: 'Voice message sent',
+        data: {
+          messageId: sentMessage.id._serialized,
+          to: sentMessage.to,
+          timestamp: sentMessage.timestamp,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route POST /api/sessions/:sessionId/messages/send-poll
+ * @desc Send a poll message
+ * @scope messages:send
+ */
+router.post(
+  '/:sessionId/messages/send-poll',
+  requireScope('messages:send'),
+  messageLimiter,
+  validateBody(sendPollSchema),
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+    try {
+      await sessionService.getById(req.userId!, req.params.sessionId);
+      const { to, name, options, selectableCount, quotedMessageId } = req.body;
+
+      const sentMessage = await whatsappService.sendPoll(
+        req.params.sessionId,
+        to,
+        name,
+        options,
+        { selectableCount, quotedMessageId }
+      );
+
+      res.json({
+        success: true,
+        message: 'Poll sent',
+        data: {
+          messageId: sentMessage.id._serialized,
+          to: sentMessage.to,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route POST /api/sessions/:sessionId/messages/send-location
+ * @desc Send a location message
+ * @scope messages:send
+ */
+router.post(
+  '/:sessionId/messages/send-location',
+  requireScope('messages:send'),
+  messageLimiter,
+  validateBody(sendLocationSchema),
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+    try {
+      await sessionService.getById(req.userId!, req.params.sessionId);
+      const { to, latitude, longitude, title, quotedMessageId } = req.body;
+
+      const sentMessage = await whatsappService.sendLocation(
+        req.params.sessionId,
+        to,
+        latitude,
+        longitude,
+        title,
+        { quotedMessageId }
+      );
+
+      res.json({
+        success: true,
+        message: 'Location sent',
+        data: {
+          messageId: sentMessage.id._serialized,
+          to: sentMessage.to,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route POST /api/sessions/:sessionId/messages/send-contact
+ * @desc Send a contact message
+ * @scope messages:send
+ */
+router.post(
+  '/:sessionId/messages/send-contact',
+  requireScope('messages:send'),
+  messageLimiter,
+  validateBody(sendContactSchema),
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+    try {
+      await sessionService.getById(req.userId!, req.params.sessionId);
+      const { to, contactId, quotedMessageId } = req.body;
+
+      const sentMessage = await whatsappService.sendContact(
+        req.params.sessionId,
+        to,
+        contactId,
+        { quotedMessageId }
+      );
+
+      res.json({
+        success: true,
+        message: 'Contact sent',
+        data: {
+          messageId: sentMessage.id._serialized,
+          to: sentMessage.to,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route POST /api/sessions/:sessionId/messages/send-reaction
+ * @desc Send a reaction to a message
+ * @scope messages:send
+ */
+router.post(
+  '/:sessionId/messages/send-reaction',
+  requireScope('messages:send'),
+  messageLimiter,
+  validateBody(sendReactionSchema),
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+    try {
+      await sessionService.getById(req.userId!, req.params.sessionId);
+      const { messageId, reaction } = req.body;
+
+      await whatsappService.sendReaction(
+        req.params.sessionId,
+        messageId,
+        reaction
+      );
+
+      res.json({
+        success: true,
+        message: 'Reaction sent',
       });
     } catch (error) {
       next(error);
