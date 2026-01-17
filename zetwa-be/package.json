@@ -41,9 +41,10 @@
     "nanoid": "^3.3.11",
     "pino": "^9.5.0",
     "pino-pretty": "^11.3.0",
+    "puppeteer": "^24.31.0",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.1",
-    "whatsapp-web.js": "^1.26.0",
+    "whatsapp-web.js": "github:devlikeapro/whatsapp-web.js#fork-main-2025-12-17",
     "zod": "^3.23.8"
   },
   "devDependencies": {

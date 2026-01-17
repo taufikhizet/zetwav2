@@ -211,12 +211,6 @@ export class WhatsAppService {
           timeout: 60000, // 60 second timeout for puppeteer operations
         },
         qrMaxRetries: 5,
-        // Using "none" webVersionCache to force using local version if available
-        // or let it fetch from WhatsApp servers but without caching issues
-        // This is often more stable than remote caching which can get outdated
-        webVersionCache: {
-          type: 'none',
-        },
         ...clientInfo,
       });
 
