@@ -393,9 +393,6 @@ export function QRCodeSection({
                          alt="WhatsApp QR Code" 
                          className="w-80 h-80 object-contain" 
                        />
-                      <div className="absolute inset-0 bg-white/90 dark:bg-black/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                         <p className="text-foreground font-medium text-lg">Scan with WhatsApp</p>
-                      </div>
                     </div>
                   ) : (
                     <div className="text-center text-muted-foreground p-8">
