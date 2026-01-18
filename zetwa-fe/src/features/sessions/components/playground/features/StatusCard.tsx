@@ -7,7 +7,8 @@ import {
   Loader2, 
   RefreshCw, 
   Eye, 
-  PlayCircle
+  PlayCircle,
+  ChevronLeft
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -22,6 +23,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../ApiExample'
+import { StatusViewerDialog } from './StatusViewerDialog'
 
 interface StatusCardProps {
   sessionId: string
@@ -30,6 +32,13 @@ interface StatusCardProps {
 export function StatusCard({ sessionId }: StatusCardProps) {
   const [activeTab, setActiveTab] = useState('list')
   
+  // Status Viewer State
+  const [viewerOpen, setViewerOpen] = useState(false)
+  const [viewingContact, setViewingContact] = useState<{ name: string, statuses: any[], initialIndex?: number, mode?: 'story' | 'gallery' } | null>(null)
+  
+  // Contact List View State
+  const [viewingContactList, setViewingContactList] = useState<{ contactId: string, name: string, statuses: any[] } | null>(null)
+
   // Status Creation State
   const [statusText, setStatusText] = useState('')
   const [bgColor, setBgColor] = useState('#000000')
@@ -91,10 +100,26 @@ export function StatusCard({ sessionId }: StatusCardProps) {
 
   const formatTime = (timestamp: string | number) => {
     try {
-      return format(new Date(timestamp), 'MMM d, HH:mm')
+      let date: Date
+      if (typeof timestamp === 'number') {
+        // If timestamp is in seconds (standard for WAHA/WWebJS), convert to ms
+        if (timestamp < 1000000000000) {
+           date = new Date(timestamp * 1000)
+        } else {
+           date = new Date(timestamp)
+        }
+      } else {
+        date = new Date(timestamp)
+      }
+      return format(date, 'MMM d, HH:mm')
     } catch (e) {
       return ''
     }
+  }
+
+  const openViewer = (contactName: string, statuses: any[], index: number = 0, mode: 'story' | 'gallery' = 'story') => {
+      setViewingContact({ name: contactName, statuses, initialIndex: index, mode })
+      setViewerOpen(true)
   }
 
   return (
@@ -138,21 +163,25 @@ export function StatusCard({ sessionId }: StatusCardProps) {
                     <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
                     <p>Loading statuses...</p>
                   </div>
-                ) : myStatuses && myStatuses.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4">
-                    {myStatuses.map((status: any) => (
-                      <div key={status.id} className="border rounded-xl overflow-hidden relative group shadow-sm hover:shadow-md transition-shadow">
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+                    {myStatuses && myStatuses.length > 0 && myStatuses.map((status: any, index: number) => (
+                      <div 
+                        key={status.id} 
+                        className="border rounded-xl overflow-hidden relative group shadow-sm hover:shadow-md transition-all cursor-pointer aspect-[9/16] md:aspect-square"
+                        onClick={() => openViewer('My Status', myStatuses, index, 'gallery')}
+                      >
                          {status.type === 'text' ? (
                            <div 
-                             className="aspect-square flex items-center justify-center p-6 text-center text-white"
+                             className="w-full h-full flex items-center justify-center p-4 text-center text-white"
                              style={{ backgroundColor: status.backgroundColor || '#000000' }}
                            >
-                             <p className="line-clamp-4 font-medium">{status.body}</p>
+                             <p className="line-clamp-4 font-medium text-sm">{status.body}</p>
                            </div>
                          ) : (
-                           <div className="aspect-square bg-muted flex flex-col items-center justify-center gap-2">
+                           <div className="w-full h-full bg-muted flex flex-col items-center justify-center gap-2">
                              <ImageIcon className="h-8 w-8 text-muted-foreground opacity-50" />
-                             <span className="text-xs text-muted-foreground font-medium">Media Status</span>
+                             <span className="text-xs text-muted-foreground font-medium">Media</span>
                            </div>
                          )}
                          
@@ -162,7 +191,10 @@ export function StatusCard({ sessionId }: StatusCardProps) {
                              variant="destructive" 
                              size="icon" 
                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
-                             onClick={() => deleteStatusMutation.mutate(status.id)}
+                             onClick={(e) => {
+                                 e.stopPropagation()
+                                 deleteStatusMutation.mutate(status.id)
+                             }}
                            >
                              <Trash2 className="h-3.5 w-3.5" />
                            </Button>
@@ -170,14 +202,12 @@ export function StatusCard({ sessionId }: StatusCardProps) {
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
-                    <div className="bg-muted p-4 rounded-full mb-3">
-                      <PlayCircle className="h-8 w-8 opacity-20" />
-                    </div>
-                    <p className="font-medium">No active statuses</p>
-                    <p className="text-xs mt-1">Post a status to share updates</p>
-                  </div>
+                )}
+                
+                {!isLoadingMyStatus && (!myStatuses || myStatuses.length === 0) && (
+                     <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
+                        <p className="font-medium">No active statuses</p>
+                     </div>
                 )}
              </ScrollArea>
           </div>
@@ -190,6 +220,63 @@ export function StatusCard({ sessionId }: StatusCardProps) {
         </TabsContent>
 
         <TabsContent value="contacts" className="flex-1 flex flex-col min-h-0 space-y-4 mt-0">
+          {viewingContactList ? (
+            <div className="flex-1 flex flex-col min-h-0 space-y-4">
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => setViewingContactList(null)}>
+                        <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                            <AvatarFallback>{viewingContactList.name?.[0] || '?'}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <h3 className="font-semibold">{viewingContactList.name || viewingContactList.contactId}</h3>
+                            <p className="text-xs text-muted-foreground">{viewingContactList.statuses.length} updates</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="rounded-xl border bg-card flex-1 min-h-0 overflow-hidden flex flex-col shadow-sm">
+                    <ScrollArea className="flex-1">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+                            {viewingContactList.statuses.map((status: any, index: number) => (
+                                <div 
+                                    key={status.id} 
+                                    className="border rounded-xl overflow-hidden relative group shadow-sm hover:shadow-md transition-all cursor-pointer aspect-[9/16] md:aspect-square"
+                                    onClick={() => openViewer(viewingContactList.name, viewingContactList.statuses, index, 'gallery')}
+                                >
+                                    {status.type === 'text' ? (
+                                    <div 
+                                        className="w-full h-full flex items-center justify-center p-4 text-center text-white"
+                                        style={{ backgroundColor: status.backgroundColor || '#000000' }}
+                                    >
+                                        <p className="line-clamp-4 font-medium text-sm">{status.body}</p>
+                                    </div>
+                                    ) : (
+                                    <div className="w-full h-full bg-muted flex flex-col items-center justify-center gap-2">
+                                        <ImageIcon className="h-8 w-8 text-muted-foreground opacity-50" />
+                                        <span className="text-xs text-muted-foreground font-medium">Media</span>
+                                    </div>
+                                    )}
+                                    
+                                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent text-white flex justify-between items-end">
+                                    <span className="text-xs font-medium opacity-90">{formatTime(status.timestamp)}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </div>
+                
+                <ApiExample 
+                  method="GET" 
+                  url={`/api/sessions/${sessionId}/status/contact/${viewingContactList.contactId}`}
+                  description={`Get status updates specifically for ${viewingContactList.name || viewingContactList.contactId}.`}
+                />
+            </div>
+          ) : (
+           <>
            <div className="flex justify-end">
             <Button variant="outline" size="sm" onClick={() => refetchContactStatus()} disabled={isLoadingContactStatus} className="h-8">
               <RefreshCw className={`h-3.5 w-3.5 mr-2 ${isLoadingContactStatus ? 'animate-spin' : ''}`} />
@@ -207,21 +294,36 @@ export function StatusCard({ sessionId }: StatusCardProps) {
                 ) : contactStatuses && contactStatuses.length > 0 ? (
                   <div className="divide-y">
                     {contactStatuses.map((contact: any) => (
-                      <div key={contact.id._serialized} className="p-3 hover:bg-muted/50 transition-all flex items-center justify-between group cursor-pointer">
+                      <div 
+                        key={contact.contactId} 
+                        className="p-3 hover:bg-muted/50 transition-all flex items-center justify-between group cursor-pointer"
+                        onClick={() => setViewingContactList(contact)}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className={`p-0.5 rounded-full border-2 ${contact.unreadCount > 0 ? 'border-primary' : 'border-muted'}`}>
-                            <Avatar className="h-10 w-10">
-                              <AvatarFallback className="bg-secondary text-secondary-foreground">{contact.pushname?.[0] || '?'}</AvatarFallback>
+                          <div className="relative">
+                            <div className={`absolute inset-0 rounded-full border-2 border-primary ${contact.statuses.some((s: any) => !s.seen) ? 'animate-pulse' : ''}`}></div>
+                            <Avatar className="h-12 w-12 border-2 border-background relative z-10">
+                              <AvatarFallback className="bg-secondary text-secondary-foreground font-medium">{contact.name?.[0] || '?'}</AvatarFallback>
                             </Avatar>
                           </div>
                           <div>
-                            <div className="font-medium text-sm">{contact.pushname || contact.name || contact.number}</div>
-                            <div className="text-xs text-muted-foreground flex items-center gap-1">
-                               <span className="font-medium text-primary">{contact.msgs?.length || 0}</span> updates
+                            <div className="font-medium text-base">{typeof contact.name === 'string' ? contact.name : contact.contactId}</div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                               <span className="font-medium text-primary">{contact.statuses?.length || 0}</span> updates
+                               <span className="text-muted-foreground/50">•</span>
+                               <span>{contact.statuses?.[0] ? formatTime(contact.statuses[contact.statuses.length - 1].timestamp) : ''}</span>
                             </div>
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                openViewer(contact.name || contact.contactId, contact.statuses)
+                            }}
+                        >
                            <Eye className="h-4 w-4" />
                         </Button>
                       </div>
@@ -237,12 +339,14 @@ export function StatusCard({ sessionId }: StatusCardProps) {
                 )}
              </ScrollArea>
           </div>
-
+          
           <ApiExample 
             method="GET" 
             url={`/api/sessions/${sessionId}/status/contacts`}
             description="Get status updates from your contacts."
           />
+          </>
+          )}
         </TabsContent>
 
         <TabsContent value="create-text" className="space-y-6 mt-0">
@@ -287,61 +391,67 @@ export function StatusCard({ sessionId }: StatusCardProps) {
                 </Button>
              </div>
           </div>
-
           <ApiExample 
             method="POST" 
             url={`/api/sessions/${sessionId}/status/text`}
-            body={{ text: statusText || "Hello World", backgroundColor: bgColor }}
+            body={{ text: "Hello World", backgroundColor: "#000000" }}
+            description="Post a text status."
           />
         </TabsContent>
 
         <TabsContent value="create-media" className="space-y-6 mt-0">
-           <div className="rounded-xl border bg-card p-6 shadow-sm">
-              <div className="grid gap-6">
-                <div className="grid gap-2">
-                  <Label>Media URL</Label>
-                  <div className="flex gap-2">
-                     <Input 
-                       placeholder="https://example.com/image.jpg" 
-                       value={mediaUrl}
-                       onChange={(e) => setMediaUrl(e.target.value)}
-                     />
-                  </div>
-                </div>
-    
-                <div className="grid gap-2">
-                  <Label>Caption (Optional)</Label>
-                  <Input 
-                    placeholder="Add a caption..." 
-                    value={caption}
-                    onChange={(e) => setCaption(e.target.value)}
-                  />
-                </div>
-                
-                {mediaUrl && (
-                   <div className="rounded-lg border bg-muted/20 overflow-hidden aspect-video flex items-center justify-center">
-                      <img src={mediaUrl} alt="Preview" className="max-h-full max-w-full object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
-                   </div>
-                )}
-    
-                <Button 
-                  className="w-full" 
-                  onClick={() => postMediaStatusMutation.mutate()}
-                  disabled={!mediaUrl || postMediaStatusMutation.isPending}
-                >
-                  {postMediaStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ImageIcon className="h-4 w-4 mr-2" />}
-                  Post Media Status
-                </Button>
-              </div>
-           </div>
+            <div className="rounded-xl border bg-card p-6 shadow-sm">
+                <div className="grid gap-6">
+                    <div className="grid gap-2">
+                        <Label>Media URL</Label>
+                        <Input 
+                            placeholder="https://example.com/image.jpg"
+                            value={mediaUrl}
+                            onChange={(e) => setMediaUrl(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">Direct link to image or video</p>
+                    </div>
 
-          <ApiExample 
-            method="POST" 
-            url={`/api/sessions/${sessionId}/status/media`}
-            body={{ mediaUrl: mediaUrl || "https://example.com/image.jpg", caption: caption || "Cool pic" }}
-          />
+                    <div className="grid gap-2">
+                        <Label>Caption (Optional)</Label>
+                        <Input 
+                            placeholder="Add a caption..."
+                            value={caption}
+                            onChange={(e) => setCaption(e.target.value)}
+                        />
+                    </div>
+
+                    <Button 
+                        className="w-full" 
+                        onClick={() => postMediaStatusMutation.mutate()}
+                        disabled={!mediaUrl || postMediaStatusMutation.isPending}
+                    >
+                        {postMediaStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ImageIcon className="h-4 w-4 mr-2" />}
+                        Post Media Status
+                    </Button>
+                </div>
+            </div>
+            <ApiExample 
+                method="POST" 
+                url={`/api/sessions/${sessionId}/status/media`}
+                body={{ mediaUrl: "https://...", caption: "Check this out!" }}
+                description="Post a media status."
+            />
         </TabsContent>
       </Tabs>
+
+      {/* Status Viewer Dialog */}
+      {viewingContact && (
+        <StatusViewerDialog 
+            isOpen={viewerOpen}
+            onClose={() => setViewerOpen(false)}
+            statuses={viewingContact.statuses}
+            contactName={viewingContact.name}
+            sessionId={sessionId}
+            initialIndex={viewingContact.initialIndex}
+            mode={viewingContact.mode}
+        />
+      )}
     </div>
   )
 }

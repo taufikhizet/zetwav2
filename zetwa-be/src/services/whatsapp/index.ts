@@ -3,18 +3,14 @@
  * Main service class combining all WhatsApp functionality
  */
 
-import { Client, LocalAuth, type Message, type Chat, type Contact, MessageMedia } from 'whatsapp-web.js';
-import path from 'path';
-import fs from 'fs';
+import { Client, type Message, type Chat, type Contact, MessageMedia } from 'whatsapp-web.js';
 import { prisma } from '../../lib/prisma.js';
-import { config } from '../../config/index.js';
 import { SessionNotFoundError, SessionNotConnectedError } from '../../utils/errors.js';
 import { logger } from '../../utils/logger.js';
 import { webhookService } from '../webhook.service.js';
-import { clearSessionQRCache } from '../../utils/qrcode.js';
 
 // Import session config types
-import type { SessionConfig, ClientConfig, ProxyConfig } from '../../types/session-config.js';
+import type { SessionConfig } from '../../types/session-config.js';
 
 // Import types
 import type {
@@ -33,41 +29,57 @@ import type {
 import { TypedEventEmitter as EventEmitterClass } from './types.js';
 
 // Import modules
-import { setupEventHandlers } from './event-handlers.js';
-import * as messaging from './messaging.js';
+import * as messaging from './messaging/index.js';
 import * as groups from './groups.js';
 import * as presence from './presence.js';
 import * as labels from './labels.js';
 import * as status from './status.js';
 import * as profile from './profile.js';
-import * as messagesExtended from './messages-extended.js';
 import * as chats from './chats.js';
 import * as contacts from './contacts.js';
 import * as channels from './channels.js';
 import * as waEvents from './events.js';
 import * as calls from './calls.js';
+import * as historyModule from './history.js';
+import * as storageModule from './storage.js';
+
+// Import refactored components
+import { SessionStore, ExtendedWASession } from './store.js';
+import { SessionLifecycle } from './lifecycle.js';
 
 // Re-export types
 export type { WASession, SessionStatus, SendMessageOptions, SendMediaOptions } from './types.js';
-
-/**
- * Extended session with config
- */
-interface ExtendedWASession extends WASession {
-  config?: SessionConfig;
-}
+export { ExtendedWASession };
 
 /**
  * Main WhatsApp Service Class
  */
 export class WhatsAppService {
-  private sessions: Map<string, ExtendedWASession> = new Map();
-  private events: TypedEventEmitter = new EventEmitterClass();
+  // Use public readonly to allow access to store and lifecycle if needed,
+  // but preferably use facade methods.
+  public readonly store: SessionStore;
+  public readonly lifecycle: SessionLifecycle;
   
-  /** Lock to prevent race conditions during session creation */
-  private sessionCreationLocks: Set<string> = new Set();
+  private events: TypedEventEmitter = new EventEmitterClass();
+
+  public readonly messaging = messaging;
+  public readonly groups = groups;
+  public readonly presence = presence;
+  public readonly labels = labels;
+  public readonly status = status;
+  public readonly profile = profile;
+  public readonly chats = chats;
+  public readonly contacts = contacts;
+  public readonly channels = channels;
+  public readonly waEvents = waEvents;
+  public readonly calls = calls;
+  public readonly history = historyModule;
+  public readonly storage = storageModule;
 
   constructor() {
+    this.store = new SessionStore();
+    this.lifecycle = new SessionLifecycle(this.store, this.events);
+    
     this.initializeStoredSessions();
   }
 
@@ -93,240 +105,60 @@ export class WhatsAppService {
    * Initialize stored sessions on startup
    */
   async initializeStoredSessions(): Promise<void> {
-    try {
-      const storedSessions = await prisma.waSession.findMany({
-        where: {
-          isActive: true, // Only initialize active sessions
-          status: {
-            in: ['CONNECTED', 'AUTHENTICATING', 'QR_READY'],
-          },
-        },
-      });
-
-      logger.info({ count: storedSessions.length }, 'Found stored sessions to initialize');
-
-      for (const session of storedSessions) {
-        try {
-          await this.createSession(session.id, session.userId);
-        } catch (error) {
-          logger.error({ sessionId: session.id, error }, 'Failed to initialize stored session');
-        }
-      }
-    } catch (error) {
-      logger.error({ error }, 'Failed to initialize stored sessions');
-    }
-  }
-
-  /**
-   * Update session status in memory and emit event
-   */
-  private updateSessionStatus(sessionId: string, status: SessionStatus): void {
-    this.events.emit('state_change', { sessionId, state: status });
-  }
-
-  /**
-   * Build puppeteer arguments based on session config
-   */
-  private getPuppeteerArgs(sessionConfig?: SessionConfig): string[] {
-    const baseArgs = [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--disable-gpu',
-      '--disable-extensions',
-      '--disable-background-networking',
-      '--disable-sync',
-      '--disable-translate',
-      '--disable-features=TranslateUI',
-      '--metrics-recording-only',
-      '--mute-audio',
-      '--no-default-browser-check',
-      '--autoplay-policy=user-gesture-required',
-    ];
-
-    // Add proxy args if configured AND proxy server is provided
-    if (sessionConfig?.proxy?.server && sessionConfig.proxy.server.trim()) {
-      const proxyServer = sessionConfig.proxy.server.trim();
-      logger.info({ proxyServer }, 'Using proxy for session');
-      baseArgs.push(`--proxy-server=${proxyServer}`);
-    }
-
-    return baseArgs;
-  }
-
-  /**
-   * Get browser identification from client config
-   */
-  private getClientInfo(clientConfig?: ClientConfig): { webVersion?: string; webVersionCache?: any } {
-    // whatsapp-web.js uses different browser identification
-    // This is a simplified version - can be extended based on needs
-    return {};
+    await this.lifecycle.initializeStoredSessions();
   }
 
   /**
    * Create a new WhatsApp session with optional config
-   * Thread-safe with lock to prevent duplicate creation
    */
   async createSession(
     sessionId: string, 
     userId: string, 
     sessionConfig?: SessionConfig
   ): Promise<ExtendedWASession> {
-    // Return existing session immediately
-    if (this.sessions.has(sessionId)) {
-      return this.sessions.get(sessionId)!;
-    }
-    
-    // Check if session creation is already in progress
-    if (this.sessionCreationLocks.has(sessionId)) {
-      // Wait a bit and check again
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      if (this.sessions.has(sessionId)) {
-        return this.sessions.get(sessionId)!;
-      }
-      throw new Error('Session creation already in progress');
-    }
-    
-    // Acquire lock
-    this.sessionCreationLocks.add(sessionId);
-
-    try {
-      // Double-check after acquiring lock
-      if (this.sessions.has(sessionId)) {
-        return this.sessions.get(sessionId)!;
-      }
-      
-      logger.info({ sessionId, hasConfig: !!sessionConfig, hasProxy: !!sessionConfig?.proxy?.server }, 'Creating WhatsApp session');
-
-      // Build client options
-      const puppeteerArgs = this.getPuppeteerArgs(sessionConfig);
-      const clientInfo = this.getClientInfo(sessionConfig?.client);
-
-      const client = new Client({
-        authStrategy: new LocalAuth({
-          clientId: sessionId,
-          dataPath: config.whatsapp.sessionPath,
-        }),
-        puppeteer: {
-          headless: true,
-          args: puppeteerArgs,
-          timeout: 60000, // 60 second timeout for puppeteer operations
-        },
-        qrMaxRetries: 5,
-        ...clientInfo,
-      });
-
-      const session: ExtendedWASession = {
-        sessionId,
-        userId,
-        client,
-        status: 'INITIALIZING',
-        config: sessionConfig,
-      };
-
-      this.sessions.set(sessionId, session);
-
-      // Setup event handlers
-      setupEventHandlers(
-        client,
-        sessionId,
-        this.sessions,
-        this.events,
-        this.updateSessionStatus.bind(this)
-      );
-
-      // Initialize client with better error handling
-      try {
-        await client.initialize();
-      } catch (error: any) {
-        logger.error({ sessionId, error: error?.message || error }, 'Failed to initialize client');
-        this.sessions.delete(sessionId);
-        
-        // Provide more helpful error messages
-        const errorMessage = error?.message || String(error);
-        if (errorMessage.includes('ERR_CONNECTION_RESET') || errorMessage.includes('ERR_CONNECTION_REFUSED')) {
-          throw new Error(
-            'Failed to connect to WhatsApp Web. This could be due to: ' +
-            '(1) Network connectivity issues, ' +
-            '(2) WhatsApp Web is temporarily unavailable, ' +
-            '(3) Invalid proxy configuration, or ' +
-            '(4) Firewall blocking the connection. ' +
-            'Please check your network and try again.'
-          );
-        }
-        if (errorMessage.includes('ERR_PROXY')) {
-          throw new Error(
-            'Proxy connection failed. Please verify your proxy server address and credentials are correct.'
-          );
-        }
-        if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
-          throw new Error(
-            'Connection timed out while connecting to WhatsApp Web. Please check your internet connection and try again.'
-          );
-        }
-        
-        throw error;
-      }
-
-      return session;
-    } finally {
-      // Release lock
-      this.sessionCreationLocks.delete(sessionId);
-    }
+    return this.lifecycle.createSession(sessionId, userId, sessionConfig);
   }
 
   /**
    * Get session by ID
    */
   getSession(sessionId: string): WASession | undefined {
-    return this.sessions.get(sessionId);
+    return this.store.get(sessionId);
   }
 
   /**
    * Get session safely (throws if not found)
    */
   private getSessionSafe(sessionId: string): WASession {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
-      throw new SessionNotFoundError(sessionId);
-    }
-    return session;
+    return this.store.getSafe(sessionId);
   }
 
   /**
    * Get WhatsApp client by session ID
    */
   getClient(sessionId: string): Client {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
-      throw new SessionNotFoundError(sessionId);
-    }
-    return session.client;
+    return this.store.getClient(sessionId);
   }
 
   /**
    * Check if session is connected
    */
   isConnected(sessionId: string): boolean {
-    const session = this.sessions.get(sessionId);
-    return session?.status === 'CONNECTED';
+    return this.store.isConnected(sessionId);
   }
 
   /**
    * Get all sessions for a user
    */
   getUserSessions(userId: string): WASession[] {
-    return Array.from(this.sessions.values()).filter((s) => s.userId === userId);
+    return this.store.getUserSessions(userId);
   }
 
   /**
    * Get QR code for session
    */
   getQRCode(sessionId: string): string | undefined {
-    const session = this.sessions.get(sessionId);
+    const session = this.store.get(sessionId);
     return session?.qrCode;
   }
 
@@ -334,22 +166,21 @@ export class WhatsAppService {
    * Get session status
    */
   getStatus(sessionId: string): SessionStatus | undefined {
-    return this.sessions.get(sessionId)?.status;
+    return this.store.get(sessionId)?.status;
   }
 
   /**
    * Get session configuration
    */
   getSessionConfig(sessionId: string): SessionConfig | undefined {
-    const session = this.sessions.get(sessionId);
-    return session?.config;
+    return this.store.get(sessionId)?.config;
   }
 
   /**
    * Get authenticated user ("me") information
    */
   getMeInfo(sessionId: string): { id?: string; phoneNumber?: string; pushName?: string } | null {
-    const session = this.sessions.get(sessionId);
+    const session = this.store.get(sessionId);
     if (!session || session.status !== 'CONNECTED') {
       return null;
     }
@@ -370,7 +201,7 @@ export class WhatsAppService {
    * Get session screenshot (for debugging)
    */
   async getScreenshot(sessionId: string): Promise<Buffer | null> {
-    const session = this.sessions.get(sessionId);
+    const session = this.store.get(sessionId);
     if (!session) {
       throw new SessionNotFoundError(sessionId);
     }
@@ -386,15 +217,10 @@ export class WhatsAppService {
   }
 
   /**
-   * Request pairing code for phone number authentication
-   * This is an alternative to QR code scanning - user can enter a code
-   * displayed on their WhatsApp mobile app to link the device.
-   * 
-   * Note: This feature requires whatsapp-web.js version 1.23.0+
-   * and may not be available in all configurations.
+   * Request pairing code
    */
   async requestPairingCode(sessionId: string, phoneNumber: string): Promise<string> {
-    const session = this.sessions.get(sessionId);
+    const session = this.store.get(sessionId);
     if (!session) {
       throw new SessionNotFoundError(sessionId);
     }
@@ -409,12 +235,7 @@ export class WhatsAppService {
     }
 
     try {
-      // whatsapp-web.js supports requestPairingCode since v1.23.0
-      // Format phone number (remove + and spaces if present)
       const formattedPhone = phoneNumber.replace(/[+\s-]/g, '');
-      
-      // Request pairing code from the client
-      // The method returns the pairing code as a string
       const code = await session.client.requestPairingCode(formattedPhone);
       
       logger.info({ sessionId, phoneNumber: phoneNumber.slice(-4) }, 'Pairing code generated');
@@ -456,128 +277,11 @@ export class WhatsAppService {
   // ================================
 
   async destroySession(sessionId: string, shouldLogout: boolean = false): Promise<void> {
-    const existingSession = this.sessions.get(sessionId);
-    if (existingSession) {
-      try {
-        if (shouldLogout) {
-          logger.info({ sessionId }, 'Initiating WhatsApp logout...');
-          try {
-            if (existingSession.client.pupPage && !existingSession.client.pupPage.isClosed()) {
-              await existingSession.client.logout();
-              // Wait for the logout to propagate and browser to close
-              // whatsapp-web.js logout() closes the browser but we should give it a moment
-              await new Promise(resolve => setTimeout(resolve, 2000));
-            } else {
-              logger.warn({ sessionId }, 'Puppeteer page is closed or missing, skipping logout');
-            }
-          } catch (err) {
-            logger.warn({ sessionId, error: err instanceof Error ? err.message : err }, 'Logout failed');
-          }
-        }
-        await existingSession.client.destroy();
-      } catch (error) {
-        logger.warn({ sessionId, error }, 'Error destroying session client');
-      }
-      this.sessions.delete(sessionId);
-    }
-
-    // Clean up session data directory
-    try {
-      const sessionDir = path.join(config.whatsapp.sessionPath, `session-${sessionId}`);
-      if (fs.existsSync(sessionDir)) {
-        // Wait a bit to ensure file locks are released
-        await new Promise(resolve => setTimeout(resolve, 100));
-        fs.rmSync(sessionDir, { recursive: true, force: true });
-        logger.info({ sessionId, sessionDir }, 'Cleaned up session data directory');
-      }
-    } catch (error) {
-      logger.error({ sessionId, error }, 'Failed to clean up session data directory');
-    }
-
-    // Only update status if NOT deleting (checked by caller via Prisma delete)
-    // But here we don't know if the caller will delete it.
-    // So we update it to LOGGED_OUT. If the caller deletes it, this update is harmless (or might fail if race condition, but unlikely).
-    // Actually, if we are going to delete it, we shouldn't update it?
-    // The previous code updated it.
-    // Let's keep the update. If the caller deletes it immediately after, it's fine.
-    
-    try {
-      // Check if session still exists before updating (it might be deleted by the caller in parallel, although we are in control here)
-      // Prisma update will throw if record doesn't exist.
-      // We can use updateMany to avoid error if it doesn't exist, or just try/catch.
-      await prisma.waSession.update({
-        where: { id: sessionId },
-        data: {
-          status: 'LOGGED_OUT',
-          disconnectedAt: new Date(),
-          phoneNumber: null,
-          pushName: null,
-          profilePicUrl: null,
-          qrCode: null,
-          lastQrAt: null,
-          connectedAt: null,
-          // isActive: false // Also mark inactive - REMOVED per user request: Logout should not disable the session config
-        },
-      });
-    } catch (error) {
-      // If record not found, it might have been deleted already.
-      // Or if this is called during a delete operation that happens in a transaction?
-      // For now, ignore update error if record missing.
-    }
-
-    logger.info({ sessionId }, 'Session destroyed');
+    return this.lifecycle.destroySession(sessionId, shouldLogout);
   }
 
   async restartSession(sessionId: string): Promise<void> {
-    const dbSession = await prisma.waSession.findUnique({
-      where: { id: sessionId },
-    });
-
-    if (!dbSession) {
-      throw new SessionNotFoundError(sessionId);
-    }
-
-    // Clear QR cache for this session
-    clearSessionQRCache(sessionId);
-
-    const existingSession = this.sessions.get(sessionId);
-    if (existingSession) {
-      try {
-        await existingSession.client.destroy();
-      } catch {
-        // Ignore errors
-      }
-      this.sessions.delete(sessionId);
-    }
-
-    // Force clean up session data directory to prevent "markedUnread" and other compatibility errors
-    // This ensures a fresh start with the latest library version
-    try {
-      const sessionDir = path.join(config.whatsapp.sessionPath, `session-${sessionId}`);
-      if (fs.existsSync(sessionDir)) {
-        fs.rmSync(sessionDir, { recursive: true, force: true });
-        logger.info({ sessionId, sessionDir }, 'Cleaned up session data directory');
-      }
-    } catch (error) {
-      logger.error({ sessionId, error }, 'Failed to clean up session data directory');
-    }
-
-    await prisma.waSession.update({
-      where: { id: sessionId },
-      data: {
-        status: 'INITIALIZING',
-        phoneNumber: null,
-        pushName: null,
-        profilePicUrl: null,
-        connectedAt: null,
-        qrCode: null,
-        lastQrAt: null,
-      },
-    });
-
-    await this.createSession(sessionId, dbSession.userId);
-
-    logger.info({ sessionId }, 'Session restarted');
+    return this.lifecycle.restartSession(sessionId);
   }
 
   // ================================
@@ -934,17 +638,15 @@ export class WhatsAppService {
   }
 
   async removeReaction(sessionId: string, messageId: string) {
-    return messagesExtended.removeReaction(this.getSessionSafe(sessionId), messageId);
+    return messaging.removeReaction(this.getSessionSafe(sessionId), messageId);
   }
 
   async sendLocation(sessionId: string, to: string, latitude: number, longitude: number, description?: string, options?: { quotedMessageId?: string }) {
-    // Use messaging.ts implementation which uses newer classes
     return messaging.sendLocation(this.getSessionSafe(sessionId), to, latitude, longitude, description, options);
   }
 
   async sendContact(sessionId: string, to: string, contact: ContactInfo, options?: { quotedMessageId?: string }) {
-    // Use messages-extended.ts implementation which supports vCard generation
-    return messagesExtended.sendContact(this.getSessionSafe(sessionId), to, contact, options);
+    return messaging.sendContactInfo(this.getSessionSafe(sessionId), to, contact, options);
   }
 
   async sendPoll(sessionId: string, to: string, name: string, options: string[], settings?: { selectableCount?: number; quotedMessageId?: string }) {
@@ -952,39 +654,39 @@ export class WhatsAppService {
   }
 
   async sendButtons(sessionId: string, to: string, body: string, buttons: MessageButton[], title?: string, footer?: string) {
-    return messagesExtended.sendButtons(this.getSessionSafe(sessionId), to, body, buttons, title, footer);
+    return messaging.sendButtons(this.getSessionSafe(sessionId), to, body, buttons, title, footer);
   }
 
   async sendList(sessionId: string, to: string, body: string, buttonText: string, sections: ListSection[], title?: string, footer?: string) {
-    return messagesExtended.sendList(this.getSessionSafe(sessionId), to, body, buttonText, sections, title, footer);
+    return messaging.sendList(this.getSessionSafe(sessionId), to, body, buttonText, sections, title, footer);
   }
 
   async forwardMessage(sessionId: string, messageId: string, to: string) {
-    return messagesExtended.forwardMessage(this.getSessionSafe(sessionId), messageId, to);
+    return messaging.forwardMessage(this.getSessionSafe(sessionId), messageId, to);
   }
 
   async deleteMessage(sessionId: string, messageId: string, forEveryone: boolean) {
-    return messagesExtended.deleteMessage(this.getSessionSafe(sessionId), messageId, forEveryone);
+    return messaging.deleteMessage(this.getSessionSafe(sessionId), messageId, forEveryone);
   }
 
   async editMessage(sessionId: string, messageId: string, newContent: string) {
-    return messagesExtended.editMessage(this.getSessionSafe(sessionId), messageId, newContent);
+    return messaging.editMessage(this.getSessionSafe(sessionId), messageId, newContent);
   }
 
   async starMessage(sessionId: string, messageId: string, star: boolean) {
-    return messagesExtended.starMessage(this.getSessionSafe(sessionId), messageId, star);
+    return messaging.starMessage(this.getSessionSafe(sessionId), messageId, star);
   }
 
   async getStarredMessages(sessionId: string) {
-    return messagesExtended.getStarredMessages(this.getSessionSafe(sessionId));
+    return messaging.getStarredMessages(this.getSessionSafe(sessionId));
   }
 
   async downloadMedia(sessionId: string, messageId: string) {
-    return messagesExtended.downloadMedia(this.getSessionSafe(sessionId), messageId);
+    return messaging.downloadMedia(this.getSessionSafe(sessionId), messageId);
   }
 
   async getMessageInfo(sessionId: string, messageId: string) {
-    return messagesExtended.getMessageInfo(this.getSessionSafe(sessionId), messageId);
+    return messaging.getMessageInfo(this.getSessionSafe(sessionId), messageId);
   }
 
   // ================================
@@ -992,34 +694,7 @@ export class WhatsAppService {
   // ================================
 
   async shutdown(): Promise<void> {
-    logger.info('Shutting down WhatsApp service...');
-
-    const sessionCount = this.sessions.size;
-    if (sessionCount === 0) {
-      logger.info('No active sessions to close');
-      return;
-    }
-
-    logger.info({ sessionCount }, 'Closing active sessions...');
-
-    const promises = Array.from(this.sessions.entries()).map(async ([sessionId, session]) => {
-      try {
-        const destroyPromise = session.client.destroy();
-        const timeoutPromise = new Promise<void>((_, reject) =>
-          setTimeout(() => reject(new Error('Session destroy timeout')), 5000)
-        );
-
-        await Promise.race([destroyPromise, timeoutPromise]);
-        logger.debug({ sessionId }, 'Session closed');
-      } catch (error) {
-        logger.warn({ sessionId, error: error instanceof Error ? error.message : error }, 'Error closing session (will be force-closed)');
-      }
-    });
-
-    await Promise.allSettled(promises);
-    this.sessions.clear();
-
-    logger.info('WhatsApp service shutdown complete');
+    return this.lifecycle.shutdown();
   }
 }
 

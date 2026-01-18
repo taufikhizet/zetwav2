@@ -5,6 +5,13 @@
 import type { WASession, LabelUpdate } from './types.js';
 import { SessionNotConnectedError, BadRequestError } from '../../utils/errors.js';
 import { logger } from '../../utils/logger.js';
+import type { Client } from 'whatsapp-web.js';
+
+// Helper to get Puppeteer page
+function getPage(client: Client): any {
+  // @ts-ignore
+  return client.pupPage;
+}
 
 /**
  * Get all labels
@@ -18,13 +25,52 @@ export async function getLabels(session: WASession): Promise<Array<{
     throw new SessionNotConnectedError(session.sessionId);
   }
 
-  const labels = await session.client.getLabels();
-  
-  return labels.map((label) => ({
-    id: label.id,
-    name: label.name,
-    color: label.hexColor ? parseInt(label.hexColor.replace('#', ''), 16) : 0,
-  }));
+  try {
+    const labels = await session.client.getLabels();
+    
+    // Fallback: If client.getLabels() returns empty, try direct store access
+    // This handles cases where whatsapp-web.js might filter or fail silently
+    if (!labels || labels.length === 0) {
+      const page = getPage(session.client);
+      if (page) {
+        const rawLabels = await page.evaluate(() => {
+          try {
+            // @ts-ignore
+            if (window.Store && window.Store.Label) {
+              // @ts-ignore
+              const models = window.Store.Label.getModelsArray();
+              return models.map((l: any) => ({
+                id: l.id,
+                name: l.name,
+                hexColor: l.hexColor
+              }));
+            }
+          } catch (e) {
+            return null;
+          }
+          return [];
+        });
+
+        if (rawLabels && rawLabels.length > 0) {
+          logger.warn({ sessionId: session.sessionId }, 'Client.getLabels() returned empty but Store.Label has data. Using direct data.');
+          return rawLabels.map((label: any) => ({
+            id: label.id,
+            name: label.name,
+            color: label.hexColor ? parseInt(label.hexColor.replace('#', ''), 16) : 0,
+          }));
+        }
+      }
+    }
+
+    return labels.map((label) => ({
+      id: label.id,
+      name: label.name,
+      color: label.hexColor ? parseInt(label.hexColor.replace('#', ''), 16) : 0,
+    }));
+  } catch (error: any) {
+    logger.error({ sessionId: session.sessionId, error }, 'Failed to get labels');
+    throw new BadRequestError(error.message || 'Failed to get labels');
+  }
 }
 
 /**
@@ -39,17 +85,22 @@ export async function createLabel(
     throw new SessionNotConnectedError(session.sessionId);
   }
 
-  // @ts-ignore
-  if (typeof session.client.createLabel !== 'function') {
-    throw new BadRequestError('Creating labels is not supported in the current WhatsApp Web version');
+  const page = getPage(session.client);
+  if (!page) {
+    throw new BadRequestError('Puppeteer page not available');
   }
 
   try {
-    // @ts-ignore
-    const label = await session.client.createLabel(name, color); // Some versions accept color
+    // Use WAWebBizLabelEditingAction directly as in WAHA
+    const labelId: number = await page.evaluate(async (name: string, color: number) => {
+      // @ts-ignore
+      const action = window.require('WAWebBizLabelEditingAction');
+      return await action.labelAddAction(name, color);
+    }, name, color || 0);
+
     return {
-      id: label.id,
-      name: label.name,
+      id: labelId.toString(),
+      name: name,
     };
   } catch (error: any) {
     logger.error({ sessionId: session.sessionId, error }, 'Failed to create label');
@@ -68,17 +119,22 @@ export async function getLabelById(
     throw new SessionNotConnectedError(session.sessionId);
   }
 
-  const label = await session.client.getLabelById(labelId);
-  
-  if (!label) {
-    throw new BadRequestError('Label not found');
-  }
+  try {
+    const label = await session.client.getLabelById(labelId);
+    
+    if (!label) {
+      throw new BadRequestError('Label not found');
+    }
 
-  return {
-    id: label.id,
-    name: label.name,
-    color: label.hexColor ? parseInt(label.hexColor.replace('#', ''), 16) : 0,
-  };
+    return {
+      id: label.id,
+      name: label.name,
+      color: label.hexColor ? parseInt(label.hexColor.replace('#', ''), 16) : 0,
+    };
+  } catch (error: any) {
+    logger.error({ sessionId: session.sessionId, error }, 'Failed to get label by ID');
+    throw new BadRequestError(error.message || 'Failed to get label');
+  }
 }
 
 /**
@@ -93,31 +149,34 @@ export async function updateLabel(
     throw new SessionNotConnectedError(session.sessionId);
   }
 
-  // @ts-ignore
-  // Note: updateLabel might not be directly available, usually we get the label object and call save/update on it
-  // Or client.updateLabel(id, updates)
+  const page = getPage(session.client);
+  if (!page) {
+    throw new BadRequestError('Puppeteer page not available');
+  }
   
   try {
-    const label = await session.client.getLabelById(labelId);
-    if (!label) throw new Error('Label not found');
+    // Fetch current label to get missing fields if needed, but for update we just pass what we have
+    // WAHA implementation: labelEditAction(id, name, predefinedId, color)
+    // We need name and color. If not provided in updates, we should probably fetch them.
+    let currentName = updates.name;
+    let currentColor = updates.color;
 
-    // @ts-ignore
-    if (typeof label.save === 'function') {
-      // @ts-ignore
-      if (updates.name) label.name = updates.name;
-      // @ts-ignore
-      if (updates.color) label.hexColor = `#${updates.color.toString(16).padStart(6, '0')}`;
-      
-      // @ts-ignore
-      await label.save();
-      
-      return {
-        id: label.id,
-        name: label.name,
-      };
-    } else {
-        throw new Error('Label update not supported');
+    if (!currentName || currentColor === undefined) {
+        const currentLabel = await getLabelById(session, labelId);
+        if (!currentName) currentName = currentLabel.name;
+        if (currentColor === undefined) currentColor = currentLabel.color;
     }
+
+    await page.evaluate(async (id: string, name: string, color: number) => {
+      // @ts-ignore
+      const action = window.require('WAWebBizLabelEditingAction');
+      return await action.labelEditAction(id, name, undefined, color);
+    }, labelId, currentName!, currentColor!);
+      
+    return {
+      id: labelId,
+      name: currentName!,
+    };
   } catch (error: any) {
     logger.error({ sessionId: session.sessionId, error }, 'Failed to update label');
     throw new BadRequestError(error.message || 'Failed to update label');
@@ -132,26 +191,21 @@ export async function deleteLabel(session: WASession, labelId: string): Promise<
     throw new SessionNotConnectedError(session.sessionId);
   }
 
+  const page = getPage(session.client);
+  if (!page) {
+    throw new BadRequestError('Puppeteer page not available');
+  }
+
   try {
-    // @ts-ignore
-    if (typeof session.client.deleteLabel === 'function') {
-         // @ts-ignore
-         await session.client.deleteLabel(labelId);
-         return;
-    }
-    
-    // Alternative: get label and call delete
-    const label = await session.client.getLabelById(labelId);
-    if (label) {
-        // @ts-ignore
-        if (typeof label.delete === 'function') {
-             // @ts-ignore
-             await label.delete();
-             return;
-        }
-    }
-    
-    throw new Error('Delete label not supported');
+    // WAHA requires name and color for deletion too
+    const label = await getLabelById(session, labelId);
+
+    await page.evaluate(async (id: string, name: string, color: number) => {
+      // @ts-ignore
+      const action = window.require('WAWebBizLabelEditingAction');
+      return await action.labelDeleteAction(id, name, color);
+    }, labelId, label.name, label.color);
+
   } catch (error: any) {
     logger.error({ sessionId: session.sessionId, error }, 'Failed to delete label');
     throw new BadRequestError(error.message || 'Failed to delete label');

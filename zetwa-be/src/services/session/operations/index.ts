@@ -16,5 +16,7 @@ export { update } from './update.js';
 export { remove, logout } from './delete.js';
 
 // QR and pairing operations
-export { getQRCode, getQRCodeWithFormat, requestPairingCode, restart, getQRCodeSmart } from './qr.js';
+export { getQRCode, getQRCodeWithFormat, getQRCodeSmart } from './qr.js';
+export { restart } from './restart.js';
+export { requestPairingCode } from './pairing.js';
 export type { SmartQROptions } from './qr.js';

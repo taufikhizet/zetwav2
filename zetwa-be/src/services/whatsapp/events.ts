@@ -5,7 +5,7 @@
 import type { WASession } from './types.js';
 import { SessionNotConnectedError } from '../../utils/errors.js';
 import { logger } from '../../utils/logger.js';
-import { formatChatId } from './messaging.js';
+import { formatChatId } from './messaging/index.js';
 
 /**
  * Send Event (Calendar)

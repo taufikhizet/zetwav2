@@ -25,6 +25,49 @@ const router = Router({ mergeParams: true });
 router.use(authenticateAny);
 
 /**
+ * @route GET /api/sessions/:sessionId/chats
+ * @desc Get chats for session
+ * @scope messages:read
+ */
+router.get('/', requireScope('messages:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+  try {
+    await sessionService.getById(req.userId!, req.params.sessionId);
+
+    const chats = await whatsappService.history.getChats(req.params.sessionId);
+
+    res.json({
+      success: true,
+      data: chats,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route GET /api/sessions/:sessionId/chats/live
+ * @desc Get live chats from WhatsApp
+ * @scope messages:read
+ */
+router.get('/live', requireScope('messages:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+  try {
+    await sessionService.getById(req.userId!, req.params.sessionId);
+    // Use getSessionSafe internally to check connection
+    const session = whatsappService.getSession(req.params.sessionId);
+    if (!session) throw new Error('Session not found');
+
+    const chats = await whatsappService.history.getLiveChats(session);
+
+    res.json({
+      success: true,
+      data: chats,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * @route POST /api/sessions/:sessionId/chats/:chatId/archive
  * @desc Archive/Unarchive a chat
  * @scope messages:write

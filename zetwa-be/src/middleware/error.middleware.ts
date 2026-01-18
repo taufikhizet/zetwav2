@@ -89,6 +89,18 @@ export const errorHandler = (
       });
       return;
     }
+
+    // Handle connection errors
+    if (['P1001', 'P1002', 'P1008', 'P1017'].includes(prismaError.code)) {
+      res.status(503).json({
+        success: false,
+        error: {
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Database service unavailable, please try again later',
+        },
+      });
+      return;
+    }
   }
 
   // Handle unknown errors

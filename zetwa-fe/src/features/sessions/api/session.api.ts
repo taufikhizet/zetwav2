@@ -122,6 +122,11 @@ export const sessionApi = {
     return response.data.data
   },
 
+  downloadMessageMedia: async (sessionId: string, messageId: string): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/messages/${messageId}/download`)
+    return response.data
+  },
+
   // Chats
   getChats: async (sessionId: string, live: boolean = false): Promise<any[]> => {
     const endpoint = live ? `/sessions/${sessionId}/chats/live` : `/sessions/${sessionId}/chats`

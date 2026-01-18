@@ -52,9 +52,12 @@ api.interceptors.response.use(
         // Retry the original request
         originalRequest.headers.Authorization = `Bearer ${accessToken}`
         return api(originalRequest)
-      } catch {
-        // Refresh failed, logout user
-        useAuthStore.getState().logout()
+      } catch (refreshError) {
+        // Only logout if the refresh token is invalid (401/403)
+        // Do not logout on server errors (500) or network errors
+        if (axios.isAxiosError(refreshError) && (refreshError.response?.status === 401 || refreshError.response?.status === 403)) {
+          useAuthStore.getState().logout()
+        }
         return Promise.reject(error)
       }
     }

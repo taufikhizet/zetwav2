@@ -62,7 +62,36 @@ interface ChatsCardProps {
   sessionId: string
 }
 
-// --- Helper Components ---
+// --- Helper Functions ---
+
+const safeFormat = (timestamp: any, formatStr: string = 'PPpp') => {
+  try {
+    if (!timestamp) return 'N/A'
+    const num = Number(timestamp)
+    if (isNaN(num)) return 'N/A'
+    // Heuristic: If timestamp is less than 100 billion, assume seconds.
+    // 100 billion seconds is year 5138. 
+    // 100 billion milliseconds is year 1973.
+    // So for current dates:
+    // Seconds: ~1.7e9 (<< 1e11)
+    // Milliseconds: ~1.7e12 (>> 1e11)
+    const date = new Date(num > 100000000000 ? num : num * 1000)
+    return format(date, formatStr)
+  } catch {
+    return 'Invalid Date'
+  }
+}
+
+const getMessageKey = (msg: any, index: number) => {
+  const rawId = msg?.id?._serialized || (typeof msg?.id === 'string' ? msg.id : null)
+  // Append index to ensure uniqueness even if IDs are duplicated in the list
+  return rawId ? `${rawId}_${index}` : `msg_${index}`
+}
+
+const getChatKey = (chat: any, index: number) => {
+  const rawId = chat?.id?._serialized || (typeof chat.id === 'string' ? chat.id : null)
+  return rawId ? `${rawId}_${index}` : `chat_${index}`
+}
 
 const MessageDetailDialog = ({ message, open, onOpenChange }: { message: any, open: boolean, onOpenChange: (open: boolean) => void }) => {
   if (!message) return null
@@ -110,14 +139,7 @@ const MessageDetailDialog = ({ message, open, onOpenChange }: { message: any, op
                 <Clock className="h-3 w-3" /> Timestamp
               </div>
               <div className="text-sm">
-                {(() => {
-                  if (!message.timestamp) return 'N/A'
-                  try {
-                    return format(new Date(Number(message.timestamp) * 1000), 'PPpp')
-                  } catch {
-                    return 'Invalid Date'
-                  }
-                })()}
+                {safeFormat(message.timestamp, 'PPpp')}
               </div>
             </div>
 
@@ -246,14 +268,7 @@ const ChatDetailDialog = ({ chat, open, onOpenChange }: { chat: any, open: boole
                 <Clock className="h-3 w-3" /> Last Active
               </div>
               <div className="text-sm">
-                {(() => {
-                  if (!chat.timestamp) return 'N/A'
-                  try {
-                    return format(new Date(Number(chat.timestamp) * 1000), 'PPpp')
-                  } catch {
-                    return 'Invalid Date'
-                  }
-                })()}
+                {safeFormat(chat.timestamp, 'PPpp')}
               </div>
             </div>
 
@@ -327,12 +342,8 @@ const MessageBubble = ({ msg, onClick }: { msg: any, onClick: (msg: any) => void
   }
 
   const formatTime = (timestamp: number) => {
-    if (!timestamp || isNaN(Number(timestamp))) return ''
-    try {
-      return format(new Date(Number(timestamp) * 1000), 'HH:mm')
-    } catch {
-      return ''
-    }
+    const res = safeFormat(timestamp, 'HH:mm')
+    return (res === 'N/A' || res === 'Invalid Date') ? '' : res
   }
 
   return (
@@ -394,11 +405,6 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
     return chat.id._serialized || (typeof chat.id === 'string' ? chat.id : JSON.stringify(chat.id))
   }
   
-  // Safe helper for message keys
-  const getMessageKey = (msg: any, index: number) => {
-    return msg?.id?._serialized || (typeof msg?.id === 'string' ? msg.id : `msg-${index}`)
-  }
-
   // Get Chats Query
   const { data: chats, isLoading: isLoadingChats, refetch: refetchChats } = useQuery({
     queryKey: ['chats', sessionId],
@@ -520,15 +526,6 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
 
   const messages = messagesData?.messages || []
   const chatMessages = chatMessagesData?.messages || []
-
-  const formatTime = (timestamp: number | string) => {
-    if (!timestamp || isNaN(Number(timestamp))) return ''
-    try {
-      return format(new Date(Number(timestamp)), 'HH:mm')
-    } catch (e) {
-      return ''
-    }
-  }
 
   // Filter chats based on search
   const filteredChats = chats?.filter((chat: any) => {
@@ -701,7 +698,7 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
                           const chatId = getChatId(chat)
                           return (
                             <div 
-                              key={chatId || `chat-${index}`} 
+                              key={getChatKey(chat, index)} 
                               className="p-3.5 hover:bg-muted/40 transition-all flex items-center justify-between group cursor-pointer relative"
                               onClick={() => handleChatClick(chat)}
                             >
@@ -717,7 +714,10 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
                                       {chat.name || (typeof chat.id === 'string' ? chat.id.split('@')[0] : chat.id.user)}
                                     </div>
                                     <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                                      {formatTime(chat.timestamp * 1000)}
+                                      {(() => {
+                                         const t = safeFormat(chat.timestamp, 'HH:mm')
+                                         return t === 'N/A' || t === 'Invalid Date' ? '' : t
+                                      })()}
                                     </span>
                                   </div>
                                   <div className="flex items-center justify-between">
