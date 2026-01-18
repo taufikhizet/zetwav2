@@ -414,9 +414,13 @@ router.get('/:sessionId/messages', requireScope('messages:read'), async (req: Re
       const metadata = msg.metadata as Record<string, any> || {};
       return {
         ...msg,
+        id: msg.waMessageId || msg.id, // Prefer WA ID if available, or maybe we should return object? WAHA returns string.
+        _dbId: msg.id, // Keep DB ID just in case
+        timestamp: Math.floor(msg.timestamp.getTime() / 1000), // Convert to unix timestamp (seconds)
         from: metadata.from || msg.chatId, // Fallback to chatId if missing (approximate)
         to: metadata.to,
         author: metadata.author,
+        _data: metadata, // WAHA compatibility
       };
     });
 
@@ -453,9 +457,16 @@ router.get('/:sessionId/chats', requireScope('messages:read'), async (req: Reque
       take: 100,
     });
 
+    const formattedChats = chats.map(chat => ({
+      ...chat,
+      id: chat.waChatId, // Use WhatsApp ID (e.g. 123@c.us) instead of DB ID
+      _dbId: chat.id,
+      timestamp: chat.lastMessageAt ? Math.floor(chat.lastMessageAt.getTime() / 1000) : 0,
+    }));
+
     res.json({
       success: true,
-      data: chats,
+      data: formattedChats,
     });
   } catch (error) {
     next(error);
@@ -507,9 +518,15 @@ router.get('/:sessionId/contacts', requireScope('contacts:read'), async (req: Re
       orderBy: { name: 'asc' },
     });
 
+    const formattedContacts = contacts.map(contact => ({
+      ...contact,
+      id: contact.waContactId, // Use WA ID
+      _dbId: contact.id,
+    }));
+
     res.json({
       success: true,
-      data: contacts,
+      data: formattedContacts,
     });
   } catch (error) {
     next(error);

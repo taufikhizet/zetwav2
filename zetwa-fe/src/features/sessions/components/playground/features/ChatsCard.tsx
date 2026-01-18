@@ -73,6 +73,7 @@ const MessageDetailDialog = ({ message, open, onOpenChange }: { message: any, op
   }
 
   const isMe = message.fromMe || message.isFromMe
+  const messageId = message.id?._serialized || (typeof message.id === 'string' ? message.id : JSON.stringify(message.id))
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -99,8 +100,8 @@ const MessageDetailDialog = ({ message, open, onOpenChange }: { message: any, op
               <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                 <Hash className="h-3 w-3" /> Message ID
               </div>
-              <div className="text-xs font-mono break-all cursor-pointer hover:underline" onClick={() => copyToClipboard(message.id._serialized || message.id)}>
-                {message.id._serialized || message.id}
+              <div className="text-xs font-mono break-all cursor-pointer hover:underline" onClick={() => copyToClipboard(messageId)}>
+                {messageId}
               </div>
             </div>
             
@@ -110,10 +111,11 @@ const MessageDetailDialog = ({ message, open, onOpenChange }: { message: any, op
               </div>
               <div className="text-sm">
                 {(() => {
+                  if (!message.timestamp) return 'N/A'
                   try {
-                    return format(new Date(message.timestamp * 1000), 'PPpp')
+                    return format(new Date(Number(message.timestamp) * 1000), 'PPpp')
                   } catch {
-                    return 'N/A'
+                    return 'Invalid Date'
                   }
                 })()}
               </div>
@@ -141,9 +143,16 @@ const MessageDetailDialog = ({ message, open, onOpenChange }: { message: any, op
                <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                 <Info className="h-3 w-3" /> Type
               </div>
-              <Badge variant="outline" className="uppercase text-[10px]">
-                {message.type}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="uppercase text-[10px]">
+                  {message.type}
+                </Badge>
+                {message.deviceType && (
+                   <Badge variant="outline" className="text-[10px]">
+                     {message.deviceType}
+                   </Badge>
+                )}
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -202,6 +211,8 @@ const ChatDetailDialog = ({ chat, open, onOpenChange }: { chat: any, open: boole
     toast.success('Copied to clipboard')
   }
 
+  const chatId = chat.id?._serialized || (typeof chat.id === 'string' ? chat.id : JSON.stringify(chat.id))
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -225,8 +236,8 @@ const ChatDetailDialog = ({ chat, open, onOpenChange }: { chat: any, open: boole
               <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                 <Hash className="h-3 w-3" /> Chat ID (WA ID)
               </div>
-              <div className="text-xs font-mono break-all cursor-pointer hover:underline" onClick={() => copyToClipboard(chat.id._serialized || chat.id)}>
-                {chat.id._serialized || chat.id}
+              <div className="text-xs font-mono break-all cursor-pointer hover:underline" onClick={() => copyToClipboard(chatId)}>
+                {chatId}
               </div>
             </div>
             
@@ -236,10 +247,11 @@ const ChatDetailDialog = ({ chat, open, onOpenChange }: { chat: any, open: boole
               </div>
               <div className="text-sm">
                 {(() => {
+                  if (!chat.timestamp) return 'N/A'
                   try {
-                    return format(new Date(chat.timestamp * 1000), 'PPpp')
+                    return format(new Date(Number(chat.timestamp) * 1000), 'PPpp')
                   } catch {
-                    return 'N/A'
+                    return 'Invalid Date'
                   }
                 })()}
               </div>
@@ -250,7 +262,7 @@ const ChatDetailDialog = ({ chat, open, onOpenChange }: { chat: any, open: boole
                 <Users className="h-3 w-3" /> Name
               </div>
               <div className="text-sm font-medium truncate">
-                {chat.name || chat.id.user}
+                {chat.name || (typeof chat.id === 'string' ? chat.id.split('@')[0] : chat.id.user)}
               </div>
             </div>
 
@@ -315,8 +327,9 @@ const MessageBubble = ({ msg, onClick }: { msg: any, onClick: (msg: any) => void
   }
 
   const formatTime = (timestamp: number) => {
+    if (!timestamp || isNaN(Number(timestamp))) return ''
     try {
-      return format(new Date(timestamp * 1000), 'HH:mm')
+      return format(new Date(Number(timestamp) * 1000), 'HH:mm')
     } catch {
       return ''
     }
@@ -377,7 +390,13 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const getChatId = (chat: any) => {
-    return chat.id._serialized || chat.id
+    if (!chat || !chat.id) return ''
+    return chat.id._serialized || (typeof chat.id === 'string' ? chat.id : JSON.stringify(chat.id))
+  }
+  
+  // Safe helper for message keys
+  const getMessageKey = (msg: any, index: number) => {
+    return msg?.id?._serialized || (typeof msg?.id === 'string' ? msg.id : `msg-${index}`)
   }
 
   // Get Chats Query
@@ -503,8 +522,9 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
   const chatMessages = chatMessagesData?.messages || []
 
   const formatTime = (timestamp: number | string) => {
+    if (!timestamp || isNaN(Number(timestamp))) return ''
     try {
-      return format(new Date(timestamp), 'HH:mm')
+      return format(new Date(Number(timestamp)), 'HH:mm')
     } catch (e) {
       return ''
     }
@@ -629,9 +649,9 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
                    </div>
                 ) : chatMessages.length > 0 ? (
                   <div className="space-y-2 pb-4">
-                    {chatMessages.map((msg: any) => (
+                    {chatMessages.map((msg: any, index: number) => (
                       <MessageBubble 
-                        key={msg.id._serialized || msg.id} 
+                        key={getMessageKey(msg, index)} 
                         msg={msg} 
                         onClick={setSelectedMessage} 
                       />
@@ -677,11 +697,11 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
                       </div>
                     ) : filteredChats.length > 0 ? (
                       <div className="divide-y divide-border/40">
-                        {filteredChats.map((chat: any) => {
+                        {filteredChats.map((chat: any, index: number) => {
                           const chatId = getChatId(chat)
                           return (
                             <div 
-                              key={chatId} 
+                              key={chatId || `chat-${index}`} 
                               className="p-3.5 hover:bg-muted/40 transition-all flex items-center justify-between group cursor-pointer relative"
                               onClick={() => handleChatClick(chat)}
                             >
@@ -694,7 +714,7 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
                                 <div className="min-w-0 flex-1 space-y-0.5">
                                   <div className="flex items-center justify-between gap-2">
                                     <div className="font-semibold truncate text-sm text-foreground">
-                                      {chat.name || chat.id.user}
+                                      {chat.name || (typeof chat.id === 'string' ? chat.id.split('@')[0] : chat.id.user)}
                                     </div>
                                     <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                                       {formatTime(chat.timestamp * 1000)}
@@ -858,9 +878,9 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
                 </div>
               ) : messages && messages.length > 0 ? (
                 <div className="space-y-2 pb-4">
-                  {messages.map((msg: any) => (
+                  {messages.map((msg: any, index: number) => (
                     <MessageBubble 
-                      key={msg.id._serialized || msg.id} 
+                      key={getMessageKey(msg, index)} 
                       msg={msg} 
                       onClick={setSelectedMessage} 
                     />
