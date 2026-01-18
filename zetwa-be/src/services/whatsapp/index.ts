@@ -633,7 +633,7 @@ export class WhatsAppService {
     return messaging.removeReaction(this.getSessionSafe(sessionId), messageId);
   }
 
-  async sendLocation(sessionId: string, to: string, latitude: number, longitude: number, description?: string, options?: { quotedMessageId?: string; url?: string }) {
+  async sendLocation(sessionId: string, to: string, latitude: number, longitude: number, description?: string, options?: { quotedMessageId?: string }) {
     return messaging.sendLocation(this.getSessionSafe(sessionId), to, latitude, longitude, description, options);
   }
 
@@ -645,12 +645,12 @@ export class WhatsAppService {
     return messaging.sendPoll(this.getSessionSafe(sessionId), to, name, options, settings);
   }
 
-  async sendButtons(sessionId: string, to: string, body: string, buttons: MessageButton[], title?: string, footer?: string, options?: { quotedMessageId?: string }) {
-    return messaging.sendButtons(this.getSessionSafe(sessionId), to, body, buttons, title, footer, options);
+  async sendButtons(sessionId: string, to: string, body: string, buttons: MessageButton[], title?: string, footer?: string) {
+    return messaging.sendButtons(this.getSessionSafe(sessionId), to, body, buttons, title, footer);
   }
 
-  async sendList(sessionId: string, to: string, body: string, buttonText: string, sections: ListSection[], title?: string, footer?: string, options?: { quotedMessageId?: string }) {
-    return messaging.sendList(this.getSessionSafe(sessionId), to, body, buttonText, sections, title, footer, options);
+  async sendList(sessionId: string, to: string, body: string, buttonText: string, sections: ListSection[], title?: string, footer?: string) {
+    return messaging.sendList(this.getSessionSafe(sessionId), to, body, buttonText, sections, title, footer);
   }
 
   async forwardMessage(sessionId: string, messageId: string, to: string) {

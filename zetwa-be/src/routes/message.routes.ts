@@ -40,13 +40,13 @@ router.post(
       // Verify session ownership
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const { to, message, quotedMessageId, reply_to, mentions } = req.body;
+      const { to, message, quotedMessageId, mentions } = req.body;
 
       const sentMessage = await whatsappService.sendMessage(
         req.params.sessionId,
         to,
         message,
-        { quotedMessageId: quotedMessageId || reply_to, mentions }
+        { quotedMessageId, mentions }
       );
 
       res.json({
@@ -79,7 +79,7 @@ router.post(
       // Verify session ownership
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const { to, mediaUrl, mediaBase64, mimetype, filename, caption, quotedMessageId, reply_to } = req.body;
+      const { to, mediaUrl, mediaBase64, mimetype, filename, caption, quotedMessageId } = req.body;
 
       let media: MessageMedia;
 
@@ -111,7 +111,7 @@ router.post(
         req.params.sessionId,
         to,
         media,
-        { caption, quotedMessageId: quotedMessageId || reply_to }
+        { caption, quotedMessageId }
       );
 
       res.json({
@@ -144,7 +144,7 @@ router.post(
       // Verify session ownership
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const { to, mediaUrl, mediaBase64, mimetype, quotedMessageId, reply_to } = req.body;
+      const { to, mediaUrl, mediaBase64, mimetype, quotedMessageId } = req.body;
 
       let media: MessageMedia;
 
@@ -170,12 +170,51 @@ router.post(
         req.params.sessionId,
         to,
         media,
-        { quotedMessageId: quotedMessageId || reply_to, sendAudioAsVoice: true }
+        { quotedMessageId, sendAudioAsVoice: true }
       );
 
       res.json({
         success: true,
         message: 'Voice message sent',
+        data: {
+          messageId: sentMessage.id._serialized,
+          to: sentMessage.to,
+          timestamp: sentMessage.timestamp,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route POST /api/sessions/:sessionId/messages/send-location
+ * @desc Send a location message
+ * @scope messages:send
+ */
+router.post(
+  '/:sessionId/messages/send-location',
+  requireScope('messages:send'),
+  messageLimiter,
+  validateBody(sendLocationSchema),
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+    try {
+      await sessionService.getById(req.userId!, req.params.sessionId);
+      const { to, latitude, longitude, title, quotedMessageId } = req.body;
+
+      const sentMessage = await whatsappService.sendLocation(
+        req.params.sessionId,
+        to,
+        latitude,
+        longitude,
+        title,
+        { quotedMessageId }
+      );
+
+      res.json({
+        success: true,
+        message: 'Location sent',
         data: {
           messageId: sentMessage.id._serialized,
           to: sentMessage.to,

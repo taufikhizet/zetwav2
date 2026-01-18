@@ -30,7 +30,7 @@ export async function sendMessage(
 
   const chatId = formatChatId(to);
 
-  const sendOptions: { quotedMessageId?: string; mentions?: string[]; linkPreview?: boolean } = {};
+  const sendOptions: { quotedMessageId?: string; mentions?: string[] } = {};
 
   if (options?.quotedMessageId) {
     sendOptions.quotedMessageId = options.quotedMessageId;
@@ -38,10 +38,6 @@ export async function sendMessage(
 
   if (options?.mentions) {
     sendOptions.mentions = options.mentions;
-  }
-
-  if (options?.linkPreview !== undefined) {
-    sendOptions.linkPreview = options.linkPreview;
   }
 
   const sentMessage = await session.client.sendMessage(chatId, message, sendOptions);

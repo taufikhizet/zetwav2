@@ -149,8 +149,7 @@ export async function sendButtons(
   body: string,
   buttons: MessageButton[],
   title?: string,
-  footer?: string,
-  options?: { quotedMessageId?: string }
+  footer?: string
 ): Promise<Message> {
   if (session.status !== 'CONNECTED') {
     throw new SessionNotConnectedError(session.sessionId);
@@ -163,12 +162,7 @@ export async function sendButtons(
   const buttonText = buttons.map((b, i) => `${i + 1}. ${b.text}`).join('\n');
   const fullMessage = `${title ? `*${title}*\n\n` : ''}${body}\n\n${buttonText}${footer ? `\n\n_${footer}_` : ''}`;
 
-  const sendOptions: { quotedMessageId?: string } = {};
-  if (options?.quotedMessageId) {
-    sendOptions.quotedMessageId = options.quotedMessageId;
-  }
-
-  const result = await session.client.sendMessage(chatId, fullMessage, sendOptions);
+  const result = await session.client.sendMessage(chatId, fullMessage);
   
   logger.info({ sessionId: session.sessionId, to: chatId }, 'Buttons message sent (as text fallback)');
 
@@ -185,8 +179,7 @@ export async function sendList(
   buttonText: string,
   sections: ListSection[],
   title?: string,
-  footer?: string,
-  options?: { quotedMessageId?: string }
+  footer?: string
 ): Promise<Message> {
   if (session.status !== 'CONNECTED') {
     throw new SessionNotConnectedError(session.sessionId);
@@ -211,57 +204,9 @@ export async function sendList(
     listText += `_${footer}_`;
   }
 
-  const sendOptions: { quotedMessageId?: string } = {};
-  if (options?.quotedMessageId) {
-    sendOptions.quotedMessageId = options.quotedMessageId;
-  }
-
-  const result = await session.client.sendMessage(chatId, listText, sendOptions);
+  const result = await session.client.sendMessage(chatId, listText);
   
   logger.info({ sessionId: session.sessionId, to: chatId }, 'List message sent (as text fallback)');
 
   return result;
-}
-
-/**
- * Send Poll Vote
- */
-export async function sendPollVote(
-  session: WASession,
-  to: string,
-  pollMessageId: string,
-  selectedOptions: string[]
-): Promise<void> {
-  if (session.status !== 'CONNECTED') {
-    throw new SessionNotConnectedError(session.sessionId);
-  }
-
-  // Unfortunately, whatsapp-web.js doesn't expose a direct method to vote on a poll by ID easily without fetching it first.
-  // We need to fetch the message.
-  // NOTE: This might be slow or fail if message is not found.
-  
-  // TODO: Implement actual voting logic if supported by library.
-  // Current whatsapp-web.js version might not support sending a vote via API easily without the message object.
-  // But wait, user wants implementation.
-  
-  // Try to get message from store if enabled?
-  // Or just warn it's not fully supported.
-  
-  // WAHA implementation does:
-  // await client.interface.vote(pollMessageId, selectedOptions);
-  
-  // Let's assume for now we just log it or try to fetch message.
-  
-  // Actually, I'll implement a placeholder that logs for now, or if I can find the message.
-  
-  // Real implementation requires:
-  // 1. Get message
-  // 2. await msg.vote(selectedOptions);
-  
-  logger.warn({ sessionId: session.sessionId, pollMessageId }, 'Send Poll Vote not fully implemented in underlying library wrapper yet');
-  
-  // We'll throw an error for now saying it's not supported in this version, 
-  // OR we try to find the message if we have store.
-  
-  throw new Error('Poll voting is not yet supported in this version.');
 }

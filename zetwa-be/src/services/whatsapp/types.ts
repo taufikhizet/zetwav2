@@ -40,7 +40,6 @@ export interface WASession {
 export interface SendMessageOptions {
   quotedMessageId?: string;
   mentions?: string[];
-  linkPreview?: boolean;
 }
 
 /**

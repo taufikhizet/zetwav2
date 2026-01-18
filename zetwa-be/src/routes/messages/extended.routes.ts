@@ -10,7 +10,6 @@ import {
   sendLocationSchema,
   sendContactSchema,
   sendPollSchema,
-  sendPollVoteSchema,
   sendButtonsSchema,
   sendListSchema,
   forwardMessageSchema,
@@ -111,10 +110,7 @@ router.post(
         req.body.latitude,
         req.body.longitude,
         req.body.description,
-        {
-           url: req.body.url,
-           quotedMessageId: req.body.quotedMessageId || req.body.reply_to
-        }
+        req.body.url
       );
 
       res.json({
@@ -146,24 +142,20 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const { to, contact, quotedMessageId, reply_to } = req.body;
-
-      const sentMessage = await whatsappService.sendContact(
+      const result = await whatsappService.sendContact(
         req.params.sessionId,
-        to,
-        contact.phone, // We use phone as contact ID for now
-        { 
-          quotedMessageId: quotedMessageId || reply_to 
-        }
+        req.body.to,
+        req.body.contact,
+        { quotedMessageId: req.body.quotedMessageId }
       );
 
       res.json({
         success: true,
         message: 'Contact sent',
         data: {
-          messageId: sentMessage.id._serialized,
-          to: sentMessage.to,
-          timestamp: sentMessage.timestamp,
+          messageId: result.id._serialized,
+          to: result.to,
+          timestamp: result.timestamp,
         },
       });
     } catch (error) {
@@ -193,7 +185,7 @@ router.post(
         req.body.poll.options,
         { 
           selectableCount: req.body.poll.multipleAnswers ? req.body.poll.options.length : 1,
-          quotedMessageId: req.body.quotedMessageId || req.body.reply_to
+          quotedMessageId: req.body.quotedMessageId 
         }
       );
 
@@ -259,16 +251,13 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const { to, body, buttons, title, footer, quotedMessageId, reply_to } = req.body;
-
       const result = await whatsappService.sendButtons(
         req.params.sessionId,
-        to,
-        body,
-        buttons,
-        title,
-        footer,
-        { quotedMessageId: quotedMessageId || reply_to }
+        req.body.to,
+        req.body.body,
+        req.body.buttons,
+        req.body.title,
+        req.body.footer
       );
 
       res.json({
@@ -300,17 +289,14 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const { to, body, buttonText, sections, title, footer, quotedMessageId, reply_to } = req.body;
-
       const result = await whatsappService.sendList(
         req.params.sessionId,
-        to,
-        body,
-        buttonText,
-        sections,
-        title,
-        footer,
-        { quotedMessageId: quotedMessageId || reply_to }
+        req.body.to,
+        req.body.body,
+        req.body.buttonText,
+        req.body.sections,
+        req.body.title,
+        req.body.footer
       );
 
       res.json({

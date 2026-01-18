@@ -13,8 +13,6 @@ export const sendLocationSchema = z.object({
   longitude: z.number().min(-180).max(180),
   description: z.string().max(255).optional(),
   url: z.string().url().optional(),
-  quotedMessageId: z.string().optional(),
-  reply_to: z.string().optional(),
 });
 
 // Send contact/vCard schema
@@ -27,7 +25,6 @@ export const sendContactSchema = z.object({
     email: z.string().email().optional(),
   }),
   quotedMessageId: z.string().optional(),
-  reply_to: z.string().optional(),
 });
 
 // Send poll schema
@@ -39,14 +36,6 @@ export const sendPollSchema = z.object({
     multipleAnswers: z.boolean().default(false),
   }),
   quotedMessageId: z.string().optional(),
-  reply_to: z.string().optional(),
-});
-
-// Send poll vote schema
-export const sendPollVoteSchema = z.object({
-  to: z.string().min(1, 'Recipient is required'),
-  pollMessageId: z.string().min(1, 'Poll Message ID is required'),
-  selectedOptions: z.array(z.string().min(1)).min(1, 'At least 1 option is required'),
 });
 
 // Send buttons schema (may not work due to WhatsApp restrictions)
@@ -59,8 +48,6 @@ export const sendButtonsSchema = z.object({
   })).min(1).max(3),
   title: z.string().max(60).optional(),
   footer: z.string().max(60).optional(),
-  quotedMessageId: z.string().optional(),
-  reply_to: z.string().optional(),
 });
 
 // Send list schema (may not work due to WhatsApp restrictions)
@@ -78,8 +65,6 @@ export const sendListSchema = z.object({
   })).min(1).max(10),
   title: z.string().max(60).optional(),
   footer: z.string().max(60).optional(),
-  quotedMessageId: z.string().optional(),
-  reply_to: z.string().optional(),
 });
 
 // Forward message schema
@@ -110,7 +95,6 @@ export type SendReactionInput = z.infer<typeof sendReactionSchema>;
 export type SendLocationInput = z.infer<typeof sendLocationSchema>;
 export type SendContactInput = z.infer<typeof sendContactSchema>;
 export type SendPollInput = z.infer<typeof sendPollSchema>;
-export type SendPollVoteInput = z.infer<typeof sendPollVoteSchema>;
 export type SendButtonsInput = z.infer<typeof sendButtonsSchema>;
 export type SendListInput = z.infer<typeof sendListSchema>;
 export type ForwardMessageInput = z.infer<typeof forwardMessageSchema>;
