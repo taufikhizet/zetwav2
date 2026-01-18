@@ -633,7 +633,7 @@ export class WhatsAppService {
     return messaging.removeReaction(this.getSessionSafe(sessionId), messageId);
   }
 
-  async sendLocation(sessionId: string, to: string, latitude: number, longitude: number, description?: string, options?: { quotedMessageId?: string }) {
+  async sendLocation(sessionId: string, to: string, latitude: number, longitude: number, description?: string, options?: { quotedMessageId?: string; url?: string }) {
     return messaging.sendLocation(this.getSessionSafe(sessionId), to, latitude, longitude, description, options);
   }
 
@@ -643,6 +643,10 @@ export class WhatsAppService {
 
   async sendPoll(sessionId: string, to: string, name: string, options: string[], settings?: { selectableCount?: number; quotedMessageId?: string }) {
     return messaging.sendPoll(this.getSessionSafe(sessionId), to, name, options, settings);
+  }
+
+  async sendPollVote(sessionId: string, to: string, pollMessageId: string, selectedOptions: string[]) {
+    return messaging.sendPollVote(this.getSessionSafe(sessionId), to, pollMessageId, selectedOptions);
   }
 
   async sendButtons(sessionId: string, to: string, body: string, buttons: MessageButton[], title?: string, footer?: string) {

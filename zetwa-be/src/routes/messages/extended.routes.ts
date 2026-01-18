@@ -16,6 +16,7 @@ import {
   messageActionSchema,
   editMessageSchema,
   starMessageSchema,
+  sendPollVoteSchema,
 } from '../../schemas/messages-extended.schema.js';
 
 interface SessionParams extends ParamsDictionary {
@@ -104,13 +105,18 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
+      const { to, latitude, longitude, description, url, quotedMessageId, reply_to } = req.body;
+      const finalQuotedMessageId = quotedMessageId || reply_to || undefined;
+
       const result = await whatsappService.sendLocation(
         req.params.sessionId,
-        req.body.to,
-        req.body.latitude,
-        req.body.longitude,
-        req.body.description,
-        req.body.url
+        to,
+        latitude,
+        longitude,
+        description || undefined,
+        url || undefined,
+        // @ts-ignore - Check if service supports options
+        { quotedMessageId: finalQuotedMessageId }
       );
 
       res.json({
@@ -142,11 +148,21 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
+      const { to, contact, quotedMessageId, reply_to } = req.body;
+      const finalQuotedMessageId = quotedMessageId || reply_to || undefined;
+
+      // Sanitize contact object to remove nulls
+      const cleanContact = {
+        ...contact,
+        organization: contact.organization || undefined,
+        email: contact.email || undefined
+      };
+
       const result = await whatsappService.sendContact(
         req.params.sessionId,
-        req.body.to,
-        req.body.contact,
-        { quotedMessageId: req.body.quotedMessageId }
+        to,
+        cleanContact,
+        { quotedMessageId: finalQuotedMessageId }
       );
 
       res.json({
@@ -178,14 +194,28 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
+      const { to, name, options, multipleAnswers, selectableCount, quotedMessageId, reply_to } = req.body;
+      const finalQuotedMessageId = quotedMessageId || reply_to || undefined;
+
+      // Determine selectable count: 
+      // 1. If selectableCount is provided, use it
+      // 2. If multipleAnswers is true, allow all options
+      // 3. Default to 1
+      let finalSelectableCount = 1;
+      if (selectableCount) {
+        finalSelectableCount = selectableCount;
+      } else if (multipleAnswers) {
+        finalSelectableCount = options.length;
+      }
+
       const result = await whatsappService.sendPoll(
         req.params.sessionId,
-        req.body.to,
-        req.body.poll.name,
-        req.body.poll.options,
+        to,
+        name,
+        options,
         { 
-          selectableCount: req.body.poll.multipleAnswers ? req.body.poll.options.length : 1,
-          quotedMessageId: req.body.quotedMessageId 
+          selectableCount: finalSelectableCount,
+          quotedMessageId: finalQuotedMessageId 
         }
       );
 
@@ -218,18 +248,16 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      // Note: This requires implementation in whatsappService
-      // await whatsappService.sendPollVote(
-      //   req.params.sessionId,
-      //   req.body.to,
-      //   req.body.pollMessageId,
-      //   req.body.selectedOptions
-      // );
+      await whatsappService.sendPollVote(
+        req.params.sessionId,
+        req.body.to,
+        req.body.pollMessageId,
+        req.body.selectedOptions
+      );
       
-      // For now, return not implemented or success mock
-      res.status(501).json({
-        success: false,
-        message: 'Poll voting not yet supported',
+      res.json({
+        success: true,
+        message: 'Poll vote sent successfully',
       });
     } catch (error) {
       next(error);
@@ -251,13 +279,18 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
+      const { to, body, buttons, title, footer, quotedMessageId, reply_to } = req.body;
+      const finalQuotedMessageId = quotedMessageId || reply_to || undefined;
+
       const result = await whatsappService.sendButtons(
         req.params.sessionId,
-        req.body.to,
-        req.body.body,
-        req.body.buttons,
-        req.body.title,
-        req.body.footer
+        to,
+        body,
+        buttons,
+        title || undefined,
+        footer || undefined,
+        // @ts-ignore - Check if service supports options
+        { quotedMessageId: finalQuotedMessageId }
       );
 
       res.json({
@@ -289,14 +322,19 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
+      const { to, body, buttonText, sections, title, footer, quotedMessageId, reply_to } = req.body;
+      const finalQuotedMessageId = quotedMessageId || reply_to;
+
       const result = await whatsappService.sendList(
         req.params.sessionId,
-        req.body.to,
-        req.body.body,
-        req.body.buttonText,
-        req.body.sections,
-        req.body.title,
-        req.body.footer
+        to,
+        body,
+        buttonText,
+        sections,
+        title,
+        footer,
+        // @ts-ignore - Check if service supports options
+        { quotedMessageId: finalQuotedMessageId }
       );
 
       res.json({

@@ -40,13 +40,14 @@ router.post(
       // Verify session ownership
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const { to, message, quotedMessageId, mentions } = req.body;
+      const { to, message, quotedMessageId, reply_to, mentions } = req.body;
+      const finalQuotedMessageId = quotedMessageId || reply_to || undefined;
 
       const sentMessage = await whatsappService.sendMessage(
         req.params.sessionId,
         to,
         message,
-        { quotedMessageId, mentions }
+        { quotedMessageId: finalQuotedMessageId, mentions: mentions || undefined }
       );
 
       res.json({
@@ -79,7 +80,10 @@ router.post(
       // Verify session ownership
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const { to, mediaUrl, mediaBase64, mimetype, filename, caption, quotedMessageId } = req.body;
+      const { to, mediaUrl, mediaBase64, mimetype, filename, caption, quotedMessageId, reply_to } = req.body;
+
+      // Use quotedMessageId if present, otherwise use reply_to (WAHA compatibility)
+      const finalQuotedMessageId = quotedMessageId || reply_to;
 
       let media: MessageMedia;
 
@@ -111,7 +115,7 @@ router.post(
         req.params.sessionId,
         to,
         media,
-        { caption, quotedMessageId }
+        { caption, quotedMessageId: finalQuotedMessageId }
       );
 
       res.json({
@@ -144,7 +148,8 @@ router.post(
       // Verify session ownership
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const { to, mediaUrl, mediaBase64, mimetype, quotedMessageId } = req.body;
+      const { to, mediaUrl, mediaBase64, mimetype, quotedMessageId, reply_to } = req.body;
+      const finalQuotedMessageId = quotedMessageId || reply_to;
 
       let media: MessageMedia;
 
@@ -170,7 +175,7 @@ router.post(
         req.params.sessionId,
         to,
         media,
-        { quotedMessageId, sendAudioAsVoice: true }
+        { quotedMessageId: finalQuotedMessageId, sendAudioAsVoice: true }
       );
 
       res.json({
@@ -201,15 +206,17 @@ router.post(
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
-      const { to, latitude, longitude, title, quotedMessageId } = req.body;
+      const { to, latitude, longitude, title, description, url, quotedMessageId, reply_to } = req.body;
+      const finalQuotedMessageId = quotedMessageId || reply_to || undefined;
+      const finalTitle = title || description || undefined;
 
       const sentMessage = await whatsappService.sendLocation(
         req.params.sessionId,
         to,
         latitude,
         longitude,
-        title,
-        { quotedMessageId }
+        finalTitle,
+        { quotedMessageId: finalQuotedMessageId, url: url || undefined }
       );
 
       res.json({

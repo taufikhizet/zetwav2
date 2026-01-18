@@ -247,7 +247,7 @@ export const sessionApi = {
   },
 
   // Extended Messages
-  sendLocation: async (sessionId: string, data: { to: string; latitude: number; longitude: number; description?: string; url?: string; reply_to?: string }): Promise<any> => {
+  sendLocation: async (sessionId: string, data: { to: string; latitude: number; longitude: number; description?: string; title?: string; url?: string; reply_to?: string }): Promise<any> => {
     const response = await api.post(`/sessions/${sessionId}/messages/send-location`, data)
     return response.data
   },
@@ -257,7 +257,7 @@ export const sessionApi = {
     return response.data
   },
 
-  sendPoll: async (sessionId: string, data: { to: string; poll: { name: string; options: string[]; multipleAnswers?: boolean }; reply_to?: string }): Promise<any> => {
+  sendPoll: async (sessionId: string, data: { to: string; name: string; options: string[]; multipleAnswers?: boolean; selectableCount?: number; reply_to?: string }): Promise<any> => {
     const response = await api.post(`/sessions/${sessionId}/messages/send-poll`, data)
     return response.data
   },

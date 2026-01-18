@@ -40,6 +40,38 @@ export async function sendPoll(
 }
 
 /**
+ * Send Poll Vote
+ */
+export async function sendPollVote(
+  session: WASession,
+  to: string,
+  pollMessageId: string,
+  selectedOptions: string[]
+): Promise<void> {
+  if (session.status !== 'CONNECTED') {
+    throw new SessionNotConnectedError(session.sessionId);
+  }
+
+  // Get the poll message
+  const pollMessage = await session.client.getMessageById(pollMessageId);
+  if (!pollMessage) {
+    throw new Error('Poll message not found');
+  }
+
+  // Vote on poll
+  // Note: whatsapp-web.js implementation for voting might differ
+  // This is a placeholder for actual voting logic
+  // Typically requires the Poll object or specific method on the message
+  
+  if (pollMessage.type !== 'poll_creation') {
+    throw new Error('Message is not a poll');
+  }
+
+  await pollMessage.vote(selectedOptions);
+  logger.info({ sessionId: session.sessionId, pollMessageId, selectedOptions }, 'Poll vote sent');
+}
+
+/**
  * Send Location
  */
 export async function sendLocation(

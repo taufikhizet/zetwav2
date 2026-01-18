@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sessionApi } from '@/features/sessions/api/session.api'
+import { ApiExample } from '../../ApiExample'
 
 interface MediaTabProps {
   sessionId: string
@@ -96,6 +97,26 @@ export function MediaTab({ sessionId }: MediaTabProps) {
             </Button>
          </div>
       </div>
+
+      <ApiExample 
+        method="POST" 
+        url={`/api/sessions/${sessionId}/messages/send-media`}
+        body={{
+          to: mediaTo || "6281234567890",
+          mediaUrl: mediaUrl || "https://example.com/image.jpg",
+          caption: mediaCaption || undefined,
+          reply_to: replyTo || null
+        }}
+        description="Send media (image/video/document) from a URL."
+        parameters={[
+          { name: "to", type: "string", required: true, description: "Recipient's phone number" },
+          { name: "mediaUrl", type: "string", required: true, description: "Direct URL to the media file" },
+          { name: "caption", type: "string", required: false, description: "Caption for the media" },
+          { name: "reply_to", type: "string | null", required: false, description: "ID of the message to reply to (optional, default: null)" },
+          { name: "mimetype", type: "string", required: false, description: "MIME type of the media (optional, auto-detected if possible)" },
+          { name: "filename", type: "string", required: false, description: "Filename for the media (optional)" }
+        ]}
+      />
     </div>
   )
 }
