@@ -296,11 +296,6 @@ export const sessionApi = {
   },
 
   // Status
-  getMyStatuses: async (sessionId: string): Promise<any[]> => {
-    const response = await api.get<ApiResponse<any[]>>(`/sessions/${sessionId}/status`)
-    return response.data.data
-  },
-
   getContactStatuses: async (sessionId: string): Promise<any[]> => {
     const response = await api.get<ApiResponse<any[]>>(`/sessions/${sessionId}/status/contacts`)
     return response.data.data
@@ -314,10 +309,6 @@ export const sessionApi = {
   postMediaStatus: async (sessionId: string, data: { mediaUrl?: string; mediaBase64?: string; mimetype: string; caption?: string }): Promise<any> => {
     const response = await api.post(`/sessions/${sessionId}/status/media`, data)
     return response.data
-  },
-
-  deleteStatus: async (sessionId: string, statusId: string): Promise<void> => {
-    await api.delete(`/sessions/${sessionId}/status/${statusId}`)
   },
 
   // Profile

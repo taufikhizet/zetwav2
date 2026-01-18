@@ -307,11 +307,18 @@ async function fetchStatusesDirectly(session: WASession) {
             if (!caption && body) caption = body;
         }
 
+        // Determine type more reliably
+        let type = msgData.type;
+        if (msgData.backgroundColor || msgData.font) {
+            type = 'text';
+        }
+
         return {
             id: msgData.id,
             timestamp: msgData.t,
             body: body, // Keep original body available just in case
-            type: msgData.type,
+            type: type,
+            backgroundColor: msgData.backgroundColor,
             fromMe: (msgData.id && typeof msgData.id === 'object' ? msgData.id.fromMe : msgData.fromMe) ?? false,
             author: getSerialized(msgData.author),
             from: getSerialized(msgData.from),
@@ -328,72 +335,6 @@ async function fetchStatusesDirectly(session: WASession) {
 }
 
 
-
-/**
- * Get my statuses
- */
-export async function getMyStatuses(session: WASession): Promise<Array<{
-  id: string;
-  timestamp: number;
-  caption?: string;
-  type: string;
-  body?: string;
-}>> {
-  if (session.status !== 'CONNECTED') {
-    throw new SessionNotConnectedError(session.sessionId);
-  }
-
-  // Use the same approach as getContactStatuses: fetch all and filter
-  const messages = await getAllStatuses(session);
-  
-  // Filter for 'fromMe'
-  const myStatuses = messages.filter((msg: any) => {
-      // Check fromMe property
-      if (msg.fromMe === true) return true;
-      if (msg.id && typeof msg.id === 'object' && msg.id.fromMe === true) return true;
-      return false;
-  });
-
-  // Dedup by ID
-  const seenIds = new Set();
-  const uniqueStatuses: any[] = [];
-  
-  for (const msg of myStatuses) {
-      const id = msg.id?._serialized || (typeof msg.id === 'string' ? msg.id : msg.id?._serialized);
-      if (id && !seenIds.has(id)) {
-          seenIds.add(id);
-          uniqueStatuses.push(msg);
-      }
-  }
-
-  // Sort chronological (oldest first for stories)
-  uniqueStatuses.sort((a, b) => a.timestamp - b.timestamp);
-
-  return uniqueStatuses
-    .map((msg: any) => {
-      // Logic to prevent showing base64 body as caption for media
-      const isMedia = msg.type === 'image' || msg.type === 'video' || msg.type === 'audio';
-      let caption = msg.caption || '';
-      
-      if (!isMedia && !caption && msg.body) {
-          // For text, fallback to body
-          caption = msg.body;
-      } else if (isMedia && !caption && msg.body) {
-          // For media, check if body is not base64 thumbnail
-          if (typeof msg.body === 'string' && msg.body.length < 1000 && !msg.body.startsWith('/9j/')) {
-              caption = msg.body;
-          }
-      }
-
-      return {
-        id: msg.id?._serialized || (typeof msg.id === 'string' ? msg.id : msg.id?._serialized) || 'unknown',
-        timestamp: msg.timestamp,
-        caption: caption,
-        type: msg.type,
-        body: msg.body || ''
-      };
-    });
-}
 
 /**
  * Get all contacts' statuses
@@ -414,17 +355,61 @@ export async function getContactStatuses(session: WASession): Promise<Array<{
   }
 
   const messages = await getAllStatuses(session);
-  const otherStatuses = messages.filter((msg: any) => !msg.fromMe);
+  
+  // Get Me User (Phone Number) for robust matching
+  // Try client info first, then session store
+  let meUser = session.client.info?.wid?.user;
+  if (!meUser && session.phoneNumber) {
+      meUser = session.phoneNumber;
+  }
+
+  // Filter out my statuses
+  const otherStatuses = messages.filter((msg: any) => {
+      // 1. Check explicit fromMe property
+      if (msg.fromMe === true) return false;
+      if (msg.id && typeof msg.id === 'object' && msg.id.fromMe === true) return false;
+      
+      // 2. Check author/participant against Me User
+      if (meUser) {
+          const author = msg.author || msg.participant;
+          if (author) {
+              const authorId = typeof author === 'string' ? author : author._serialized;
+              const authorUser = authorId?.split('@')[0]?.split(':')[0];
+              if (authorUser === meUser) return false;
+          }
+      }
+      return true;
+  });
   
   // Group by author (which is the contact ID for statuses)
   const grouped: Record<string, any[]> = {};
   
   for (const msg of otherStatuses) {
-    const author = msg.author || msg.from; // Should be author for status
+    // Robust author detection
+    let author = msg.author || msg.participant;
+    
+    // If msg.id is object (WWebJS style)
+    if (!author && msg.id && typeof msg.id === 'object') {
+        author = msg.id.participant || msg.id.remote;
+    }
+    
+    // Clean up author ID (remove serialization if present)
+    if (author && typeof author === 'object' && author._serialized) {
+        author = author._serialized;
+    }
+    
+    // Fallback to from if it's NOT status@broadcast
+    if (!author && msg.from !== 'status@broadcast') {
+        author = msg.from;
+    }
+
+    // Skip if author is still missing or is status@broadcast
+    if (!author || author === 'status@broadcast') continue;
+
     if (!grouped[author]) {
       grouped[author] = [];
     }
-    grouped[author].push(msg);
+    grouped[author]?.push(msg);
   }
 
   const result = [];
@@ -465,7 +450,8 @@ export async function getContactStatuses(session: WASession): Promise<Array<{
             timestamp: msg.timestamp,
             caption: caption,
             type: msg.type,
-            body: msg.body
+            body: msg.body,
+            backgroundColor: msg.backgroundColor
         };
       })
     });
@@ -610,42 +596,6 @@ export async function postMediaStatus(
   } catch (error: any) {
     logger.error({ sessionId: session.sessionId, error }, 'Failed to post media status');
     throw new BadRequestError(error.message || 'Failed to post media status');
-  }
-}
-
-/**
- * Delete status
- */
-export async function deleteStatus(session: WASession, statusId: string): Promise<void> {
-  if (session.status !== 'CONNECTED') {
-    throw new SessionNotConnectedError(session.sessionId);
-  }
-
-  try {
-    // Standard delete
-    const msg = await session.client.getMessageById(statusId);
-    if (msg) {
-        await msg.delete(true);
-        return;
-    }
-    
-    // WAHA/Store fallback if message not found in cache
-    // @ts-ignore
-    if (typeof session.client.revokeStatusMessage === 'function') {
-        // Ensure ID format is correct for status
-        let messageId = statusId;
-        // WAHA logic: if (!request.id.startsWith('true_status@broadcast_')) ...
-        // But statusId passed here should already be serialized.
-        
-        // @ts-ignore
-        await session.client.revokeStatusMessage(messageId);
-        return;
-    }
-
-    throw new Error('Message not found or cannot be deleted');
-  } catch (error: any) {
-    logger.error({ sessionId: session.sessionId, error }, 'Failed to delete status');
-    throw new BadRequestError(error.message || 'Failed to delete status');
   }
 }
 

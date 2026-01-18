@@ -3,7 +3,6 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { 
   Image as ImageIcon, 
   Type, 
-  Trash2, 
   Loader2, 
   RefreshCw, 
   Eye, 
@@ -30,7 +29,7 @@ interface StatusCardProps {
 }
 
 export function StatusCard({ sessionId }: StatusCardProps) {
-  const [activeTab, setActiveTab] = useState('list')
+  const [activeTab, setActiveTab] = useState('contacts')
   
   // Status Viewer State
   const [viewerOpen, setViewerOpen] = useState(false)
@@ -45,13 +44,6 @@ export function StatusCard({ sessionId }: StatusCardProps) {
   const [mediaUrl, setMediaUrl] = useState('')
   const [caption, setCaption] = useState('')
 
-  // Get My Status Query
-  const { data: myStatuses, isLoading: isLoadingMyStatus, refetch: refetchMyStatus } = useQuery({
-    queryKey: ['status', 'me', sessionId],
-    queryFn: () => sessionApi.getMyStatuses(sessionId),
-    enabled: activeTab === 'list',
-  })
-
   // Get Contact Status Query
   const { data: contactStatuses, isLoading: isLoadingContactStatus, refetch: refetchContactStatus } = useQuery({
     queryKey: ['status', 'contacts', sessionId],
@@ -65,7 +57,7 @@ export function StatusCard({ sessionId }: StatusCardProps) {
     onSuccess: () => {
       toast.success('Text status posted')
       setStatusText('')
-      if (activeTab === 'list') refetchMyStatus()
+      // Switch to contacts tab or stay
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to post status')
@@ -79,22 +71,10 @@ export function StatusCard({ sessionId }: StatusCardProps) {
       toast.success('Media status posted')
       setMediaUrl('')
       setCaption('')
-      if (activeTab === 'list') refetchMyStatus()
+      // Switch to contacts tab or stay
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to post status')
-    }
-  })
-
-  // Delete Status Mutation
-  const deleteStatusMutation = useMutation({
-    mutationFn: (statusId: string) => sessionApi.deleteStatus(sessionId, statusId),
-    onSuccess: () => {
-      toast.success('Status deleted')
-      refetchMyStatus()
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete status')
     }
   })
 
@@ -140,84 +120,12 @@ export function StatusCard({ sessionId }: StatusCardProps) {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
         <div className="flex items-center justify-between mb-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="list">My Status</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="create-text">Post Text</TabsTrigger>
             <TabsTrigger value="create-media">Post Media</TabsTrigger>
           </TabsList>
         </div>
-
-        <TabsContent value="list" className="flex-1 flex flex-col min-h-0 space-y-4 mt-0">
-          <div className="flex justify-end">
-             <Button variant="outline" size="sm" onClick={() => refetchMyStatus()} disabled={isLoadingMyStatus} className="h-8">
-                <RefreshCw className={`h-3.5 w-3.5 mr-2 ${isLoadingMyStatus ? 'animate-spin' : ''}`} />
-                Refresh
-             </Button>
-          </div>
-
-          <div className="rounded-xl border bg-card flex-1 min-h-0 overflow-hidden flex flex-col shadow-sm">
-             <ScrollArea className="flex-1">
-                {isLoadingMyStatus ? (
-                  <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
-                    <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
-                    <p>Loading statuses...</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-                    {myStatuses && myStatuses.length > 0 && myStatuses.map((status: any, index: number) => (
-                      <div 
-                        key={status.id} 
-                        className="border rounded-xl overflow-hidden relative group shadow-sm hover:shadow-md transition-all cursor-pointer aspect-[9/16] md:aspect-square"
-                        onClick={() => openViewer('My Status', myStatuses, index, 'gallery')}
-                      >
-                         {status.type === 'text' ? (
-                           <div 
-                             className="w-full h-full flex items-center justify-center p-4 text-center text-white"
-                             style={{ backgroundColor: status.backgroundColor || '#000000' }}
-                           >
-                             <p className="line-clamp-4 font-medium text-sm">{status.body}</p>
-                           </div>
-                         ) : (
-                           <div className="w-full h-full bg-muted flex flex-col items-center justify-center gap-2">
-                             <ImageIcon className="h-8 w-8 text-muted-foreground opacity-50" />
-                             <span className="text-xs text-muted-foreground font-medium">Media</span>
-                           </div>
-                         )}
-                         
-                         <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent text-white flex justify-between items-end">
-                           <span className="text-xs font-medium opacity-90">{formatTime(status.timestamp)}</span>
-                           <Button 
-                             variant="destructive" 
-                             size="icon" 
-                             className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
-                             onClick={(e) => {
-                                 e.stopPropagation()
-                                 deleteStatusMutation.mutate(status.id)
-                             }}
-                           >
-                             <Trash2 className="h-3.5 w-3.5" />
-                           </Button>
-                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {!isLoadingMyStatus && (!myStatuses || myStatuses.length === 0) && (
-                     <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
-                        <p className="font-medium">No active statuses</p>
-                     </div>
-                )}
-             </ScrollArea>
-          </div>
-          
-          <ApiExample 
-            method="GET" 
-            url={`/api/sessions/${sessionId}/status`}
-            description="Get your current active statuses."
-          />
-        </TabsContent>
 
         <TabsContent value="contacts" className="flex-1 flex flex-col min-h-0 space-y-4 mt-0">
           {viewingContactList ? (

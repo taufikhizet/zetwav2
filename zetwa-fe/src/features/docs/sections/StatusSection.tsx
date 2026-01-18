@@ -30,33 +30,6 @@ export function StatusSection({ baseUrl }: StatusSectionProps) {
 
       <EndpointCard
         method="GET"
-        path="/api/sessions/{sessionId}/status"
-        title="Get My Statuses"
-        description="Ambil status yang saya posting"
-        auth="Both"
-        scope="status:read"
-        pathParams={[
-          { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
-        ]}
-        curlExample={`curl -X GET "${baseUrl}/api/sessions/{sessionId}/status" \\
-  -H "X-API-Key: YOUR_API_KEY"`}
-        responseExample={`{
-  "success": true,
-  "data": [
-    {
-      "id": "status_123456",
-      "type": "text",
-      "content": "Hello World!",
-      "backgroundColor": "#25D366",
-      "timestamp": "2026-01-14T10:00:00.000Z",
-      "views": 15
-    }
-  ]
-}`}
-      />
-
-      <EndpointCard
-        method="GET"
         path="/api/sessions/{sessionId}/status/contacts"
         title="Get Contact Statuses"
         description="Ambil status dari semua kontak"
@@ -173,25 +146,6 @@ export function StatusSection({ baseUrl }: StatusSectionProps) {
   "data": {
     "id": "status_media456"
   }
-}`}
-      />
-
-      <EndpointCard
-        method="DELETE"
-        path="/api/sessions/{sessionId}/status/{statusId}"
-        title="Delete Status"
-        description="Hapus status"
-        auth="Both"
-        scope="status:write"
-        pathParams={[
-          { name: 'sessionId', type: 'string', required: true, description: 'ID session WhatsApp' },
-          { name: 'statusId', type: 'string', required: true, description: 'ID status yang akan dihapus' },
-        ]}
-        curlExample={`curl -X DELETE "${baseUrl}/api/sessions/{sessionId}/status/status_123456" \\
-  -H "X-API-Key: YOUR_API_KEY"`}
-        responseExample={`{
-  "success": true,
-  "message": "Status deleted successfully"
 }`}
       />
 

@@ -4,7 +4,7 @@ import { whatsappService } from '../../services/whatsapp.service.js';
 import { sessionService } from '../../services/session.service.js';
 import { authenticateAny, requireScope } from '../../middleware/auth.middleware.js';
 import { validateBody } from '../../middleware/validate.middleware.js';
-import { postTextStatusSchema, postMediaStatusSchema, deleteStatusSchema } from '../../schemas/status.schema.js';
+import { postTextStatusSchema, postMediaStatusSchema } from '../../schemas/status.schema.js';
 
 interface SessionParams extends ParamsDictionary {
   sessionId: string;
@@ -22,26 +22,6 @@ const router = Router({ mergeParams: true });
 
 // Apply authentication to all routes
 router.use(authenticateAny);
-
-/**
- * @route GET /api/sessions/:sessionId/status
- * @desc Get my status updates
- * @scope status:read
- */
-router.get('/', requireScope('status:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
-  try {
-    await sessionService.getById(req.userId!, req.params.sessionId);
-
-    const statuses = await whatsappService.getMyStatuses(req.params.sessionId);
-
-    res.json({
-      success: true,
-      data: statuses,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
 
 /**
  * @route GET /api/sessions/:sessionId/status/contacts
@@ -148,29 +128,6 @@ router.post(
     }
   }
 );
-
-/**
- * @route DELETE /api/sessions/:sessionId/status/:statusId
- * @desc Delete a status update
- * @scope status:write
- */
-router.delete('/:statusId', requireScope('status:write'), async (req: Request<StatusParams>, res: Response, next: NextFunction) => {
-  try {
-    await sessionService.getById(req.userId!, req.params.sessionId);
-
-    await whatsappService.deleteStatus(
-      req.params.sessionId,
-      req.params.statusId
-    );
-
-    res.json({
-      success: true,
-      message: 'Status deleted successfully',
-    });
-  } catch (error) {
-    next(error);
-  }
-});
 
 /**
  * @route POST /api/sessions/:sessionId/status/:statusId/seen

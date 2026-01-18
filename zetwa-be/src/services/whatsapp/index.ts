@@ -513,10 +513,6 @@ export class WhatsAppService {
   // STATUS METHODS
   // ================================
 
-  async getMyStatuses(sessionId: string) {
-    return status.getMyStatuses(this.getSessionSafe(sessionId));
-  }
-
   async getContactStatuses(sessionId: string) {
     return status.getContactStatuses(this.getSessionSafe(sessionId));
   }
@@ -531,10 +527,6 @@ export class WhatsAppService {
 
   async postMediaStatus(sessionId: string, mediaUrl?: string, mediaBase64?: string, mimetype?: string, caption?: string) {
     return status.postMediaStatus(this.getSessionSafe(sessionId), mediaUrl, mediaBase64, mimetype, caption);
-  }
-
-  async deleteStatus(sessionId: string, statusId: string) {
-    return status.deleteStatus(this.getSessionSafe(sessionId), statusId);
   }
 
   async markStatusSeen(sessionId: string, statusId: string) {

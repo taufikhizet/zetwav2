@@ -18,12 +18,6 @@ export const postMediaStatusSchema = z.object({
   'Either mediaUrl or mediaBase64 is required'
 );
 
-// Delete status schema
-export const deleteStatusSchema = z.object({
-  statusId: z.string().min(1, 'Status ID is required'),
-});
-
 // Type exports
 export type PostTextStatusInput = z.infer<typeof postTextStatusSchema>;
 export type PostMediaStatusInput = z.infer<typeof postMediaStatusSchema>;
-export type DeleteStatusInput = z.infer<typeof deleteStatusSchema>;
