@@ -95,12 +95,12 @@ export const sessionApi = {
   },
 
   // Messages
-  sendMessage: async (sessionId: string, data: { to: string; message: string }): Promise<any> => {
+  sendMessage: async (sessionId: string, data: { to: string; message: string; linkPreview?: boolean; reply_to?: string }): Promise<any> => {
     const response = await api.post(`/sessions/${sessionId}/messages/send`, data)
     return response.data
   },
 
-  sendMedia: async (sessionId: string, data: { to: string; mediaUrl?: string; mediaBase64?: string; mimetype?: string; filename?: string; caption?: string }): Promise<any> => {
+  sendMedia: async (sessionId: string, data: { to: string; mediaUrl?: string; mediaBase64?: string; mimetype?: string; filename?: string; caption?: string; reply_to?: string }): Promise<any> => {
     const response = await api.post(`/sessions/${sessionId}/messages/send-media`, data)
     return response.data
   },
@@ -247,19 +247,58 @@ export const sessionApi = {
   },
 
   // Extended Messages
-  sendLocation: async (sessionId: string, data: { to: string; latitude: number; longitude: number; description?: string; url?: string }): Promise<any> => {
+  sendLocation: async (sessionId: string, data: { to: string; latitude: number; longitude: number; description?: string; url?: string; reply_to?: string }): Promise<any> => {
     const response = await api.post(`/sessions/${sessionId}/messages/send-location`, data)
     return response.data
   },
 
-  sendContact: async (sessionId: string, data: { to: string; contact: { name: string; phone: string; organization?: string; email?: string } }): Promise<any> => {
+  sendContact: async (sessionId: string, data: { to: string; contact: { name: string; phone: string; organization?: string; email?: string }; reply_to?: string }): Promise<any> => {
     const response = await api.post(`/sessions/${sessionId}/messages/send-contact`, data)
     return response.data
   },
 
-  sendPoll: async (sessionId: string, data: { to: string; poll: { name: string; options: string[]; multipleAnswers?: boolean } }): Promise<any> => {
+  sendPoll: async (sessionId: string, data: { to: string; poll: { name: string; options: string[]; multipleAnswers?: boolean }; reply_to?: string }): Promise<any> => {
     const response = await api.post(`/sessions/${sessionId}/messages/send-poll`, data)
     return response.data
+  },
+
+  sendPollVote: async (sessionId: string, data: { to: string; pollMessageId: string; selectedOptions: string[] }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/messages/poll-vote`, data)
+    return response.data
+  },
+
+  sendButtons: async (sessionId: string, data: { to: string; body: string; buttons: { id: string; text: string }[]; title?: string; footer?: string; reply_to?: string }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/messages/send-buttons`, data)
+    return response.data
+  },
+
+  sendList: async (sessionId: string, data: { to: string; body: string; buttonText: string; sections: { title: string; rows: { id: string; title: string; description?: string }[] }[]; title?: string; footer?: string; reply_to?: string }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/messages/send-list`, data)
+    return response.data
+  },
+
+  sendReaction: async (sessionId: string, data: { messageId: string; reaction: string }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/messages/reaction`, data)
+    return response.data
+  },
+
+  starMessage: async (sessionId: string, messageId: string, star: boolean = true): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/messages/${messageId}/star`, { star })
+    return response.data
+  },
+
+  editMessage: async (sessionId: string, messageId: string, newContent: string): Promise<any> => {
+    const response = await api.patch(`/sessions/${sessionId}/messages/${messageId}`, { newContent })
+    return response.data
+  },
+
+  // Presence Helpers
+  sendTyping: async (sessionId: string, chatId: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/presence/typing/${chatId}`)
+  },
+
+  stopTyping: async (sessionId: string, chatId: string): Promise<void> => {
+    await api.delete(`/sessions/${sessionId}/presence/typing/${chatId}`)
   },
 
   // Labels

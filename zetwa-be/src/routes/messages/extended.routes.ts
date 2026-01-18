@@ -10,6 +10,7 @@ import {
   sendLocationSchema,
   sendContactSchema,
   sendPollSchema,
+  sendPollVoteSchema,
   sendButtonsSchema,
   sendListSchema,
   forwardMessageSchema,
@@ -110,7 +111,10 @@ router.post(
         req.body.latitude,
         req.body.longitude,
         req.body.description,
-        req.body.url
+        {
+           url: req.body.url,
+           quotedMessageId: req.body.quotedMessageId || req.body.reply_to
+        }
       );
 
       res.json({
@@ -142,20 +146,24 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
-      const result = await whatsappService.sendContact(
+      const { to, contact, quotedMessageId, reply_to } = req.body;
+
+      const sentMessage = await whatsappService.sendContact(
         req.params.sessionId,
-        req.body.to,
-        req.body.contact,
-        { quotedMessageId: req.body.quotedMessageId }
+        to,
+        contact.phone, // We use phone as contact ID for now
+        { 
+          quotedMessageId: quotedMessageId || reply_to 
+        }
       );
 
       res.json({
         success: true,
         message: 'Contact sent',
         data: {
-          messageId: result.id._serialized,
-          to: result.to,
-          timestamp: result.timestamp,
+          messageId: sentMessage.id._serialized,
+          to: sentMessage.to,
+          timestamp: sentMessage.timestamp,
         },
       });
     } catch (error) {
@@ -185,7 +193,7 @@ router.post(
         req.body.poll.options,
         { 
           selectableCount: req.body.poll.multipleAnswers ? req.body.poll.options.length : 1,
-          quotedMessageId: req.body.quotedMessageId 
+          quotedMessageId: req.body.quotedMessageId || req.body.reply_to
         }
       );
 
@@ -197,6 +205,39 @@ router.post(
           to: result.to,
           timestamp: result.timestamp,
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route POST /api/sessions/:sessionId/messages/poll-vote
+ * @desc Vote on a poll
+ * @scope messages:send
+ */
+router.post(
+  '/poll-vote',
+  requireScope('messages:send'),
+  messageLimiter,
+  validateBody(sendPollVoteSchema),
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+    try {
+      await sessionService.getById(req.userId!, req.params.sessionId);
+
+      // Note: This requires implementation in whatsappService
+      // await whatsappService.sendPollVote(
+      //   req.params.sessionId,
+      //   req.body.to,
+      //   req.body.pollMessageId,
+      //   req.body.selectedOptions
+      // );
+      
+      // For now, return not implemented or success mock
+      res.status(501).json({
+        success: false,
+        message: 'Poll voting not yet supported',
       });
     } catch (error) {
       next(error);
@@ -218,13 +259,16 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
+      const { to, body, buttons, title, footer, quotedMessageId, reply_to } = req.body;
+
       const result = await whatsappService.sendButtons(
         req.params.sessionId,
-        req.body.to,
-        req.body.body,
-        req.body.buttons,
-        req.body.title,
-        req.body.footer
+        to,
+        body,
+        buttons,
+        title,
+        footer,
+        { quotedMessageId: quotedMessageId || reply_to }
       );
 
       res.json({
@@ -256,14 +300,17 @@ router.post(
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
+      const { to, body, buttonText, sections, title, footer, quotedMessageId, reply_to } = req.body;
+
       const result = await whatsappService.sendList(
         req.params.sessionId,
-        req.body.to,
-        req.body.body,
-        req.body.buttonText,
-        req.body.sections,
-        req.body.title,
-        req.body.footer
+        to,
+        body,
+        buttonText,
+        sections,
+        title,
+        footer,
+        { quotedMessageId: quotedMessageId || reply_to }
       );
 
       res.json({

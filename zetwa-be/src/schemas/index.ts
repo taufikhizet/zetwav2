@@ -220,7 +220,9 @@ export const sendMessageSchema = z.object({
   to: z.string().min(1, 'Recipient (to) is required'),
   message: z.string().min(1, 'Message content is required'),
   quotedMessageId: z.string().optional(),
+  reply_to: z.string().optional(),
   mentions: z.array(z.string()).optional(),
+  linkPreview: z.boolean().optional(),
 });
 
 export const sendMediaSchema = z.object({
@@ -231,6 +233,7 @@ export const sendMediaSchema = z.object({
   filename: z.string().optional(),
   caption: z.string().optional(),
   quotedMessageId: z.string().optional(),
+  reply_to: z.string().optional(),
 });
 
 export const sendVoiceSchema = z.object({
@@ -240,6 +243,7 @@ export const sendVoiceSchema = z.object({
   mimetype: z.string().optional(), // usually audio/ogg; codecs=opus
   ptt: z.boolean().default(true), // Push-to-Talk (voice note)
   quotedMessageId: z.string().optional(),
+  reply_to: z.string().optional(),
 });
 
 export const sendPollSchema = z.object({
@@ -248,6 +252,7 @@ export const sendPollSchema = z.object({
   options: z.array(z.string()).min(2, 'At least 2 options are required'),
   selectableCount: z.number().int().min(1).optional(),
   quotedMessageId: z.string().optional(),
+  reply_to: z.string().optional(),
 });
 
 export const sendLocationSchema = z.object({
@@ -256,12 +261,14 @@ export const sendLocationSchema = z.object({
   longitude: z.number(),
   title: z.string().optional(), // Description/Address
   quotedMessageId: z.string().optional(),
+  reply_to: z.string().optional(),
 });
 
 export const sendContactSchema = z.object({
   to: z.string().min(1, 'Recipient (to) is required'),
   contactId: z.string().min(1, 'Contact ID (phone number) is required'),
   quotedMessageId: z.string().optional(),
+  reply_to: z.string().optional(),
 });
 
 export const sendReactionSchema = z.object({
