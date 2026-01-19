@@ -51,7 +51,7 @@ export async function getGroups(session: WASession): Promise<Array<{
   }
 
   const chats = await session.client.getChats();
-  const groups = chats.filter((chat) => chat.isGroup) as GroupChat[];
+  const groups = chats.filter((chat) => chat.isGroup && chat.id._serialized !== 'status@broadcast') as GroupChat[];
 
   return groups.map((group) => ({
     id: group.id._serialized,

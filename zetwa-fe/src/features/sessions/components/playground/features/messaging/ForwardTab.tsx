@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface ForwardTabProps {
   sessionId: string
@@ -15,11 +16,13 @@ interface ForwardTabProps {
 export function ForwardTab({ sessionId }: ForwardTabProps) {
   const [forwardTo, setForwardTo] = useState('')
   const [forwardMessageId, setForwardMessageId] = useState('')
+  const [response, setResponse] = useState<any>(null)
 
   const forwardMessageMutation = useMutation({
     mutationFn: () => sessionApi.forwardMessage(sessionId, { messageId: forwardMessageId, to: forwardTo }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Message forwarded successfully')
+      setResponse(data)
       setForwardMessageId('')
     },
     onError: (error: any) => {
@@ -63,6 +66,8 @@ export function ForwardTab({ sessionId }: ForwardTabProps) {
             )}
             Forward Message
           </Button>
+          
+          <ResponseDisplay data={response} />
        </div>
     </div>
 
@@ -78,6 +83,25 @@ export function ForwardTab({ sessionId }: ForwardTabProps) {
         { name: "messageId", type: "string", required: true, description: "The ID of the message to forward" },
         { name: "to", type: "string", required: true, description: "Recipient's phone number or chat ID" }
       ]}
+      responseExample={{
+        "id": {
+          "fromMe": true,
+          "remote": "6281234567890@c.us",
+          "id": "3EB0...",
+          "_serialized": "true_6281234567890@c.us_3EB0..."
+        },
+        "ack": 0,
+        "hasMedia": false,
+        "body": "Forwarded message",
+        "type": "chat",
+        "timestamp": 1705641234,
+        "from": "6289876543210@c.us",
+        "to": "6281234567890@c.us",
+        "deviceType": "android",
+        "isForwarded": true,
+        "forwardingScore": 1
+      }}
+      responseDescription="Returns the forwarded message object."
     />
   </div>
   )

@@ -195,6 +195,24 @@ export const sessionApi = {
     return response.data.data
   },
 
+  getGroupsCount: async (sessionId: string): Promise<{ count: number }> => {
+    // Note: This endpoint might not exist in backend yet, using getGroups length as fallback if needed
+    // or assume backend will implement it. For now, matching WAHA signature.
+    try {
+        const response = await api.get(`/sessions/${sessionId}/groups/count`)
+        return response.data
+    } catch (e) {
+        const groups = await sessionApi.getGroups(sessionId);
+        return { count: groups.length }
+    }
+  },
+
+  refreshGroups: async (sessionId: string): Promise<{ success: boolean }> => {
+     // Note: This endpoint might not exist in backend yet.
+    const response = await api.post(`/sessions/${sessionId}/groups/refresh`)
+    return response.data
+  },
+
   getGroupInviteCode: async (sessionId: string, groupId: string): Promise<string> => {
     const response = await api.get(`/sessions/${sessionId}/groups/${groupId}/invite-code`)
     return response.data.data.code
@@ -210,14 +228,102 @@ export const sessionApi = {
     return response.data.data.groupId
   },
 
+  joinInfoGroup: async (sessionId: string, code: string): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/groups/join-info`, { params: { code } })
+    return response.data
+  },
+
   getGroup: async (sessionId: string, groupId: string): Promise<any> => {
     const response = await api.get<ApiResponse<any>>(`/sessions/${sessionId}/groups/${groupId}`)
     return response.data.data
   },
 
+  deleteGroup: async (sessionId: string, groupId: string): Promise<void> => {
+    await api.delete(`/sessions/${sessionId}/groups/${groupId}`)
+  },
+
+  leaveGroup: async (sessionId: string, groupId: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/groups/${groupId}/leave`)
+  },
+
   createGroup: async (sessionId: string, data: { name: string; participants: string[] }): Promise<any> => {
     const response = await api.post<ApiResponse<any>>(`/sessions/${sessionId}/groups`, data)
     return response.data.data
+  },
+
+  setDescription: async (sessionId: string, groupId: string, description: string): Promise<any> => {
+      // Using PATCH /groups/:id which handles updates in current BE
+      const response = await api.patch(`/sessions/${sessionId}/groups/${groupId}`, { description })
+      return response.data
+  },
+
+  setSubject: async (sessionId: string, groupId: string, subject: string): Promise<any> => {
+      // Using PATCH /groups/:id which handles updates in current BE
+      const response = await api.patch(`/sessions/${sessionId}/groups/${groupId}`, { name: subject })
+      return response.data
+  },
+
+  setInfoAdminsOnly: async (sessionId: string, groupId: string, adminsOnly: boolean): Promise<any> => {
+      // Using PATCH /groups/:id/settings
+      // Note: mapping 'adminsOnly' to 'restrict' (usually restrict=true means only admins can edit info)
+      const response = await api.patch(`/sessions/${sessionId}/groups/${groupId}/settings`, { restrict: adminsOnly })
+      return response.data
+  },
+
+  setMessagesAdminsOnly: async (sessionId: string, groupId: string, adminsOnly: boolean): Promise<any> => {
+      // Using PATCH /groups/:id/settings
+      // Note: mapping 'adminsOnly' to 'announce' (announce=true means only admins can send messages)
+      const response = await api.patch(`/sessions/${sessionId}/groups/${groupId}/settings`, { announce: adminsOnly })
+      return response.data
+  },
+
+  getChatPicture: async (sessionId: string, groupId: string): Promise<{ url: string }> => {
+      // Missing in BE specific to groups, but usually /contacts/:id/profile-picture works for groups too if treated as contacts
+      // Or trying /groups/:id/picture if implemented
+      try {
+        const response = await api.get(`/sessions/${sessionId}/groups/${groupId}/picture`)
+        return response.data
+      } catch (e) {
+         // Fallback to contact picture
+         const url = await sessionApi.getContactProfilePicture(sessionId, groupId);
+         return { url: url || '' }
+      }
+  },
+
+  setPicture: async (sessionId: string, groupId: string, data: { imageUrl?: string; imageBase64?: string }): Promise<any> => {
+      const response = await api.patch(`/sessions/${sessionId}/groups/${groupId}/picture`, data)
+      return response.data
+  },
+
+  deletePicture: async (sessionId: string, groupId: string): Promise<any> => {
+       // Missing in BE, attempting delete on picture endpoint
+       const response = await api.delete(`/sessions/${sessionId}/groups/${groupId}/picture`)
+       return response.data
+  },
+
+  getParticipants: async (sessionId: string, groupId: string): Promise<any[]> => {
+      const response = await api.get(`/sessions/${sessionId}/groups/${groupId}/participants`)
+      return response.data.data
+  },
+
+  addParticipants: async (sessionId: string, groupId: string, participants: string[]): Promise<any> => {
+      const response = await api.post(`/sessions/${sessionId}/groups/${groupId}/participants/add`, { participants })
+      return response.data
+  },
+
+  removeParticipants: async (sessionId: string, groupId: string, participants: string[]): Promise<any> => {
+      const response = await api.post(`/sessions/${sessionId}/groups/${groupId}/participants/remove`, { participants })
+      return response.data
+  },
+
+  promoteToAdmin: async (sessionId: string, groupId: string, participants: string[]): Promise<any> => {
+      const response = await api.post(`/sessions/${sessionId}/groups/${groupId}/participants/promote`, { participants })
+      return response.data
+  },
+
+  demoteToAdmin: async (sessionId: string, groupId: string, participants: string[]): Promise<any> => {
+      const response = await api.post(`/sessions/${sessionId}/groups/${groupId}/participants/demote`, { participants })
+      return response.data
   },
 
   // Chat Actions

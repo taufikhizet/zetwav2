@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card'
 import { PlaygroundSidebar } from './PlaygroundSidebar'
 import { MessagingCard } from './features/MessagingCard'
 import { GroupsCard } from './features/GroupsCard'
+import { TestGroupsCard } from './features/TestGroupsCard'
 import { SystemCard } from './features/SystemCard'
 import { ContactsCard } from './features/ContactsCard'
 import { ChatsCard } from './features/ChatsCard'
@@ -76,6 +77,7 @@ export function SessionPlaygroundTab({ sessionId, isOnline }: SessionPlaygroundT
             {activeFeature === 'chats' && <ChatsCard sessionId={sessionId} />}
             {activeFeature === 'contacts' && <ContactsCard sessionId={sessionId} />}
             {activeFeature === 'groups' && <GroupsCard sessionId={sessionId} />}
+            {activeFeature === 'test-groups' && <TestGroupsCard sessionId={sessionId} />}
             {activeFeature === 'labels' && <LabelsCard sessionId={sessionId} />}
             {activeFeature === 'status' && <StatusCard sessionId={sessionId} />}
             {activeFeature === 'system' && <SystemCard sessionId={sessionId} />}

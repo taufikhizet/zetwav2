@@ -181,6 +181,15 @@ export function StatusCard({ sessionId }: StatusCardProps) {
                   method="GET" 
                   url={`/api/sessions/${sessionId}/status/contact/${viewingContactList.contactId}`}
                   description={`Get status updates specifically for ${viewingContactList.name || viewingContactList.contactId}.`}
+                  responseExample={[
+                    {
+                      "id": "false_1203...@g.us_3EB...",
+                      "body": "My status",
+                      "type": "text",
+                      "timestamp": 1705641234
+                    }
+                  ]}
+                  responseDescription="Returns a list of status messages."
                 />
             </div>
           ) : (
@@ -252,6 +261,14 @@ export function StatusCard({ sessionId }: StatusCardProps) {
             method="GET" 
             url={`/api/sessions/${sessionId}/status/contacts`}
             description="Get status updates from your contacts."
+            responseExample={[
+              {
+                "contactId": "628123...@c.us",
+                "name": "John Doe",
+                "statuses": []
+              }
+            ]}
+            responseDescription="Returns a list of contacts with their status updates."
           />
           </>
           )}
@@ -304,6 +321,11 @@ export function StatusCard({ sessionId }: StatusCardProps) {
             url={`/api/sessions/${sessionId}/status/text`}
             body={{ text: "Hello World", backgroundColor: "#000000" }}
             description="Post a text status."
+            responseExample={{
+              "success": true,
+              "message": "Status posted"
+            }}
+            responseDescription="Returns confirmation."
           />
         </TabsContent>
 
@@ -344,6 +366,11 @@ export function StatusCard({ sessionId }: StatusCardProps) {
                 url={`/api/sessions/${sessionId}/status/media`}
                 body={{ mediaUrl: "https://...", caption: "Check this out!" }}
                 description="Post a media status."
+                responseExample={{
+                  "success": true,
+                  "message": "Status posted"
+                }}
+                responseDescription="Returns confirmation."
             />
         </TabsContent>
       </Tabs>

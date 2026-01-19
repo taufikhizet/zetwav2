@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface LocationTabProps {
   sessionId: string
@@ -19,6 +20,7 @@ export function LocationTab({ sessionId }: LocationTabProps) {
   const [locationDesc, setLocationDesc] = useState('')
   const [locationUrl, setLocationUrl] = useState('')
   const [replyTo, setReplyTo] = useState('')
+  const [response, setResponse] = useState<any>(null)
 
   const sendLocationMutation = useMutation({
     mutationFn: () => sessionApi.sendLocation(sessionId, {
@@ -30,8 +32,9 @@ export function LocationTab({ sessionId }: LocationTabProps) {
       url: locationUrl,
       reply_to: replyTo || undefined
     }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Location sent successfully')
+      setResponse(data)
       setReplyTo('')
     },
     onError: (error: any) => {
@@ -114,6 +117,8 @@ export function LocationTab({ sessionId }: LocationTabProps) {
               )}
               Send Location
             </Button>
+            
+            <ResponseDisplay data={response} />
          </div>
       </div>
 
@@ -137,6 +142,39 @@ export function LocationTab({ sessionId }: LocationTabProps) {
           { name: "url", type: "string | null", required: false, description: "URL associated with the location (optional, default: null)" },
           { name: "reply_to", type: "string | null", required: false, description: "ID of the message to reply to (optional, default: null)" }
         ]}
+        responseExample={{
+          "id": {
+            "fromMe": true,
+            "remote": "6281234567890@c.us",
+            "id": "3EB0...",
+            "_serialized": "true_6281234567890@c.us_3EB0..."
+          },
+          "ack": 0,
+          "hasMedia": false,
+          "body": "My Current Location",
+          "type": "location",
+          "timestamp": 1705641234,
+          "from": "6289876543210@c.us",
+          "to": "6281234567890@c.us",
+          "deviceType": "android",
+          "isForwarded": false,
+          "forwardingScore": 0,
+          "isStatus": false,
+          "isStarred": false,
+          "broadcast": false,
+          "fromMe": true,
+          "hasQuotedMsg": false,
+          "location": {
+            "latitude": -6.2,
+            "longitude": 106.8,
+            "description": "My Current Location"
+          },
+          "vCards": [],
+          "mentionedIds": [],
+          "isGif": false,
+          "links": []
+        }}
+        responseDescription="Returns the location message object that was sent."
       />
     </div>
   )

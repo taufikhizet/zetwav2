@@ -244,6 +244,16 @@ export function ContactsCard({ sessionId }: ContactsCardProps) {
             method="GET" 
             url={`/api/sessions/${sessionId}/contacts`}
             description="Get all contacts from the database."
+            responseExample={[
+              {
+                "id": { "_serialized": "628123...@c.us" },
+                "number": "628123...",
+                "name": "John Doe",
+                "isBusiness": false,
+                "isBlocked": false
+              }
+            ]}
+            responseDescription="Returns a list of contact objects."
           />
         </TabsContent>
 
@@ -312,6 +322,11 @@ export function ContactsCard({ sessionId }: ContactsCardProps) {
             method="GET" 
             url={`/api/sessions/${sessionId}/check-number/${checkNumber || '{number}'}`}
             description="Verify if a phone number is registered on WhatsApp."
+            responseExample={{
+              "numberExists": true,
+              "id": { "_serialized": "628123...@c.us" }
+            }}
+            responseDescription="Returns the registration status."
           />
         </TabsContent>
 
@@ -352,6 +367,12 @@ export function ContactsCard({ sessionId }: ContactsCardProps) {
             method="GET" 
             url={`/api/sessions/${sessionId}/me`}
             description="Get information about the authenticated account."
+            responseExample={{
+              "pushName": "My Name",
+              "id": "628123...@c.us",
+              "profilePicUrl": "https://..."
+            }}
+            responseDescription="Returns account profile information."
           />
         </TabsContent>
       </Tabs>

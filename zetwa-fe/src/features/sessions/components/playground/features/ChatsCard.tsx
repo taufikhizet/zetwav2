@@ -849,6 +849,16 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
                 method="GET" 
                 url={`/api/sessions/${sessionId}/chats`}
                 description="Get all active chats from database."
+                responseExample={[
+                  {
+                    "id": { "_serialized": "12036302...@g.us" },
+                    "name": "My Group",
+                    "isGroup": true,
+                    "timestamp": 1705641234,
+                    "unreadCount": 0
+                  }
+                ]}
+                responseDescription="Returns a list of chat objects."
               />
             </>
           )}
@@ -901,6 +911,18 @@ export function ChatsCard({ sessionId }: ChatsCardProps) {
             method="GET" 
             url={`/api/sessions/${sessionId}/messages${messageFilter !== 'all' ? `?direction=${messageFilter.toUpperCase()}` : ''}`}
             description="Get recent message history from database."
+            responseExample={{
+              "messages": [
+                {
+                  "id": { "_serialized": "true_12036302...@g.us_3EB0..." },
+                  "body": "Hello world",
+                  "fromMe": true,
+                  "timestamp": 1705641234,
+                  "type": "chat"
+                }
+              ]
+            }}
+            responseDescription="Returns a list of message objects."
           />
         </TabsContent>
       </Tabs>

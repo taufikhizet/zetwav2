@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface MediaTabProps {
   sessionId: string
@@ -17,6 +18,7 @@ export function MediaTab({ sessionId }: MediaTabProps) {
   const [mediaUrl, setMediaUrl] = useState('')
   const [mediaCaption, setMediaCaption] = useState('')
   const [replyTo, setReplyTo] = useState('')
+  const [response, setResponse] = useState<any>(null)
 
   const sendMediaMutation = useMutation({
     mutationFn: () => sessionApi.sendMedia(sessionId, { 
@@ -25,8 +27,9 @@ export function MediaTab({ sessionId }: MediaTabProps) {
       caption: mediaCaption,
       reply_to: replyTo || undefined
     }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Media sent successfully')
+      setResponse(data)
       setMediaUrl('')
       setMediaCaption('')
       setReplyTo('')
@@ -95,6 +98,8 @@ export function MediaTab({ sessionId }: MediaTabProps) {
               )}
               Send Media
             </Button>
+            
+            <ResponseDisplay data={response} />
          </div>
       </div>
 
@@ -116,6 +121,35 @@ export function MediaTab({ sessionId }: MediaTabProps) {
           { name: "mimetype", type: "string", required: false, description: "MIME type of the media (optional, auto-detected if possible)" },
           { name: "filename", type: "string", required: false, description: "Filename for the media (optional)" }
         ]}
+        responseExample={{
+          "id": {
+            "fromMe": true,
+            "remote": "6281234567890@c.us",
+            "id": "3EB0...",
+            "_serialized": "true_6281234567890@c.us_3EB0..."
+          },
+          "ack": 0,
+          "hasMedia": true,
+          "body": "",
+          "type": "image",
+          "timestamp": 1705641234,
+          "from": "6289876543210@c.us",
+          "to": "6281234567890@c.us",
+          "deviceType": "android",
+          "isForwarded": false,
+          "forwardingScore": 0,
+          "isStatus": false,
+          "isStarred": false,
+          "broadcast": false,
+          "fromMe": true,
+          "hasQuotedMsg": false,
+          "location": null,
+          "vCards": [],
+          "mentionedIds": [],
+          "isGif": false,
+          "links": []
+        }}
+        responseDescription="Returns the media message object that was sent."
       />
     </div>
   )

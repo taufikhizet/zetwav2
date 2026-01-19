@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface ReactionTabProps {
   sessionId: string
@@ -15,14 +16,16 @@ interface ReactionTabProps {
 export function ReactionTab({ sessionId }: ReactionTabProps) {
   const [reactionMsgId, setReactionMsgId] = useState('')
   const [reactionEmoji, setReactionEmoji] = useState('❤️')
+  const [response, setResponse] = useState<any>(null)
 
   const sendReactionMutation = useMutation({
     mutationFn: () => sessionApi.sendReaction(sessionId, {
       messageId: reactionMsgId,
       reaction: reactionEmoji
     }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Reaction sent successfully')
+      setResponse(data)
       setReactionMsgId('')
     },
     onError: (error: any) => {
@@ -46,6 +49,8 @@ export function ReactionTab({ sessionId }: ReactionTabProps) {
             <Button onClick={() => sendReactionMutation.mutate()} disabled={!reactionMsgId || !reactionEmoji || sendReactionMutation.isPending}>
               {sendReactionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Send Reaction'}
             </Button>
+            
+            <ResponseDisplay data={response} />
          </div>
       </div>
       
@@ -61,6 +66,8 @@ export function ReactionTab({ sessionId }: ReactionTabProps) {
           { name: "messageId", type: "string", required: true, description: "The ID of the message to react to" },
           { name: "reaction", type: "string", required: true, description: "The emoji to react with" }
         ]}
+        responseExample={null}
+        responseDescription="Returns 200 OK with no content."
       />
     </div>
   )

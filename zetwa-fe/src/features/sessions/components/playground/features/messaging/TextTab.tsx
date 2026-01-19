@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface TextTabProps {
   sessionId: string
@@ -19,6 +20,7 @@ export function TextTab({ sessionId }: TextTabProps) {
   const [textBody, setTextBody] = useState('')
   const [linkPreview, setLinkPreview] = useState(false)
   const [replyTo, setReplyTo] = useState('')
+  const [response, setResponse] = useState<any>(null)
 
   const sendTextMutation = useMutation({
     mutationFn: () => sessionApi.sendMessage(sessionId, { 
@@ -27,8 +29,9 @@ export function TextTab({ sessionId }: TextTabProps) {
       linkPreview,
       reply_to: replyTo || undefined
     }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Message sent successfully')
+      setResponse(data)
       setTextBody('')
       setReplyTo('')
     },
@@ -93,6 +96,8 @@ export function TextTab({ sessionId }: TextTabProps) {
               )}
               Send Text Message
             </Button>
+            
+            <ResponseDisplay data={response} />
          </div>
       </div>
 
@@ -114,6 +119,35 @@ export function TextTab({ sessionId }: TextTabProps) {
           { name: "reply_to", type: "string | null", required: false, description: "ID of the message to reply to (optional, default: null)" },
           { name: "mentions", type: "string[]", required: false, description: "Array of phone numbers to mention in the message" }
         ]}
+        responseExample={{
+          "id": {
+            "fromMe": true,
+            "remote": "6281234567890@c.us",
+            "id": "3EB0...",
+            "_serialized": "true_6281234567890@c.us_3EB0..."
+          },
+          "ack": 0,
+          "hasMedia": false,
+          "body": "Hello from API!",
+          "type": "chat",
+          "timestamp": 1705641234,
+          "from": "6289876543210@c.us",
+          "to": "6281234567890@c.us",
+          "deviceType": "android",
+          "isForwarded": false,
+          "forwardingScore": 0,
+          "isStatus": false,
+          "isStarred": false,
+          "broadcast": false,
+          "fromMe": true,
+          "hasQuotedMsg": false,
+          "location": undefined,
+          "vCards": [],
+          "mentionedIds": [],
+          "isGif": false,
+          "links": []
+        }}
+        responseDescription="Returns the message object that was sent."
       />
     </div>
   )

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface StartTypingTabProps {
   sessionId: string
@@ -14,10 +15,14 @@ interface StartTypingTabProps {
 
 export function StartTypingTab({ sessionId }: StartTypingTabProps) {
   const [presenceChatId, setPresenceChatId] = useState('')
+  const [response, setResponse] = useState<any>(null)
 
   const sendTypingMutation = useMutation({
     mutationFn: () => sessionApi.sendTyping(sessionId, presenceChatId),
-    onSuccess: () => toast.success('Typing indicator sent'),
+    onSuccess: (data) => {
+      toast.success('Typing indicator sent')
+      setResponse(data)
+    },
     onError: (error: any) => toast.error(error.message || 'Failed to send typing')
   })
 
@@ -35,6 +40,8 @@ export function StartTypingTab({ sessionId }: StartTypingTabProps) {
             <Button onClick={() => sendTypingMutation.mutate()} disabled={!presenceChatId || sendTypingMutation.isPending}>
               {sendTypingMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Start Typing'}
             </Button>
+            
+            <ResponseDisplay data={response} />
          </div>
       </div>
 
@@ -45,6 +52,8 @@ export function StartTypingTab({ sessionId }: StartTypingTabProps) {
           parameters={[
           { name: "chatId", type: "string", required: true, description: "The phone number or Chat ID" }
           ]}
+          responseExample={null}
+          responseDescription="Returns 200 OK with no content."
       />
     </div>
   )

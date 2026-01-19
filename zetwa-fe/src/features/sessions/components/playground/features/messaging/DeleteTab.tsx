@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface DeleteTabProps {
   sessionId: string
@@ -17,11 +18,13 @@ interface DeleteTabProps {
 export function DeleteTab({ sessionId }: DeleteTabProps) {
   const [deleteMessageId, setDeleteMessageId] = useState('')
   const [deleteForEveryone, setDeleteForEveryone] = useState(true)
+  const [response, setResponse] = useState<any>(null)
 
   const deleteMessageMutation = useMutation({
     mutationFn: () => sessionApi.deleteMessage(sessionId, deleteMessageId, deleteForEveryone),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Message deleted successfully')
+      setResponse(data)
       setDeleteMessageId('')
     },
     onError: (error: any) => {
@@ -75,6 +78,8 @@ export function DeleteTab({ sessionId }: DeleteTabProps) {
             )}
             Delete Message
           </Button>
+          
+          <ResponseDisplay data={response} />
        </div>
     </div>
 
@@ -86,6 +91,8 @@ export function DeleteTab({ sessionId }: DeleteTabProps) {
         { name: "messageId", type: "string", required: true, description: "The ID of the message to delete" },
         { name: "forEveryone", type: "boolean", required: false, description: "Whether to delete for everyone (revoke) or just for me (default: true)" }
       ]}
+      responseExample={null}
+      responseDescription="Returns 200 OK with no content."
     />
   </div>
   )

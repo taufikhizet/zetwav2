@@ -238,6 +238,15 @@ export function LabelsCard({ sessionId }: LabelsCardProps) {
             method="GET" 
             url={`/api/sessions/${sessionId}/labels`}
             description="Get all labels (WA Business only)."
+            responseExample={[
+              {
+                "id": "1",
+                "name": "New Customer",
+                "hexColor": "#A4A4A4",
+                "count": 5
+              }
+            ]}
+            responseDescription="Returns a list of labels."
           />
         </TabsContent>
       </Tabs>

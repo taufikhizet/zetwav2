@@ -34,6 +34,12 @@ export const PLAYGROUND_FEATURES = [
     description: 'Manage groups and participants',
   },
   {
+    id: 'test-groups',
+    label: 'Test Groups',
+    icon: Users,
+    description: 'Legacy Groups Implementation',
+  },
+  {
     id: 'labels',
     label: 'Labels',
     icon: Tag,
@@ -53,4 +59,4 @@ export const PLAYGROUND_FEATURES = [
   },
 ] as const
 
-export type PlaygroundFeatureId = typeof PLAYGROUND_FEATURES[number]['id']
+export type PlaygroundFeatureId = typeof PLAYGROUND_FEATURES[number]['id'] | 'test-groups'

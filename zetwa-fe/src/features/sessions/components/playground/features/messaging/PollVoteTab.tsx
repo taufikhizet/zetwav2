@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface PollVoteTabProps {
   sessionId: string
@@ -16,6 +17,7 @@ export function PollVoteTab({ sessionId }: PollVoteTabProps) {
   const [votePollId, setVotePollId] = useState('')
   const [voteOptions, setVoteOptions] = useState<string[]>([''])
   const [voteTo, setVoteTo] = useState('')
+  const [response, setResponse] = useState<any>(null)
 
   const sendPollVoteMutation = useMutation({
     mutationFn: () => sessionApi.sendPollVote(sessionId, {
@@ -23,8 +25,9 @@ export function PollVoteTab({ sessionId }: PollVoteTabProps) {
       pollMessageId: votePollId,
       selectedOptions: voteOptions.filter(o => o.trim() !== '')
     }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Poll vote sent successfully')
+      setResponse(data)
       setVotePollId('')
       setVoteOptions([''])
     },
@@ -88,6 +91,8 @@ export function PollVoteTab({ sessionId }: PollVoteTabProps) {
             >
               {sendPollVoteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Cast Vote'}
             </Button>
+            
+            <ResponseDisplay data={response} />
          </div>
       </div>
 
@@ -105,6 +110,8 @@ export function PollVoteTab({ sessionId }: PollVoteTabProps) {
           { name: "pollMessageId", type: "string", required: true, description: "ID of the poll message" },
           { name: "selectedOptions", type: "string[]", required: true, description: "Array of selected option texts" }
         ]}
+        responseExample={null}
+        responseDescription="Returns 200 OK with no content."
       />
     </div>
   )

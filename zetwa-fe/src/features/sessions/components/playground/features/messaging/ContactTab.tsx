@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface ContactTabProps {
   sessionId: string
@@ -19,6 +20,7 @@ export function ContactTab({ sessionId }: ContactTabProps) {
   const [contactOrg, setContactOrg] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [replyTo, setReplyTo] = useState('')
+  const [response, setResponse] = useState<any>(null)
 
   const sendContactMutation = useMutation({
     mutationFn: () => sessionApi.sendContact(sessionId, {
@@ -32,8 +34,9 @@ export function ContactTab({ sessionId }: ContactTabProps) {
       // @ts-ignore
       reply_to: replyTo || undefined
     }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Contact sent successfully')
+      setResponse(data)
       setContactName('')
       setContactPhone('')
       setContactOrg('')
@@ -119,6 +122,8 @@ export function ContactTab({ sessionId }: ContactTabProps) {
               )}
               Send Contact
             </Button>
+            
+            <ResponseDisplay data={response} />
          </div>
       </div>
 
@@ -144,6 +149,37 @@ export function ContactTab({ sessionId }: ContactTabProps) {
           { name: "contact.email", type: "string | null", required: false, description: "Contact's email address (optional)" },
           { name: "reply_to", type: "string | null", required: false, description: "ID of the message to reply to (optional, default: null)" }
         ]}
+        responseExample={{
+          "id": {
+            "fromMe": true,
+            "remote": "6281234567890@c.us",
+            "id": "3EB0...",
+            "_serialized": "true_6281234567890@c.us_3EB0..."
+          },
+          "ack": 0,
+          "hasMedia": false,
+          "body": "BEGIN:VCARD...",
+          "type": "vcard",
+          "timestamp": 1705641234,
+          "from": "6289876543210@c.us",
+          "to": "6281234567890@c.us",
+          "deviceType": "android",
+          "isForwarded": false,
+          "forwardingScore": 0,
+          "isStatus": false,
+          "isStarred": false,
+          "broadcast": false,
+          "fromMe": true,
+          "hasQuotedMsg": false,
+          "location": null,
+          "vCards": [
+             "BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nTEL;waid=628111222333:+62 811-1222-333\nEND:VCARD"
+          ],
+          "mentionedIds": [],
+          "isGif": false,
+          "links": []
+        }}
+        responseDescription="Returns the contact message object that was sent."
       />
     </div>
   )

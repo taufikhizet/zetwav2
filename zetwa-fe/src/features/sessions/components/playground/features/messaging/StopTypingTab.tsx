@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface StopTypingTabProps {
   sessionId: string
@@ -14,10 +15,14 @@ interface StopTypingTabProps {
 
 export function StopTypingTab({ sessionId }: StopTypingTabProps) {
   const [presenceChatId, setPresenceChatId] = useState('')
+  const [response, setResponse] = useState<any>(null)
 
   const stopTypingMutation = useMutation({
     mutationFn: () => sessionApi.stopTyping(sessionId, presenceChatId),
-    onSuccess: () => toast.success('Typing indicator stopped'),
+    onSuccess: (data) => {
+      toast.success('Typing indicator stopped')
+      setResponse(data)
+    },
     onError: (error: any) => toast.error(error.message || 'Failed to stop typing')
   })
 
@@ -35,6 +40,8 @@ export function StopTypingTab({ sessionId }: StopTypingTabProps) {
             <Button variant="outline" onClick={() => stopTypingMutation.mutate()} disabled={!presenceChatId || stopTypingMutation.isPending}>
               {stopTypingMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Stop Typing'}
             </Button>
+            
+            <ResponseDisplay data={response} />
          </div>
       </div>
 
@@ -45,6 +52,8 @@ export function StopTypingTab({ sessionId }: StopTypingTabProps) {
           parameters={[
           { name: "chatId", type: "string", required: true, description: "The phone number or Chat ID" }
           ]}
+          responseExample={null}
+          responseDescription="Returns 200 OK with no content."
       />
     </div>
   )

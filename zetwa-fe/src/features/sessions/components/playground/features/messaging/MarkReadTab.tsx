@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface MarkReadTabProps {
   sessionId: string
@@ -14,10 +15,14 @@ interface MarkReadTabProps {
 
 export function MarkReadTab({ sessionId }: MarkReadTabProps) {
   const [presenceChatId, setPresenceChatId] = useState('')
+  const [response, setResponse] = useState<any>(null)
 
   const sendSeenMutation = useMutation({
     mutationFn: () => sessionApi.markChatRead(sessionId, presenceChatId, true),
-    onSuccess: () => toast.success('Chat marked as read'),
+    onSuccess: (data) => {
+      toast.success('Chat marked as read')
+      setResponse(data)
+    },
     onError: (error: any) => toast.error(error.message || 'Failed to mark as read')
   })
 
@@ -35,6 +40,8 @@ export function MarkReadTab({ sessionId }: MarkReadTabProps) {
             <Button onClick={() => sendSeenMutation.mutate()} disabled={!presenceChatId || sendSeenMutation.isPending}>
               {sendSeenMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Mark as Read'}
             </Button>
+            
+            <ResponseDisplay data={response} />
          </div>
       </div>
 
@@ -45,6 +52,8 @@ export function MarkReadTab({ sessionId }: MarkReadTabProps) {
         parameters={[
           { name: "chatId", type: "string", required: true, description: "The phone number or Chat ID" }
         ]}
+        responseExample={null}
+        responseDescription="Returns 200 OK with no content."
       />
     </div>
   )

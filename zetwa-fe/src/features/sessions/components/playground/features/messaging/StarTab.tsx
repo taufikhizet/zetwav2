@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface StarTabProps {
   sessionId: string
@@ -16,11 +17,13 @@ interface StarTabProps {
 export function StarTab({ sessionId }: StarTabProps) {
   const [starMsgId, setStarMsgId] = useState('')
   const [isStar, setIsStar] = useState(true)
+  const [response, setResponse] = useState<any>(null)
 
   const starMessageMutation = useMutation({
     mutationFn: () => sessionApi.starMessage(sessionId, starMsgId, isStar),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success(`Message ${isStar ? 'starred' : 'unstarred'} successfully`)
+      setResponse(data)
       setStarMsgId('')
     },
     onError: (error: any) => {
@@ -44,6 +47,8 @@ export function StarTab({ sessionId }: StarTabProps) {
             <Button onClick={() => starMessageMutation.mutate()} disabled={!starMsgId || starMessageMutation.isPending}>
               {starMessageMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isStar ? 'Star Message' : 'Unstar Message')}
             </Button>
+            
+            <ResponseDisplay data={response} />
          </div>
       </div>
       
@@ -59,6 +64,8 @@ export function StarTab({ sessionId }: StarTabProps) {
           { name: "messageId", type: "string", required: true, description: "The ID of the message to star/unstar" },
           { name: "star", type: "boolean", required: true, description: "True to star, false to unstar" }
         ]}
+        responseExample={null}
+        responseDescription="Returns 200 OK with no content."
       />
     </div>
   )

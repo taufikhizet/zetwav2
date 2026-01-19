@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { sessionApi } from '@/features/sessions/api/session.api'
 import { ApiExample } from '../../ApiExample'
+import { ResponseDisplay } from '../../ResponseDisplay'
 
 interface PollTabProps {
   sessionId: string
@@ -20,6 +21,7 @@ export function PollTab({ sessionId }: PollTabProps) {
   const [pollOptions, setPollOptions] = useState(['', ''])
   const [pollMultiple, setPollMultiple] = useState(false)
   const [replyTo, setReplyTo] = useState('')
+  const [response, setResponse] = useState<any>(null)
 
   const sendPollMutation = useMutation({
     mutationFn: () => sessionApi.sendPoll(sessionId, {
@@ -30,8 +32,9 @@ export function PollTab({ sessionId }: PollTabProps) {
       // @ts-ignore
       reply_to: replyTo || undefined
     }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Poll sent successfully')
+      setResponse(data)
       setPollName('')
       setPollOptions(['', ''])
       setReplyTo('')
@@ -128,6 +131,8 @@ export function PollTab({ sessionId }: PollTabProps) {
               )}
               Send Poll
             </Button>
+            
+            <ResponseDisplay data={response} />
          </div>
       </div>
 
@@ -150,6 +155,35 @@ export function PollTab({ sessionId }: PollTabProps) {
           { name: "selectableCount", type: "number", required: false, description: "Number of selectable options (overrides multipleAnswers)" },
           { name: "reply_to", type: "string | null", required: false, description: "ID of the message to reply to (optional)" }
         ]}
+        responseExample={{
+          "id": {
+            "fromMe": true,
+            "remote": "6281234567890@c.us",
+            "id": "3EB0...",
+            "_serialized": "true_6281234567890@c.us_3EB0..."
+          },
+          "ack": 0,
+          "hasMedia": false,
+          "body": "POLL: What is your favorite color?",
+          "type": "poll_creation",
+          "timestamp": 1705641234,
+          "from": "6289876543210@c.us",
+          "to": "6281234567890@c.us",
+          "deviceType": "android",
+          "isForwarded": false,
+          "forwardingScore": 0,
+          "isStatus": false,
+          "isStarred": false,
+          "broadcast": false,
+          "fromMe": true,
+          "hasQuotedMsg": false,
+          "location": null,
+          "vCards": [],
+          "mentionedIds": [],
+          "isGif": false,
+          "links": []
+        }}
+        responseDescription="Returns the poll message object that was sent."
       />
     </div>
   )

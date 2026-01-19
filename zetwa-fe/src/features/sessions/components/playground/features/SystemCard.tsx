@@ -130,6 +130,11 @@ export function SystemCard({ sessionId }: SystemCardProps) {
                   url={`/api/sessions/${sessionId}/presence`}
                   body={{ presence }}
                   description="Force set the online/offline status of the session."
+                  responseExample={{
+                    "success": true,
+                    "message": "Presence set"
+                  }}
+                  responseDescription="Returns confirmation."
                 />
              </div>
            </div>
@@ -184,6 +189,11 @@ export function SystemCard({ sessionId }: SystemCardProps) {
                   method="GET" 
                   url={`/api/sessions/${sessionId}/presence/${checkPresenceId || '{contactId}'}`}
                   description="Get the current presence status of a contact."
+                  responseExample={{
+                    "id": { "_serialized": "628123...@c.us" },
+                    "status": "available"
+                  }}
+                  responseDescription="Returns the presence status object."
                 />
              </div>
            </div>
@@ -237,6 +247,11 @@ export function SystemCard({ sessionId }: SystemCardProps) {
                   url={`/api/sessions/${sessionId}/presence/subscribe`}
                   body={{ contactId: subscribeTo || "6281234567890" }}
                   description="Subscribe to realtime presence updates for a contact."
+                  responseExample={{
+                    "success": true,
+                    "message": "Subscribed"
+                  }}
+                  responseDescription="Returns confirmation."
                 />
              </div>
           </div>

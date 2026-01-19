@@ -25,9 +25,11 @@ interface ApiExampleProps {
   body?: Record<string, any>
   description?: string
   parameters?: ApiParameter[]
+  responseExample?: Record<string, any> | any[] | null
+  responseDescription?: string
 }
 
-export function ApiExample({ method, url, body, description, parameters }: ApiExampleProps) {
+export function ApiExample({ method, url, body, description, parameters, responseExample, responseDescription }: ApiExampleProps) {
   const [copied, setCopied] = useState(false)
 
   const getCurlCommand = () => {
@@ -80,6 +82,31 @@ export function ApiExample({ method, url, body, description, parameters }: ApiEx
             </div>
           </div>
         </div>
+
+        {/* Response Example Section */}
+        {(responseExample !== undefined || responseDescription) && (
+          <div className="space-y-3">
+            <div className="text-sm font-medium flex items-center gap-2">
+              <Code2 className="h-4 w-4 text-muted-foreground" />
+              Response Example
+            </div>
+            {responseDescription && (
+              <p className="text-xs text-muted-foreground">{responseDescription}</p>
+            )}
+            {responseExample !== undefined && (
+              <div className="rounded-lg border bg-muted/40 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2 bg-muted/60 border-b">
+                  <span className="text-xs font-mono text-muted-foreground">JSON</span>
+                </div>
+                <div className="p-4 overflow-x-auto">
+                  <pre className="text-xs font-mono text-foreground whitespace-pre">
+                    {JSON.stringify(responseExample, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Parameters Section - Not in a card, just a table */}
         {parameters && parameters.length > 0 && (
