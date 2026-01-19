@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { sessionApi } from '@/features/sessions/api/session.api'
+import { ApiExample } from '../../ApiExample'
 
 interface DeleteTabProps {
   sessionId: string
@@ -29,6 +30,7 @@ export function DeleteTab({ sessionId }: DeleteTabProps) {
   })
 
   return (
+    <div className="space-y-6">
     <div className="rounded-xl border bg-card p-6 shadow-sm">
        <div className="grid gap-6">
           <Alert variant="destructive">
@@ -75,5 +77,16 @@ export function DeleteTab({ sessionId }: DeleteTabProps) {
           </Button>
        </div>
     </div>
+
+    <ApiExample 
+      method="DELETE" 
+      url={`/api/sessions/${sessionId}/messages/{messageId}`}
+      description="Delete a message."
+      parameters={[
+        { name: "messageId", type: "string", required: true, description: "The ID of the message to delete" },
+        { name: "forEveryone", type: "boolean", required: false, description: "Whether to delete for everyone (revoke) or just for me (default: true)" }
+      ]}
+    />
+  </div>
   )
 }

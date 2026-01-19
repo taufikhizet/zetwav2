@@ -1,10 +1,10 @@
 /**
  * Interactive Message Functions
- * Polls, Locations, Contacts, Buttons, Lists
+ * Polls, Locations, Contacts
  */
 
 import { Message, Location, Poll } from 'whatsapp-web.js';
-import type { WASession, ContactInfo, MessageButton, ListSection } from '../types.js';
+import type { WASession, ContactInfo } from '../types.js';
 import { SessionNotConnectedError } from '../../../utils/errors.js';
 import { logger } from '../../../utils/logger.js';
 import { formatChatId } from './core.js';
@@ -168,77 +168,6 @@ export async function sendContactInfo(
   const result = await session.client.sendMessage(chatId, vcard, sendOptions);
   
   logger.info({ sessionId: session.sessionId, to: chatId }, 'Contact info sent');
-
-  return result;
-}
-
-/**
- * Send buttons message (fallback to text)
- */
-export async function sendButtons(
-  session: WASession,
-  to: string,
-  body: string,
-  buttons: MessageButton[],
-  title?: string,
-  footer?: string
-): Promise<Message> {
-  if (session.status !== 'CONNECTED') {
-    throw new SessionNotConnectedError(session.sessionId);
-  }
-
-  const chatId = formatChatId(to);
-  
-  // Note: Buttons may not work due to WhatsApp restrictions
-  // Send as text message with buttons info as fallback
-  const buttonText = buttons.map((b, i) => `${i + 1}. ${b.text}`).join('\n');
-  const fullMessage = `${title ? `*${title}*\n\n` : ''}${body}\n\n${buttonText}${footer ? `\n\n_${footer}_` : ''}`;
-
-  const result = await session.client.sendMessage(chatId, fullMessage);
-  
-  logger.info({ sessionId: session.sessionId, to: chatId }, 'Buttons message sent (as text fallback)');
-
-  return result;
-}
-
-/**
- * Send list message (fallback to text)
- */
-export async function sendList(
-  session: WASession,
-  to: string,
-  body: string,
-  buttonText: string,
-  sections: ListSection[],
-  title?: string,
-  footer?: string
-): Promise<Message> {
-  if (session.status !== 'CONNECTED') {
-    throw new SessionNotConnectedError(session.sessionId);
-  }
-
-  const chatId = formatChatId(to);
-  
-  // Note: List messages may not work due to WhatsApp restrictions
-  // Send as text message with list info as fallback
-  let listText = title ? `*${title}*\n\n` : '';
-  listText += `${body}\n\n`;
-  
-  for (const section of sections) {
-    listText += `*${section.title}*\n`;
-    for (const row of section.rows) {
-      listText += `• ${row.title}${row.description ? ` - ${row.description}` : ''}\n`;
-    }
-    listText += '\n';
-  }
-  
-  if (footer) {
-    listText += `_${footer}_`;
-  }
-
-  const result = await session.client.sendMessage(chatId, listText);
-  
-  logger.info({ sessionId: session.sessionId, to: chatId }, 'List message sent (as text fallback)');
 
   return result;
 }

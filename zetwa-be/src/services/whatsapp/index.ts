@@ -23,8 +23,6 @@ import type {
   GroupSettings,
   LabelUpdate,
   ContactInfo,
-  MessageButton,
-  ListSection,
 } from './types.js';
 import { TypedEventEmitter as EventEmitterClass } from './types.js';
 
@@ -647,14 +645,6 @@ export class WhatsAppService {
 
   async sendPollVote(sessionId: string, to: string, pollMessageId: string, selectedOptions: string[]) {
     return messaging.sendPollVote(this.getSessionSafe(sessionId), to, pollMessageId, selectedOptions);
-  }
-
-  async sendButtons(sessionId: string, to: string, body: string, buttons: MessageButton[], title?: string, footer?: string) {
-    return messaging.sendButtons(this.getSessionSafe(sessionId), to, body, buttons, title, footer);
-  }
-
-  async sendList(sessionId: string, to: string, body: string, buttonText: string, sections: ListSection[], title?: string, footer?: string) {
-    return messaging.sendList(this.getSessionSafe(sessionId), to, body, buttonText, sections, title, footer);
   }
 
   async forwardMessage(sessionId: string, messageId: string, to: string) {

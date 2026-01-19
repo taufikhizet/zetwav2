@@ -42,39 +42,6 @@ export const sendPollSchema = z.object({
   reply_to: z.string().nullable().optional(),
 });
 
-// Send buttons schema (may not work due to WhatsApp restrictions)
-export const sendButtonsSchema = z.object({
-  to: z.string().min(1, 'Recipient is required'),
-  body: z.string().min(1, 'Body is required'),
-  buttons: z.array(z.object({
-    id: z.string().min(1),
-    text: z.string().min(1).max(20),
-  })).min(1).max(3),
-  title: z.string().max(60).nullable().optional(),
-  footer: z.string().max(60).nullable().optional(),
-  quotedMessageId: z.string().nullable().optional(),
-  reply_to: z.string().nullable().optional(),
-});
-
-// Send list schema (may not work due to WhatsApp restrictions)
-export const sendListSchema = z.object({
-  to: z.string().min(1, 'Recipient is required'),
-  body: z.string().min(1, 'Body is required'),
-  buttonText: z.string().min(1, 'Button text is required').max(20),
-  sections: z.array(z.object({
-    title: z.string().min(1).max(24),
-    rows: z.array(z.object({
-      id: z.string().min(1),
-      title: z.string().min(1).max(24),
-      description: z.string().max(72).nullable().optional(),
-    })).min(1).max(10),
-  })).min(1).max(10),
-  title: z.string().max(60).nullable().optional(),
-  footer: z.string().max(60).nullable().optional(),
-  quotedMessageId: z.string().nullable().optional(),
-  reply_to: z.string().nullable().optional(),
-});
-
 // Forward message schema
 export const forwardMessageSchema = z.object({
   messageId: z.string().min(1, 'Message ID is required'),
@@ -111,8 +78,6 @@ export type SendLocationInput = z.infer<typeof sendLocationSchema>;
 export type SendContactInput = z.infer<typeof sendContactSchema>;
 export type SendPollInput = z.infer<typeof sendPollSchema>;
 export type SendPollVoteInput = z.infer<typeof sendPollVoteSchema>;
-export type SendButtonsInput = z.infer<typeof sendButtonsSchema>;
-export type SendListInput = z.infer<typeof sendListSchema>;
 export type ForwardMessageInput = z.infer<typeof forwardMessageSchema>;
 export type MessageActionInput = z.infer<typeof messageActionSchema>;
 export type EditMessageInput = z.infer<typeof editMessageSchema>;

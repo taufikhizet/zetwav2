@@ -10,10 +10,11 @@ import { LocationTab } from './messaging/LocationTab'
 import { ContactTab } from './messaging/ContactTab'
 import { PollTab } from './messaging/PollTab'
 import { PollVoteTab } from './messaging/PollVoteTab'
-import { ButtonsTab } from './messaging/ButtonsTab'
-import { ListTab } from './messaging/ListTab'
 import { ReactionTab } from './messaging/ReactionTab'
-import { PresenceTab } from './messaging/PresenceTab'
+import { StarTab } from './messaging/StarTab'
+import { StartTypingTab } from './messaging/StartTypingTab'
+import { StopTypingTab } from './messaging/StopTypingTab'
+import { MarkReadTab } from './messaging/MarkReadTab'
 import { ForwardTab } from './messaging/ForwardTab'
 import { DeleteTab } from './messaging/DeleteTab'
 
@@ -49,10 +50,11 @@ export function MessagingCard({ sessionId }: MessagingCardProps) {
             <TabsTrigger value="contact" className="flex-1 min-w-[70px]">Contact</TabsTrigger>
             <TabsTrigger value="poll" className="flex-1 min-w-[70px]">Poll</TabsTrigger>
             <TabsTrigger value="vote" className="flex-1 min-w-[70px]">Vote</TabsTrigger>
-            <TabsTrigger value="buttons" className="flex-1 min-w-[70px]">Buttons</TabsTrigger>
-            <TabsTrigger value="list" className="flex-1 min-w-[70px]">List</TabsTrigger>
             <TabsTrigger value="reaction" className="flex-1 min-w-[70px]">Reaction</TabsTrigger>
-            <TabsTrigger value="presence" className="flex-1 min-w-[70px]">Presence</TabsTrigger>
+            <TabsTrigger value="star" className="flex-1 min-w-[70px]">Star</TabsTrigger>
+            <TabsTrigger value="start-typing" className="flex-1 min-w-[90px]">Start Typing</TabsTrigger>
+            <TabsTrigger value="stop-typing" className="flex-1 min-w-[90px]">Stop Typing</TabsTrigger>
+            <TabsTrigger value="mark-read" className="flex-1 min-w-[70px]">Mark Read</TabsTrigger>
             <TabsTrigger value="forward" className="flex-1 min-w-[70px]">Forward</TabsTrigger>
             <TabsTrigger value="delete" className="flex-1 min-w-[70px]">Delete</TabsTrigger>
           </TabsList>
@@ -69,27 +71,32 @@ export function MessagingCard({ sessionId }: MessagingCardProps) {
               <MediaTab sessionId={sessionId} />
             </TabsContent>
 
-            {/* BUTTONS TAB */}
-            <TabsContent value="buttons" className="mt-0 space-y-6">
-              <ButtonsTab sessionId={sessionId} />
-            </TabsContent>
-
-            {/* LIST TAB */}
-            <TabsContent value="list" className="mt-0 space-y-6">
-              <ListTab sessionId={sessionId} />
-            </TabsContent>
-
-            {/* REACTION & STAR TAB */}
+            {/* REACTION TAB */}
             <TabsContent value="reaction" className="mt-0 space-y-6">
               <ReactionTab sessionId={sessionId} />
             </TabsContent>
 
-            {/* PRESENCE TAB */}
-            <TabsContent value="presence" className="mt-0 space-y-6">
-              <PresenceTab sessionId={sessionId} />
+            {/* STAR TAB */}
+            <TabsContent value="star" className="mt-0 space-y-6">
+              <StarTab sessionId={sessionId} />
             </TabsContent>
 
-            {/* LOCATION TAB */}
+            {/* START TYPING TAB */}
+            <TabsContent value="start-typing" className="mt-0 space-y-6">
+              <StartTypingTab sessionId={sessionId} />
+            </TabsContent>
+
+            {/* STOP TYPING TAB */}
+            <TabsContent value="stop-typing" className="mt-0 space-y-6">
+              <StopTypingTab sessionId={sessionId} />
+            </TabsContent>
+
+            {/* MARK READ TAB */}
+            <TabsContent value="mark-read" className="mt-0 space-y-6">
+              <MarkReadTab sessionId={sessionId} />
+            </TabsContent>
+
+            {/* FORWARD TAB */}
             <TabsContent value="location" className="mt-0 space-y-6">
               <LocationTab sessionId={sessionId} />
             </TabsContent>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { sessionApi } from '@/features/sessions/api/session.api'
+import { ApiExample } from '../../ApiExample'
 
 interface ForwardTabProps {
   sessionId: string
@@ -27,6 +28,7 @@ export function ForwardTab({ sessionId }: ForwardTabProps) {
   })
 
   return (
+    <div className="space-y-6">
     <div className="rounded-xl border bg-card p-6 shadow-sm">
        <div className="grid gap-6">
           <div className="grid gap-2">
@@ -63,5 +65,20 @@ export function ForwardTab({ sessionId }: ForwardTabProps) {
           </Button>
        </div>
     </div>
+
+    <ApiExample 
+      method="POST" 
+      url={`/api/sessions/${sessionId}/messages/forward`}
+      body={{
+        messageId: forwardMessageId || "false_1234567890@c.us_3EB0...",
+        to: forwardTo || "6281234567890"
+      }}
+      description="Forward a message to another chat."
+      parameters={[
+        { name: "messageId", type: "string", required: true, description: "The ID of the message to forward" },
+        { name: "to", type: "string", required: true, description: "Recipient's phone number or chat ID" }
+      ]}
+    />
+  </div>
   )
 }

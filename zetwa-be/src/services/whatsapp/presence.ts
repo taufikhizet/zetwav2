@@ -6,6 +6,7 @@
 import type { WASession } from './types.js';
 import { SessionNotConnectedError, BadRequestError } from '../../utils/errors.js';
 import { logger } from '../../utils/logger.js';
+import { formatChatId } from './messaging/core.js';
 
 /**
  * Set presence status
@@ -24,7 +25,8 @@ export async function setPresence(
       throw new BadRequestError('chatId is required for composing/recording presence');
     }
     
-    const chat = await session.client.getChatById(chatId);
+    const formattedChatId = formatChatId(chatId);
+    const chat = await session.client.getChatById(formattedChatId);
     
     if (presence === 'composing') {
       await chat.sendStateTyping();
@@ -36,7 +38,8 @@ export async function setPresence(
   } else if (presence === 'unavailable') {
     await session.client.sendPresenceUnavailable();
   } else if (presence === 'paused' && chatId) {
-    const chat = await session.client.getChatById(chatId);
+    const formattedChatId = formatChatId(chatId);
+    const chat = await session.client.getChatById(formattedChatId);
     await chat.clearState();
   }
 
@@ -91,7 +94,8 @@ export async function sendTyping(session: WASession, chatId: string, typing: boo
     throw new SessionNotConnectedError(session.sessionId);
   }
 
-  const chat = await session.client.getChatById(chatId);
+  const formattedChatId = formatChatId(chatId);
+  const chat = await session.client.getChatById(formattedChatId);
   
   if (typing) {
     await chat.sendStateTyping();
@@ -108,7 +112,8 @@ export async function sendRecording(session: WASession, chatId: string, recordin
     throw new SessionNotConnectedError(session.sessionId);
   }
 
-  const chat = await session.client.getChatById(chatId);
+  const formattedChatId = formatChatId(chatId);
+  const chat = await session.client.getChatById(formattedChatId);
   
   if (recording) {
     await chat.sendStateRecording();
@@ -125,7 +130,8 @@ export async function markSeen(session: WASession, chatId: string): Promise<void
     throw new SessionNotConnectedError(session.sessionId);
   }
 
-  const chat = await session.client.getChatById(chatId);
+  const formattedChatId = formatChatId(chatId);
+  const chat = await session.client.getChatById(formattedChatId);
   await chat.sendSeen();
   
   logger.debug({ sessionId: session.sessionId, chatId }, 'Chat marked as seen');

@@ -117,26 +117,6 @@ export interface ContactInfo {
 }
 
 /**
- * Button definition for interactive messages
- */
-export interface MessageButton {
-  id: string;
-  text: string;
-}
-
-/**
- * List section for list messages
- */
-export interface ListSection {
-  title: string;
-  rows: Array<{
-    id: string;
-    title: string;
-    description?: string;
-  }>;
-}
-
-/**
  * Label update options
  */
 export interface LabelUpdate {

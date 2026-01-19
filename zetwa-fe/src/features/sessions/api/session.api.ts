@@ -267,16 +267,6 @@ export const sessionApi = {
     return response.data
   },
 
-  sendButtons: async (sessionId: string, data: { to: string; body: string; buttons: { id: string; text: string }[]; title?: string; footer?: string; reply_to?: string }): Promise<any> => {
-    const response = await api.post(`/sessions/${sessionId}/messages/send-buttons`, data)
-    return response.data
-  },
-
-  sendList: async (sessionId: string, data: { to: string; body: string; buttonText: string; sections: { title: string; rows: { id: string; title: string; description?: string }[] }[]; title?: string; footer?: string; reply_to?: string }): Promise<any> => {
-    const response = await api.post(`/sessions/${sessionId}/messages/send-list`, data)
-    return response.data
-  },
-
   sendReaction: async (sessionId: string, data: { messageId: string; reaction: string }): Promise<any> => {
     const response = await api.post(`/sessions/${sessionId}/messages/reaction`, data)
     return response.data

@@ -10,8 +10,6 @@ import {
   sendLocationSchema,
   sendContactSchema,
   sendPollSchema,
-  sendButtonsSchema,
-  sendListSchema,
   forwardMessageSchema,
   messageActionSchema,
   editMessageSchema,
@@ -258,93 +256,6 @@ router.post(
       res.json({
         success: true,
         message: 'Poll vote sent successfully',
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-/**
- * @route POST /api/sessions/:sessionId/messages/send-buttons
- * @desc Send a message with buttons (may not work due to WhatsApp restrictions)
- * @scope messages:send
- */
-router.post(
-  '/send-buttons',
-  requireScope('messages:send'),
-  messageLimiter,
-  validateBody(sendButtonsSchema),
-  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
-    try {
-      await sessionService.getById(req.userId!, req.params.sessionId);
-
-      const { to, body, buttons, title, footer, quotedMessageId, reply_to } = req.body;
-      const finalQuotedMessageId = quotedMessageId || reply_to || undefined;
-
-      const result = await whatsappService.sendButtons(
-        req.params.sessionId,
-        to,
-        body,
-        buttons,
-        title || undefined,
-        footer || undefined,
-        // @ts-ignore - Check if service supports options
-        { quotedMessageId: finalQuotedMessageId }
-      );
-
-      res.json({
-        success: true,
-        message: 'Buttons message sent',
-        data: {
-          messageId: result.id._serialized,
-          to: result.to,
-          timestamp: result.timestamp,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-/**
- * @route POST /api/sessions/:sessionId/messages/send-list
- * @desc Send a list message (may not work due to WhatsApp restrictions)
- * @scope messages:send
- */
-router.post(
-  '/send-list',
-  requireScope('messages:send'),
-  messageLimiter,
-  validateBody(sendListSchema),
-  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
-    try {
-      await sessionService.getById(req.userId!, req.params.sessionId);
-
-      const { to, body, buttonText, sections, title, footer, quotedMessageId, reply_to } = req.body;
-      const finalQuotedMessageId = quotedMessageId || reply_to;
-
-      const result = await whatsappService.sendList(
-        req.params.sessionId,
-        to,
-        body,
-        buttonText,
-        sections,
-        title,
-        footer,
-        // @ts-ignore - Check if service supports options
-        { quotedMessageId: finalQuotedMessageId }
-      );
-
-      res.json({
-        success: true,
-        message: 'List message sent',
-        data: {
-          messageId: result.id._serialized,
-          to: result.to,
-          timestamp: result.timestamp,
-        },
       });
     } catch (error) {
       next(error);
