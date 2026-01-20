@@ -340,28 +340,14 @@ export const rejectCallSchema = z.object({
 // API KEY SCHEMAS
 // ============================================
 
+import { API_KEY_SCOPES } from '../services/api-key/api-key.types.js';
+
 /**
  * Valid API key scopes for granular access control
  */
-export const API_KEY_SCOPE_VALUES = [
-  'sessions:read',
-  'sessions:write',
-  'messages:send',
-  'messages:read',
-  'contacts:read',
-  'contacts:write',
-  'groups:read',
-  'groups:write',
-  'media:read',
-  'media:write',
-  'webhooks:read',
-  'webhooks:write',
-  'calls:write',
-  'channels:read',
-  'channels:write',
-] as const;
+export const API_KEY_SCOPE_VALUES = API_KEY_SCOPES;
 
-export const apiKeyScopeSchema = z.enum(API_KEY_SCOPE_VALUES);
+export const apiKeyScopeSchema = z.enum(API_KEY_SCOPE_VALUES as unknown as [string, ...string[]]);
 
 export const createApiKeySchema = z.object({
   name: z
@@ -395,6 +381,7 @@ export const updateApiKeySchema = z.object({
     .nullable()
     .optional(),
   isActive: z.boolean().optional(),
+  expiresAt: z.string().datetime().nullable().optional(),
 });
 
 export const updateApiKeyScopesSchema = z.object({

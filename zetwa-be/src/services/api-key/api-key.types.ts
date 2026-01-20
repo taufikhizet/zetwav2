@@ -133,6 +133,7 @@ export interface UpdateApiKeyInput {
   name?: string;
   description?: string;
   isActive?: boolean;
+  expiresAt?: Date | string | null;
 }
 
 export interface ValidateKeyResult {

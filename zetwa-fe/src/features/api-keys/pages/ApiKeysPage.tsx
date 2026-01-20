@@ -31,6 +31,7 @@ import {
   ApiKeyCard,
   ApiKeyEmptyState,
   EditScopesDialog,
+  EditExpirationDialog,
   DeleteApiKeyDialog,
   RegenerateApiKeyDialog,
 } from '../components'
@@ -49,6 +50,7 @@ export function ApiKeysPage() {
 
   // Dialog states
   const [editScopesKey, setEditScopesKey] = useState<ApiKey | null>(null)
+  const [editExpirationKey, setEditExpirationKey] = useState<ApiKey | null>(null)
   const [deleteKey, setDeleteKey] = useState<ApiKey | null>(null)
   const [regenerateKey, setRegenerateKey] = useState<ApiKey | null>(null)
 
@@ -98,7 +100,7 @@ export function ApiKeysPage() {
 
       {/* Filters & Actions */}
       {apiKeys.length > 0 && (
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card p-4 rounded-xl shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card p-4 rounded-xl shadow-md">
           <div className="flex items-center gap-3 flex-1 max-w-lg">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -201,8 +203,9 @@ export function ApiKeysPage() {
                     updateApiKeyMutation.mutate({ id, data: { isActive } })
                   }}
                   onEditScopes={setEditScopesKey}
-                  onDelete={setDeleteKey}
+                  onEditExpiration={setEditExpirationKey}
                   onRegenerate={setRegenerateKey}
+                  onDelete={setDeleteKey}
                   isUpdating={updateApiKeyMutation.isPending}
                 />
               ))}
@@ -216,6 +219,12 @@ export function ApiKeysPage() {
         apiKey={editScopesKey}
         open={!!editScopesKey}
         onOpenChange={(open) => !open && setEditScopesKey(null)}
+      />
+
+      <EditExpirationDialog
+        apiKey={editExpirationKey}
+        open={!!editExpirationKey}
+        onOpenChange={(open) => !open && setEditExpirationKey(null)}
       />
 
       <DeleteApiKeyDialog

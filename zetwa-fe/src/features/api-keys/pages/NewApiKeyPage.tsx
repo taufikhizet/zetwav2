@@ -54,16 +54,31 @@ export function NewApiKeyPage() {
   const [description, setDescription] = useState('')
   const [expiresAt, setExpiresAt] = useState('')
   const [selectedScopes, setSelectedScopes] = useState<string[]>([...DEFAULT_SCOPES])
+  
+  // Validation state
+  const [touched, setTouched] = useState<{name?: boolean, description?: boolean}>({})
 
   // Success state
   const [createdKey, setCreatedKey] = useState<ApiKey | null>(null)
   const [copied, setCopied] = useState(false)
   const [showKey, setShowKey] = useState(true)
 
-  // Validation
-  const isNameValid = name.trim().length >= 3 && name.trim().length <= 100
-  const isNameEmpty = name.trim().length === 0
-  const hasMinScopes = selectedScopes.length > 0
+  // Validation logic matching backend
+  const nameError = (() => {
+    if (!touched.name) return null
+    if (name.trim().length === 0) return 'Name is required'
+    if (name.trim().length < 3) return 'Name must be at least 3 characters'
+    if (name.trim().length > 100) return 'Name cannot exceed 100 characters'
+    return null
+  })()
+
+  const descriptionError = (() => {
+    if (!touched.description) return null
+    if (description.trim().length > 500) return 'Description cannot exceed 500 characters'
+    return null
+  })()
+
+  const scopesError = selectedScopes.length === 0 ? 'At least one permission is required' : null
 
   // Get minimum date for expiration (tomorrow)
   const getMinDate = () => {
@@ -124,13 +139,24 @@ export function NewApiKeyPage() {
   // Handle submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Mark all as touched to show errors
+    setTouched({ name: true, description: true })
 
+    const isNameValid = name.trim().length >= 3 && name.trim().length <= 100
+    const isDescriptionValid = description.trim().length <= 500
+    
     if (!isNameValid) {
-      toast.error('Name must be between 3 and 100 characters')
+      toast.error('Please fix the name validation errors')
       return
     }
 
-    if (!hasMinScopes) {
+    if (!isDescriptionValid) {
+      toast.error('Description is too long')
+      return
+    }
+
+    if (selectedScopes.length === 0) {
       toast.error('Please select at least one permission')
       return
     }
@@ -370,14 +396,15 @@ export function NewApiKeyPage() {
                       placeholder="e.g., Production Bot Server"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
                       disabled={createMutation.isPending}
                       className={`h-11 text-base ${
-                        name && !isNameValid ? 'border-red-500 focus-visible:ring-red-500' : ''
+                        nameError ? 'border-destructive focus-visible:ring-destructive' : ''
                       }`}
                     />
-                    {name && !isNameValid && (
-                      <p className="text-sm text-red-500">
-                        Name must be between 3 and 100 characters
+                    {nameError && (
+                      <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+                        {nameError}
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground">
@@ -399,10 +426,25 @@ export function NewApiKeyPage() {
                       placeholder="e.g., API key for the main bot server running on AWS EC2"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
+                      onBlur={() => setTouched((prev) => ({ ...prev, description: true }))}
                       disabled={createMutation.isPending}
                       rows={3}
-                      className="resize-none"
+                      className={`resize-none ${
+                        descriptionError ? 'border-destructive focus-visible:ring-destructive' : ''
+                      }`}
                     />
+                    <div className="flex justify-between items-center">
+                      {descriptionError ? (
+                        <p className="text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1">
+                          {descriptionError}
+                        </p>
+                      ) : (
+                        <span />
+                      )}
+                      <span className={`text-xs ${description.length > 500 ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                        {description.length}/500
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -537,11 +579,11 @@ export function NewApiKeyPage() {
                   {/* Selection summary and actions */}
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <Badge variant={hasMinScopes ? 'default' : 'destructive'}>
+                      <Badge variant={!scopesError ? 'default' : 'destructive'}>
                         {selectedScopes.length} of {API_KEY_SCOPES.length} selected
                       </Badge>
-                      {!hasMinScopes && (
-                        <span className="text-sm text-red-500">At least 1 required</span>
+                      {scopesError && (
+                        <span className="text-sm text-destructive">{scopesError}</span>
                       )}
                     </div>
                     <div className="flex gap-2">
@@ -661,7 +703,7 @@ export function NewApiKeyPage() {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={createMutation.isPending || isNameEmpty || !isNameValid || !hasMinScopes}
+                      disabled={createMutation.isPending}
                       className="flex-1 h-12"
                     >
                       {createMutation.isPending ? (
@@ -678,15 +720,16 @@ export function NewApiKeyPage() {
                     </Button>
                   </div>
 
-                  {/* Validation summary */}
-                  {(isNameEmpty || !hasMinScopes) && (
-                    <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                      <p className="text-sm text-amber-700 dark:text-amber-300">
-                        Please complete the following:
+                  {/* Validation summary - only show if fields are touched and have errors */}
+                  {(touched.name && (nameError || scopesError)) && (
+                    <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg animate-in fade-in slide-in-from-top-2">
+                      <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+                        Please address the following issues:
                       </p>
                       <ul className="mt-1 text-sm text-amber-600 dark:text-amber-400 list-disc list-inside">
-                        {isNameEmpty && <li>Enter an API key name</li>}
-                        {!hasMinScopes && <li>Select at least one permission</li>}
+                        {nameError && <li>{nameError}</li>}
+                        {descriptionError && <li>{descriptionError}</li>}
+                        {scopesError && <li>{scopesError}</li>}
                       </ul>
                     </div>
                   )}

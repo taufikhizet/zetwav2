@@ -129,6 +129,7 @@ export interface UpdateApiKeyInput {
   name?: string
   description?: string | null
   isActive?: boolean
+  expiresAt?: string | null
 }
 
 export interface ApiKeyStats {

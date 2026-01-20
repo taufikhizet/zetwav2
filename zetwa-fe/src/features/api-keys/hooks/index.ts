@@ -51,8 +51,9 @@ export function useCreateApiKey(options?: {
       toast.success('API key created successfully')
       options?.onSuccess?.(data)
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create API key')
+    onError: (error: any) => {
+      const message = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Failed to create API key'
+      toast.error(message)
       options?.onError?.(error)
     },
   })
@@ -75,8 +76,9 @@ export function useUpdateApiKey(options?: {
       toast.success('API key updated')
       options?.onSuccess?.(data)
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update API key')
+    onError: (error: any) => {
+      const message = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Failed to update API key'
+      toast.error(message)
       options?.onError?.(error)
     },
   })
@@ -99,8 +101,9 @@ export function useUpdateApiKeyScopes(options?: {
       toast.success('Scopes updated')
       options?.onSuccess?.(data)
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update scopes')
+    onError: (error: any) => {
+      const message = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Failed to update scopes'
+      toast.error(message)
       options?.onError?.(error)
     },
   })
@@ -119,11 +122,13 @@ export function useDeleteApiKey(options?: {
     mutationFn: (id: string) => apiKeyApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: apiKeyKeys.all })
+      queryClient.invalidateQueries({ queryKey: apiKeyKeys.list() })
       toast.success('API key deleted')
       options?.onSuccess?.()
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete API key')
+    onError: (error: any) => {
+      const message = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Failed to delete API key'
+      toast.error(message)
       options?.onError?.(error)
     },
   })
@@ -145,8 +150,9 @@ export function useRegenerateApiKey(options?: {
       toast.success('API key regenerated')
       options?.onSuccess?.(data)
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to regenerate API key')
+    onError: (error: any) => {
+      const message = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Failed to regenerate API key'
+      toast.error(message)
       options?.onError?.(error)
     },
   })
@@ -168,8 +174,9 @@ export function useRevokeAllApiKeys(options?: {
       toast.success(`${data.revokedCount} API key(s) revoked`)
       options?.onSuccess?.(data)
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to revoke API keys')
+    onError: (error: any) => {
+      const message = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Failed to revoke API keys'
+      toast.error(message)
       options?.onError?.(error)
     },
   })

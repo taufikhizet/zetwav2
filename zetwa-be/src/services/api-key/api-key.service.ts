@@ -160,6 +160,10 @@ export class ApiKeyService {
       updateData.isActive = data.isActive;
     }
 
+    if (data.expiresAt !== undefined) {
+      updateData.expiresAt = data.expiresAt ? new Date(data.expiresAt) : null;
+    }
+
     const apiKey = await prisma.apiKey.update({
       where: { id: keyId },
       data: updateData,

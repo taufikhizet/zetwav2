@@ -43,14 +43,16 @@ export function DeleteApiKeyDialog({ apiKey, open, onOpenChange }: DeleteApiKeyD
             <AlertTriangle className="h-5 w-5 text-destructive" />
             Delete API Key
           </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-3">
-            <p>
-              Are you sure you want to delete <strong>"{apiKey?.name}"</strong>?
-            </p>
-            <p className="text-destructive">
-              This action cannot be undone. Any applications using this key will immediately
-              lose access.
-            </p>
+          <AlertDialogDescription className="space-y-3" asChild>
+            <div>
+              <p>
+                Are you sure you want to delete <strong>"{apiKey?.name}"</strong>?
+              </p>
+              <p className="text-destructive">
+                This action cannot be undone. Any applications using this key will immediately
+                lose access.
+              </p>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
 

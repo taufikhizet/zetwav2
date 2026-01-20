@@ -154,16 +154,18 @@ export function RegenerateApiKeyDialog({
             <RefreshCw className="h-5 w-5 text-amber-500" />
             Regenerate API Key
           </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-3">
-            <p>
-              Are you sure you want to regenerate the key for <strong>"{apiKey?.name}"</strong>?
-            </p>
-            <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md">
-              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-600 dark:text-amber-400">
-                The current key will be invalidated immediately. Any applications using this key
-                will need to be updated with the new key.
+          <AlertDialogDescription className="space-y-3" asChild>
+            <div>
+              <p>
+                Are you sure you want to regenerate the key for <strong>"{apiKey?.name}"</strong>?
               </p>
+              <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md">
+                <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  The current key will be invalidated immediately. Any applications using this key
+                  will need to be updated with the new key.
+                </p>
+              </div>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
