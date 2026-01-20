@@ -253,7 +253,7 @@ export default function DashboardLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 px-8 py-8">
+        <main className="flex-1 px-8 pt-2 pb-8">
            <div className="animate-in fade-in-50 duration-500">
              <Outlet />
            </div>

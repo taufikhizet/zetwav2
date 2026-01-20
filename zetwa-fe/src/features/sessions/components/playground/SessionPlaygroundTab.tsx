@@ -43,22 +43,9 @@ export function SessionPlaygroundTab({ sessionId, isOnline }: SessionPlaygroundT
 
   return (
     <div className="flex flex-col space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-semibold tracking-tight">API Playground</h2>
-          <p className="text-sm text-muted-foreground">
-            Test and interact with WhatsApp features in real-time.
-          </p>
-        </div>
-        <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium">
-          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          System Online
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 lg:items-start">
         {/* Sidebar Navigation */}
-        <Card className="p-2 h-auto lg:sticky lg:top-24 shadow-sm border-muted">
+        <Card className="p-2 h-auto lg:sticky lg:top-[4.5rem] shadow-sm border-muted">
           <div className="px-4 py-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Zap className="h-4 w-4" />
             <span>Available Features</span>
