@@ -1,3 +1,4 @@
+
 /**
  * WhatsApp Contact Management Functions
  */
@@ -6,6 +7,50 @@ import type { WASession } from './types.js';
 import { SessionNotConnectedError, BadRequestError } from '../../utils/errors.js';
 import { logger } from '../../utils/logger.js';
 import { formatChatId } from './messaging/index.js';
+import type { Contact } from 'whatsapp-web.js';
+
+/**
+ * Get all contacts
+ */
+export async function getContacts(session: WASession): Promise<Contact[]> {
+  if (session.status !== 'CONNECTED') {
+    throw new SessionNotConnectedError(session.sessionId);
+  }
+  return session.client.getContacts();
+}
+
+/**
+ * Get specific contact
+ */
+export async function getContact(session: WASession, contactId: string): Promise<Contact> {
+  if (session.status !== 'CONNECTED') {
+    throw new SessionNotConnectedError(session.sessionId);
+  }
+  const formattedContactId = formatChatId(contactId);
+  return session.client.getContactById(formattedContactId);
+}
+
+/**
+ * Check number status
+ */
+export async function checkNumberStatus(session: WASession, number: string): Promise<{ numberExists: boolean, id?: { _serialized: string } }> {
+  if (session.status !== 'CONNECTED') {
+    throw new SessionNotConnectedError(session.sessionId);
+  }
+  
+  // Clean number
+  const cleanNumber = number.replace(/\D/g, '');
+  const id = await session.client.getNumberId(cleanNumber);
+  
+  if (!id) {
+      return { numberExists: false };
+  }
+  
+  return {
+      numberExists: true,
+      id: id
+  };
+}
 
 /**
  * Block a contact
@@ -56,7 +101,27 @@ export async function getContactAbout(session: WASession, contactId: string): Pr
     const about = await contact.getAbout();
     return about || null;
   } catch (error) {
-    logger.warn({ sessionId: session.sessionId, contactId: formattedContactId, error }, 'Failed to get contact about');
+    logger.warn({ sessionId: session.sessionId, contactId, error }, 'Failed to get contact about');
+    return null;
+  }
+}
+
+/**
+ * Get contact profile picture
+ */
+export async function getProfilePicture(session: WASession, contactId: string): Promise<string | null> {
+  if (session.status !== 'CONNECTED') {
+    throw new SessionNotConnectedError(session.sessionId);
+  }
+
+  const formattedContactId = formatChatId(contactId);
+  const contact = await session.client.getContactById(formattedContactId);
+  
+  try {
+    const profilePicUrl = await contact.getProfilePicUrl();
+    return profilePicUrl || null;
+  } catch (error) {
+    logger.warn({ sessionId: session.sessionId, contactId, error }, 'Failed to get contact profile picture');
     return null;
   }
 }

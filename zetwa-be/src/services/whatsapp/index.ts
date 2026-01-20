@@ -35,6 +35,7 @@ import * as status from './status.js';
 import * as profile from './profile.js';
 import * as chats from './chats.js';
 import * as contacts from './contacts.js';
+import * as lids from './lids.js';
 import * as channels from './channels.js';
 import * as waEvents from './events.js';
 import * as calls from './calls.js';
@@ -68,6 +69,7 @@ export class WhatsAppService {
   public readonly profile = profile;
   public readonly chats = chats;
   public readonly contacts = contacts;
+  public readonly lids = lids;
   public readonly channels = channels;
   public readonly waEvents = waEvents;
   public readonly calls = calls;

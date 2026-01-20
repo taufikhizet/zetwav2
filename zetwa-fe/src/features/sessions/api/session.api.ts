@@ -159,9 +159,22 @@ export const sessionApi = {
   },
 
   // Contacts
-  getContacts: async (sessionId: string, live: boolean = false): Promise<any[]> => {
-    const endpoint = live ? `/sessions/${sessionId}/contacts/live` : `/sessions/${sessionId}/contacts`
+  getContacts: async (sessionId: string): Promise<any[]> => {
+    // Current FE uses live param to differentiate endpoints? 
+    // Actually backend implementation I did: /contacts/all vs /contacts
+    // Let's standardise to /contacts/all for list.
+    const endpoint = `/sessions/${sessionId}/contacts/all`
     const response = await api.get<ApiResponse<any[]>>(endpoint)
+    return response.data.data
+  },
+
+  getContact: async (sessionId: string, contactId: string): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/contacts`, { params: { contactId } })
+    return response.data.data
+  },
+
+  createContact: async (sessionId: string, contactId: string): Promise<any> => {
+    const response = await api.put(`/sessions/${sessionId}/contacts/${contactId}`)
     return response.data.data
   },
 
@@ -170,7 +183,7 @@ export const sessionApi = {
   },
 
   checkNumber: async (sessionId: string, number: string): Promise<any> => {
-    const response = await api.get(`/sessions/${sessionId}/check-number/${number}`)
+    const response = await api.get(`/sessions/${sessionId}/contacts/check-exists`, { params: { number } })
     return response.data.data
   },
 
@@ -182,6 +195,27 @@ export const sessionApi = {
   getContactProfilePicture: async (sessionId: string, contactId: string): Promise<string | null> => {
     const response = await api.get(`/sessions/${sessionId}/contacts/${contactId}/profile-picture`)
     return response.data.data.profilePicUrl
+  },
+
+  // LIDs
+  getLids: async (sessionId: string): Promise<any[]> => {
+    const response = await api.get(`/sessions/${sessionId}/lids`)
+    return response.data.data
+  },
+
+  getLidsCount: async (sessionId: string): Promise<{ count: number }> => {
+    const response = await api.get(`/sessions/${sessionId}/lids/count`)
+    return response.data.data
+  },
+
+  getPNByLid: async (sessionId: string, lid: string): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/lids/${lid}`)
+    return response.data.data
+  },
+
+  getLidByPN: async (sessionId: string, phoneNumber: string): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/lids/pn/${phoneNumber}`)
+    return response.data.data
   },
 
   getMe: async (sessionId: string): Promise<any> => {
