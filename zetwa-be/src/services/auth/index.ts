@@ -28,6 +28,8 @@ export class AuthService {
   login = authentication.login;
   verifyEmail = authentication.verifyEmail;
   resendVerification = authentication.resendVerification;
+  requestPasswordReset = authentication.requestPasswordReset;
+  resetPassword = authentication.resetPassword;
   socialLogin = authentication.socialLogin;
   completeOnboarding = authentication.completeOnboarding;
 

@@ -108,6 +108,30 @@ router.post(
 );
 
 /**
+ * @route POST /api/auth/forgot-password
+ */
+router.post('/forgot-password', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await authService.requestPasswordReset(req.body.email);
+    res.json({ success: true, message: 'If the email exists, a reset link has been sent' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route POST /api/auth/reset-password
+ */
+router.post('/reset-password', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await authService.resetPassword(req.body.token, req.body.password);
+    res.json({ success: true, message: 'Password reset successful' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * @route POST /api/auth/refresh
  * @desc Refresh access token
  */

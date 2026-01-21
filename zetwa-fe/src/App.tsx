@@ -13,6 +13,8 @@ import LoginPage from '@/features/auth/pages/LoginPage'
 import RegisterPage from '@/features/auth/pages/RegisterPage'
 import VerifyEmailPage from '@/features/auth/pages/VerifyEmailPage'
 import OnboardingPage from '@/features/auth/pages/OnboardingPage'
+import ForgotPasswordPage from '@/features/auth/pages/ForgotPasswordPage'
+import ResetPasswordPage from '@/features/auth/pages/ResetPasswordPage'
 
 // Dashboard Pages
 import DashboardPage from '@/features/dashboard/pages/DashboardPage'
@@ -110,6 +112,22 @@ function App() {
             element={
               <PublicRoute>
                 <LoginPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPasswordPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <PublicRoute>
+                <ResetPasswordPage />
               </PublicRoute>
             }
           />

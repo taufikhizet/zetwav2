@@ -70,4 +70,12 @@ export const authApi = {
   completeOnboarding: async (data: { profession: string; usagePurpose: string; referralSource: string }): Promise<void> => {
     await api.post('/auth/onboarding', data)
   },
+
+  forgotPassword: async (email: string): Promise<void> => {
+    await api.post('/auth/forgot-password', { email })
+  },
+
+  resetPassword: async (token: string, password: string): Promise<void> => {
+    await api.post('/auth/reset-password', { token, password })
+  },
 }

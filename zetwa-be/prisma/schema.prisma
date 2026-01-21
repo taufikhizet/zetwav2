@@ -23,6 +23,10 @@ model User {
   isActive      Boolean   @default(true)
   isVerified    Boolean   @default(false)
   verificationToken String?
+  
+  // Password Reset
+  passwordResetToken String?
+  passwordResetExpires DateTime?
 
   // Social Auth
   googleId      String?   @unique

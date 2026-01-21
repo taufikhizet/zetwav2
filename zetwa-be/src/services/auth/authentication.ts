@@ -25,6 +25,72 @@ import axios from 'axios';
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 /**
+ * Request Password Reset
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+  });
+
+  // Always return success even if email doesn't exist (Security Best Practice)
+  // to prevent email enumeration attacks
+  if (!user) {
+    logger.info({ email }, 'Password reset requested for non-existent email');
+    return;
+  }
+
+  // Generate reset token
+  const resetToken = nanoid(32);
+  const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordResetToken: resetToken,
+      passwordResetExpires: resetExpires,
+    },
+  });
+
+  await emailService.sendPasswordResetEmail(user.email, resetToken);
+}
+
+/**
+ * Reset Password
+ */
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  const user = await prisma.user.findFirst({
+    where: {
+      passwordResetToken: token,
+      passwordResetExpires: { gt: new Date() },
+    },
+  });
+
+  if (!user) {
+    throw new BadRequestError('Invalid or expired reset token');
+  }
+
+  if (newPassword.length < 8) {
+    throw new BadRequestError('Password must be at least 8 characters');
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+    },
+  });
+
+  // Revoke all sessions for security
+  await prisma.refreshToken.deleteMany({
+    where: { userId: user.id },
+  });
+}
+
+/**
  * Register a new user
  */
 export async function register(input: RegisterInput): Promise<AuthResponse> {
