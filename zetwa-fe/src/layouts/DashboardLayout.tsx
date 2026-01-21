@@ -240,7 +240,7 @@ export default function DashboardLayout() {
                           </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator className="my-2" />
-                        <DropdownMenuItem className="cursor-pointer gap-2 rounded-xl px-3 py-2">
+                        <DropdownMenuItem className="cursor-pointer gap-2 rounded-xl px-3 py-2" onClick={() => navigate('/dashboard/settings')}>
                             <User className="w-4 h-4" /> Profile
                         </DropdownMenuItem>
                         <DropdownMenuItem className="cursor-pointer gap-2 rounded-xl px-3 py-2 text-destructive focus:text-destructive" onClick={handleLogout}>

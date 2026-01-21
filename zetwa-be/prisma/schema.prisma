@@ -22,6 +22,18 @@ model User {
   avatar        String?
   isActive      Boolean   @default(true)
   isVerified    Boolean   @default(false)
+  verificationToken String?
+
+  // Social Auth
+  googleId      String?   @unique
+  githubId      String?   @unique
+
+  // Onboarding
+  isOnboardingCompleted Boolean @default(false)
+  profession    String?
+  usagePurpose  String?
+  referralSource String?
+
   lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

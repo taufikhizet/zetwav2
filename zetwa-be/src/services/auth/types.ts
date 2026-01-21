@@ -19,6 +19,7 @@ export interface UserProfile {
   name: string;
   avatar: string | null;
   isVerified: boolean;
+  isOnboardingCompleted: boolean;
   createdAt: Date;
 }
 

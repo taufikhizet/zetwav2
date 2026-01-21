@@ -14,6 +14,42 @@ import {
 const router = Router();
 
 /**
+ * @route POST /api/auth/verify-email
+ */
+router.post('/verify-email', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await authService.verifyEmail(req.body.token);
+    res.json({ success: true, message: 'Email verified successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route POST /api/auth/social
+ */
+router.post('/social', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await authService.socialLogin(req.body.provider, req.body.token);
+    res.json({ success: true, message: 'Login successful', data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route POST /api/auth/onboarding
+ */
+router.post('/onboarding', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await authService.completeOnboarding(req.userId!, req.body);
+    res.json({ success: true, message: 'Onboarding completed' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * @route POST /api/auth/register
  * @desc Register a new user
  */

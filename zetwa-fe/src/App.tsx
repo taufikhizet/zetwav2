@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth.store'
@@ -9,6 +9,8 @@ import DashboardLayout from '@/layouts/DashboardLayout'
 // Auth Pages
 import LoginPage from '@/features/auth/pages/LoginPage'
 import RegisterPage from '@/features/auth/pages/RegisterPage'
+import VerifyEmailPage from '@/features/auth/pages/VerifyEmailPage'
+import OnboardingPage from '@/features/auth/pages/OnboardingPage'
 
 // Dashboard Pages
 import DashboardPage from '@/features/dashboard/pages/DashboardPage'
@@ -32,7 +34,8 @@ const queryClient = new QueryClient({
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore()
+  const { isAuthenticated, isLoading, user } = useAuthStore()
+  const location = useLocation()
 
   if (isLoading) {
     return (
@@ -44,6 +47,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+
+  // Check verification status
+  if (user && !user.isVerified && location.pathname !== '/verify-email') {
+    return <Navigate to="/verify-email" replace />
+  }
+
+  // Check onboarding status
+  if (user && user.isVerified && !user.isOnboardingCompleted && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  if (user && user.isOnboardingCompleted && location.pathname === '/onboarding') {
+    return <Navigate to="/dashboard" replace />
   }
 
   return <>{children}</>
@@ -88,6 +105,22 @@ function App() {
               <PublicRoute>
                 <RegisterPage />
               </PublicRoute>
+            }
+          />
+          <Route
+            path="/verify-email"
+            element={
+              <PublicRoute>
+                <VerifyEmailPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute>
+                <OnboardingPage />
+              </ProtectedRoute>
             }
           />
 

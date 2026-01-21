@@ -7,6 +7,7 @@ export interface User {
   name: string
   avatar: string | null
   isVerified: boolean
+  isOnboardingCompleted: boolean
   createdAt: string
 }
 

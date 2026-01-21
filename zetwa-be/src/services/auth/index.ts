@@ -26,6 +26,9 @@ export class AuthService {
   // Authentication
   register = authentication.register;
   login = authentication.login;
+  verifyEmail = authentication.verifyEmail;
+  socialLogin = authentication.socialLogin;
+  completeOnboarding = authentication.completeOnboarding;
 
   // Token management
   refreshTokens = tokens.refreshTokens;

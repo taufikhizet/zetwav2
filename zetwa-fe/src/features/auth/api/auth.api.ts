@@ -53,4 +53,17 @@ export const authApi = {
     })
     return response.data.data
   },
+
+  verifyEmail: async (token: string): Promise<void> => {
+    await api.post('/auth/verify-email', { token })
+  },
+
+  socialLogin: async (provider: 'google' | 'github', token: string): Promise<AuthResponse> => {
+    const response = await api.post<ApiResponse<AuthResponse>>('/auth/social', { provider, token })
+    return response.data.data
+  },
+
+  completeOnboarding: async (data: { profession: string; usagePurpose: string; referralSource: string }): Promise<void> => {
+    await api.post('/auth/onboarding', data)
+  },
 }
