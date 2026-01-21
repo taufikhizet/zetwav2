@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth.store'
+import { authApi } from '@/features/auth/api/auth.api'
 
 // Layouts
 import DashboardLayout from '@/layouts/DashboardLayout'
@@ -59,7 +61,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/onboarding" replace />
   }
 
-  if (user && user.isOnboardingCompleted && location.pathname === '/onboarding') {
+  // Redirect completed users away from onboarding
+  if (user && user.isVerified && user.isOnboardingCompleted && location.pathname === '/onboarding') {
     return <Navigate to="/dashboard" replace />
   }
 
@@ -86,6 +89,17 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const { isAuthenticated, setUser } = useAuthStore()
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      authApi.getProfile().then(setUser).catch(() => {
+        // If getting profile fails (e.g. invalid token), logout
+        useAuthStore.getState().logout()
+      })
+    }
+  }, [isAuthenticated, setUser])
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -110,9 +124,7 @@ function App() {
           <Route
             path="/verify-email"
             element={
-              <PublicRoute>
-                <VerifyEmailPage />
-              </PublicRoute>
+              <VerifyEmailPage />
             }
           />
           <Route

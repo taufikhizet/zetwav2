@@ -21,6 +21,7 @@ export async function getProfile(userId: string) {
       name: true,
       avatar: true,
       isVerified: true,
+      isOnboardingCompleted: true,
       createdAt: true,
       updatedAt: true,
       _count: {
@@ -52,6 +53,7 @@ export async function updateProfile(userId: string, data: UpdateProfileInput) {
       name: true,
       avatar: true,
       isVerified: true,
+      isOnboardingCompleted: true,
       createdAt: true,
       updatedAt: true,
     },

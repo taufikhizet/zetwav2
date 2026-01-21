@@ -181,6 +181,30 @@ export async function verifyEmail(token: string): Promise<void> {
 }
 
 /**
+ * Resend Verification Email
+ */
+export async function resendVerification(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  
+  if (!user) {
+    throw new UnauthorizedError('User not found');
+  }
+
+  if (user.isVerified) {
+    throw new BadRequestError('User already verified');
+  }
+
+  const verificationToken = nanoid(32);
+  
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { verificationToken }
+  });
+
+  await emailService.sendVerificationEmail(user.email, verificationToken);
+}
+
+/**
  * Social Login
  */
 export async function socialLogin(provider: 'google' | 'github', token: string): Promise<AuthResponse> {

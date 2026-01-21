@@ -26,6 +26,18 @@ router.post('/verify-email', async (req: Request, res: Response, next: NextFunct
 });
 
 /**
+ * @route POST /api/auth/resend-verification
+ */
+router.post('/resend-verification', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await authService.resendVerification(req.userId!);
+    res.json({ success: true, message: 'Verification email sent' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * @route POST /api/auth/social
  */
 router.post('/social', async (req: Request, res: Response, next: NextFunction) => {

@@ -53,13 +53,23 @@ export default function OnboardingPage() {
     try {
       await authApi.completeOnboarding(values)
       
-      // Update local user state
+      // Update local user state immediately
       if (user) {
-        setUser({ ...user, isOnboardingCompleted: true })
+        const updatedUser = { ...user, isOnboardingCompleted: true };
+        setUser(updatedUser);
+      }
+      
+      // Force fetch profile to ensure sync
+      try {
+        const profile = await authApi.getProfile();
+        setUser(profile);
+      } catch (e) {
+        console.error('Failed to refresh profile', e);
       }
       
       toast.success('Welcome aboard!')
-      navigate('/dashboard')
+      // Use replace to prevent going back to onboarding
+      navigate('/dashboard', { replace: true })
     } catch (error) {
       toast.error('Failed to complete onboarding')
     } finally {

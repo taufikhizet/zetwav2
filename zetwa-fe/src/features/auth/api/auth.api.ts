@@ -58,6 +58,10 @@ export const authApi = {
     await api.post('/auth/verify-email', { token })
   },
 
+  resendVerification: async (): Promise<void> => {
+    await api.post('/auth/resend-verification')
+  },
+
   socialLogin: async (provider: 'google' | 'github', token: string): Promise<AuthResponse> => {
     const response = await api.post<ApiResponse<AuthResponse>>('/auth/social', { provider, token })
     return response.data.data
