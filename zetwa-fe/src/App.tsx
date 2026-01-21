@@ -24,6 +24,9 @@ import SessionDetailPage from '@/features/sessions/pages/SessionDetailPage'
 import { ApiKeysPage, NewApiKeyPage } from '@/features/api-keys'
 import DocumentationPage from '@/features/docs/pages/DocumentationPage'
 import SettingsPage from '@/features/settings/pages/SettingsPage'
+import { ProfileForm } from '@/features/settings/components/ProfileForm'
+import { PasswordForm } from '@/features/settings/components/PasswordForm'
+import { AppearanceSettings } from '@/features/settings/components/AppearanceSettings'
 
 // Create query client
 const queryClient = new QueryClient({
@@ -169,7 +172,23 @@ function App() {
             <Route path="sessions/:sessionId" element={<SessionDetailPage />} />
             <Route path="api-keys" element={<ApiKeysPage />} />
             <Route path="api-keys/new" element={<NewApiKeyPage />} />
-            <Route path="settings" element={<SettingsPage />} />
+          </Route>
+
+          {/* Protected Settings Routes */}
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route element={<SettingsPage />}>
+              <Route index element={<Navigate to="profile" replace />} />
+              <Route path="profile" element={<ProfileForm />} />
+              <Route path="security" element={<PasswordForm />} />
+              <Route path="appearance" element={<AppearanceSettings />} />
+            </Route>
           </Route>
 
           {/* Documentation - Standalone Route */}

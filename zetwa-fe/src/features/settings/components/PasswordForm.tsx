@@ -77,6 +77,7 @@ export function PasswordForm() {
             <Input
               id="newPassword"
               type="password"
+              className="max-w-xl"
               {...form.register('newPassword')}
             />
             {form.formState.errors.newPassword && (
@@ -88,6 +89,7 @@ export function PasswordForm() {
             <Input
               id="confirmPassword"
               type="password"
+              className="max-w-xl"
               {...form.register('confirmPassword')}
             />
             {form.formState.errors.confirmPassword && (

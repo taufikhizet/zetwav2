@@ -59,6 +59,7 @@ export function ProfileForm() {
             <Label htmlFor="name">Name</Label>
             <Input
               id="name"
+              className="max-w-xl"
               {...form.register('name')}
             />
             {form.formState.errors.name && (
@@ -70,14 +71,26 @@ export function ProfileForm() {
             <Input
               id="email"
               type="email"
+              className="max-w-xl bg-muted text-muted-foreground"
               {...form.register('email')}
+              disabled
             />
             {form.formState.errors.email && (
               <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
             )}
           </div>
-          <div className="flex justify-end">
-            <Button type="submit" disabled={updateProfileMutation.isPending}>
+          <div className="flex justify-end gap-2">
+            {form.formState.isDirty && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => form.reset()}
+                disabled={updateProfileMutation.isPending}
+              >
+                Cancel
+              </Button>
+            )}
+            <Button type="submit" disabled={!form.formState.isDirty || updateProfileMutation.isPending}>
               {updateProfileMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}

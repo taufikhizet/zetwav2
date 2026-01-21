@@ -44,9 +44,12 @@ export async function getProfile(userId: string) {
  * Update user profile
  */
 export async function updateProfile(userId: string, data: UpdateProfileInput) {
+  // Remove email from data if present to prevent updates
+  const { email, ...updateData } = data as any;
+
   const user = await prisma.user.update({
     where: { id: userId },
-    data,
+    data: updateData,
     select: {
       id: true,
       email: true,
