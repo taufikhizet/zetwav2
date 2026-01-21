@@ -64,6 +64,8 @@ const inlineWebhookConfigSchema = z.object({
   customHeaders: z.array(customHeaderSchema).optional(),
 });
 
+export * from './channels.schema';
+
 // Store configuration for session data persistence
 const storeConfigSchema = z.object({
   enabled: z.boolean().default(false),

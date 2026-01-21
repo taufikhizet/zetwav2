@@ -6,6 +6,9 @@ import {
   MessageCircle,
   Tag,
   CircleDashed,
+  UserCircle2,
+  Megaphone,
+  Phone,
 } from 'lucide-react'
 
 export const PLAYGROUND_FEATURES = [
@@ -26,6 +29,18 @@ export const PLAYGROUND_FEATURES = [
     label: 'Contacts',
     icon: Contact2,
     description: 'Manage contacts and check numbers',
+  },
+  {
+    id: 'channels',
+    label: 'Channels',
+    icon: Megaphone,
+    description: 'Manage channels/newsletters',
+  },
+  {
+    id: 'calls',
+    label: 'Calls',
+    icon: Phone,
+    description: 'Manage incoming calls',
   },
   {
     id: 'groups',
@@ -52,11 +67,23 @@ export const PLAYGROUND_FEATURES = [
     description: 'View and post status updates',
   },
   {
-    id: 'system',
-    label: 'System',
+    id: 'profile',
+    label: 'Profile',
+    icon: UserCircle2,
+    description: 'Manage profile info, status, and picture',
+  },
+  {
+    id: 'presences',
+    label: 'Presences',
     icon: Activity,
-    description: 'Presence, Status, and Profile',
+    description: 'Manage session presence (WAHA compatible)',
+  },
+  {
+    id: 'test-presences',
+    label: 'Test Presences',
+    icon: Activity,
+    description: 'Legacy Presence Implementation',
   },
 ] as const
 
-export type PlaygroundFeatureId = typeof PLAYGROUND_FEATURES[number]['id'] | 'test-groups'
+export type PlaygroundFeatureId = typeof PLAYGROUND_FEATURES[number]['id'] | 'test-groups' | 'test-chats' | 'test-presences'

@@ -4,14 +4,14 @@ import { whatsappService } from '../../services/whatsapp.service.js';
 import { sessionService } from '../../services/session.service.js';
 import { authenticateAny, requireScope } from '../../middleware/auth.middleware.js';
 import { validateBody } from '../../middleware/validate.middleware.js';
-import { setPresenceSchema, subscribePresenceSchema } from '../../schemas/presence.schema.js';
+import { setPresenceSchema } from '../../schemas/presence.schema.js';
 
 interface SessionParams extends ParamsDictionary {
   sessionId: string;
 }
 
-interface ContactParams extends SessionParams {
-  contactId: string;
+interface ChatParams extends SessionParams {
+  chatId: string;
 }
 
 const router = Router({ mergeParams: true });
@@ -51,21 +51,67 @@ router.post(
 );
 
 /**
- * @route POST /api/sessions/:sessionId/presence/subscribe
- * @desc Subscribe to presence updates for a contact
+ * @route GET /api/sessions/:sessionId/presence
+ * @desc Get all subscribed presence information
+ * @scope presence:read
+ */
+router.get(
+  '/',
+  requireScope('presence:read'),
+  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+    try {
+      await sessionService.getById(req.userId!, req.params.sessionId);
+
+      const presences = await whatsappService.getPresences(req.params.sessionId);
+
+      res.json({
+        success: true,
+        data: presences,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @route GET /api/sessions/:sessionId/presence/:chatId
+ * @desc Get presence status of a chat
+ * @scope presence:read
+ */
+router.get('/:chatId', requireScope('presence:read'), async (req: Request<ChatParams>, res: Response, next: NextFunction) => {
+  try {
+    await sessionService.getById(req.userId!, req.params.sessionId);
+
+    const presence = await whatsappService.getPresence(
+      req.params.sessionId,
+      req.params.chatId
+    );
+
+    res.json({
+      success: true,
+      data: presence,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route POST /api/sessions/:sessionId/presence/:chatId/subscribe
+ * @desc Subscribe to presence updates for a chat
  * @scope presence:read
  */
 router.post(
-  '/subscribe',
+  '/:chatId/subscribe',
   requireScope('presence:read'),
-  validateBody(subscribePresenceSchema),
-  async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
+  async (req: Request<ChatParams>, res: Response, next: NextFunction) => {
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
 
       await whatsappService.subscribePresence(
         req.params.sessionId,
-        req.body.contactId
+        req.params.chatId
       );
 
       res.json({
@@ -77,29 +123,6 @@ router.post(
     }
   }
 );
-
-/**
- * @route GET /api/sessions/:sessionId/presence/:contactId
- * @desc Get presence status of a contact
- * @scope presence:read
- */
-router.get('/:contactId', requireScope('presence:read'), async (req: Request<ContactParams>, res: Response, next: NextFunction) => {
-  try {
-    await sessionService.getById(req.userId!, req.params.sessionId);
-
-    const presence = await whatsappService.getPresence(
-      req.params.sessionId,
-      req.params.contactId
-    );
-
-    res.json({
-      success: true,
-      data: presence,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
 
 /**
  * @route POST /api/sessions/:sessionId/presence/typing

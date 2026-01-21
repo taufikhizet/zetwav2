@@ -32,7 +32,9 @@ export async function getProfile(session: WASession): Promise<{
   }
 
   try {
-    about = await session.client.getState() as unknown as string; // Placeholder
+    // Correct way to get "About" status for self
+    const contact = await session.client.getContactById(info.wid._serialized);
+    about = await contact.getAbout() || undefined;
   } catch {
     // May not be available
   }
@@ -59,16 +61,24 @@ export async function setProfileName(session: WASession, name: string): Promise<
 }
 
 /**
- * Set profile about/status text
+ * Set profile status (About)
  */
-export async function setProfileAbout(session: WASession, about: string): Promise<void> {
+export async function setProfileStatus(session: WASession, status: string): Promise<void> {
   if (session.status !== 'CONNECTED') {
     throw new SessionNotConnectedError(session.sessionId);
   }
 
-  await session.client.setStatus(about);
+  await session.client.setStatus(status);
   
-  logger.info({ sessionId: session.sessionId }, 'Profile about updated');
+  logger.info({ sessionId: session.sessionId }, 'Profile status updated');
+}
+
+/**
+ * Set profile about/status text
+ * @deprecated Use setProfileStatus instead
+ */
+export async function setProfileAbout(session: WASession, about: string): Promise<void> {
+  return setProfileStatus(session, about);
 }
 
 /**

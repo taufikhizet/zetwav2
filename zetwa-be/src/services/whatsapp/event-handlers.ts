@@ -9,6 +9,7 @@ import { setupConnectionHandlers } from './handlers/connection.js';
 import { setupMessageHandlers } from './handlers/messages.js';
 import { setupGroupHandlers } from './handlers/groups.js';
 import { setupCallHandlers } from './handlers/calls.js';
+import { setupPresenceHandlers } from './handlers/presence.js';
 
 /**
  * Get ACK name from numeric value
@@ -53,4 +54,7 @@ export function setupEventHandlers(
 
   // Setup Call Handlers (Incoming)
   setupCallHandlers(client, sessionId, events);
+
+  // Setup Presence Handlers (Tag events, Injection)
+  setupPresenceHandlers(client, sessions.get(sessionId)!);
 }

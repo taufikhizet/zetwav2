@@ -6,8 +6,13 @@ export const updateWaNameSchema = z.object({
 });
 
 // Update WhatsApp about/status
+export const updateWaStatusSchema = z.object({
+  status: z.string().max(139), // WhatsApp max about length, empty string clears it
+});
+
+// Update WhatsApp about/status (deprecated alias)
 export const updateWaAboutSchema = z.object({
-  about: z.string().max(139), // WhatsApp max about length, empty string clears it
+  about: z.string().max(139), 
 });
 
 // Update WhatsApp profile picture

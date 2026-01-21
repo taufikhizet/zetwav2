@@ -209,3 +209,48 @@ export async function getMessageInfo(
     played: info?.played?.map((p) => p.id._serialized) || [],
   };
 }
+
+/**
+ * Pin message
+ */
+export async function pinMessage(
+  session: WASession,
+  messageId: string,
+  duration: number
+): Promise<void> {
+  if (session.status !== 'CONNECTED') {
+    throw new SessionNotConnectedError(session.sessionId);
+  }
+
+  const message = await session.client.getMessageById(messageId);
+  
+  if (!message) {
+    throw new BadRequestError('Message not found');
+  }
+
+  await message.pin(duration);
+  
+  logger.info({ sessionId: session.sessionId, messageId, duration }, 'Message pinned');
+}
+
+/**
+ * Unpin message
+ */
+export async function unpinMessage(
+  session: WASession,
+  messageId: string
+): Promise<void> {
+  if (session.status !== 'CONNECTED') {
+    throw new SessionNotConnectedError(session.sessionId);
+  }
+
+  const message = await session.client.getMessageById(messageId);
+  
+  if (!message) {
+    throw new BadRequestError('Message not found');
+  }
+
+  await message.unpin();
+  
+  logger.info({ sessionId: session.sessionId, messageId }, 'Message unpinned');
+}

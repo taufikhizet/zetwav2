@@ -16,7 +16,7 @@ interface SystemCardProps {
   sessionId: string
 }
 
-export function SystemCard({ sessionId }: SystemCardProps) {
+export function TestPresencesCard({ sessionId }: SystemCardProps) {
   const [activeTab, setActiveTab] = useState('presence')
   const [presence, setPresence] = useState('available')
   const [subscribeTo, setSubscribeTo] = useState('')

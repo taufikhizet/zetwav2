@@ -6,7 +6,7 @@ import { authenticateAny, requireScope } from '../../middleware/auth.middleware.
 import { validateBody } from '../../middleware/validate.middleware.js';
 import {
   updateWaNameSchema,
-  updateWaAboutSchema,
+  updateWaStatusSchema,
   updateWaProfilePicSchema,
 } from '../../schemas/profile.schema.js';
 
@@ -27,8 +27,8 @@ router.use(authenticateAny);
 router.get('/', requireScope('profile:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
-
-    const profile = await whatsappService.getProfile(req.params.sessionId);
+    const session = whatsappService.store.getSafe(req.params.sessionId);
+    const profile = await whatsappService.profile.getProfile(session);
 
     res.json({
       success: true,
@@ -40,20 +40,21 @@ router.get('/', requireScope('profile:read'), async (req: Request<SessionParams>
 });
 
 /**
- * @route PATCH /api/sessions/:sessionId/profile/name
+ * @route PUT /api/sessions/:sessionId/profile/name
  * @desc Update WhatsApp display name
  * @scope profile:write
  */
-router.patch(
+router.put(
   '/name',
   requireScope('profile:write'),
   validateBody(updateWaNameSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
+      const session = whatsappService.store.getSafe(req.params.sessionId);
 
-      await whatsappService.setProfileName(
-        req.params.sessionId,
+      await whatsappService.profile.setProfileName(
+        session,
         req.body.name
       );
 
@@ -68,26 +69,27 @@ router.patch(
 );
 
 /**
- * @route PATCH /api/sessions/:sessionId/profile/about
+ * @route PUT /api/sessions/:sessionId/profile/status
  * @desc Update WhatsApp about/status
  * @scope profile:write
  */
-router.patch(
-  '/about',
+router.put(
+  '/status',
   requireScope('profile:write'),
-  validateBody(updateWaAboutSchema),
+  validateBody(updateWaStatusSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
+      const session = whatsappService.store.getSafe(req.params.sessionId);
 
-      await whatsappService.setProfileAbout(
-        req.params.sessionId,
-        req.body.about
+      await whatsappService.profile.setProfileStatus(
+        session,
+        req.body.status
       );
 
       res.json({
         success: true,
-        message: 'Profile about updated successfully',
+        message: 'Profile status updated successfully',
       });
     } catch (error) {
       next(error);
@@ -96,20 +98,21 @@ router.patch(
 );
 
 /**
- * @route PATCH /api/sessions/:sessionId/profile/picture
+ * @route PUT /api/sessions/:sessionId/profile/picture
  * @desc Update WhatsApp profile picture
  * @scope profile:write
  */
-router.patch(
+router.put(
   '/picture',
   requireScope('profile:write'),
   validateBody(updateWaProfilePicSchema),
   async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
     try {
       await sessionService.getById(req.userId!, req.params.sessionId);
+      const session = whatsappService.store.getSafe(req.params.sessionId);
 
-      await whatsappService.setProfilePicture(
-        req.params.sessionId,
+      await whatsappService.profile.setProfilePicture(
+        session,
         req.body.imageUrl,
         req.body.imageBase64
       );
@@ -132,8 +135,9 @@ router.patch(
 router.delete('/picture', requireScope('profile:write'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
+    const session = whatsappService.store.getSafe(req.params.sessionId);
 
-    await whatsappService.removeProfilePicture(req.params.sessionId);
+    await whatsappService.profile.removeProfilePicture(session);
 
     res.json({
       success: true,
@@ -152,8 +156,9 @@ router.delete('/picture', requireScope('profile:write'), async (req: Request<Ses
 router.get('/business', requireScope('profile:read'), async (req: Request<SessionParams>, res: Response, next: NextFunction) => {
   try {
     await sessionService.getById(req.userId!, req.params.sessionId);
+    const session = whatsappService.store.getSafe(req.params.sessionId);
 
-    const businessProfile = await whatsappService.getBusinessProfile(req.params.sessionId);
+    const businessProfile = await whatsappService.profile.getBusinessProfile(session);
 
     res.json({
       success: true,

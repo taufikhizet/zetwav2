@@ -8,6 +8,7 @@ import { SessionNotFoundError, SessionNotConnectedError } from '../../utils/erro
  */
 export interface ExtendedWASession extends WASession {
   config?: SessionConfig;
+  presenceStore?: Map<string, any>;
 }
 
 /**

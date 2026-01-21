@@ -4,11 +4,16 @@ import { PlaygroundSidebar } from './PlaygroundSidebar'
 import { MessagingCard } from './features/MessagingCard'
 import { GroupsCard } from './features/GroupsCard'
 import { TestGroupsCard } from './features/TestGroupsCard'
-import { SystemCard } from './features/SystemCard'
+import { TestPresencesCard } from './features/TestPresencesCard'
+import { PresencesCard } from './features/PresencesCard'
 import { ContactsCard } from './features/ContactsCard'
+import { TestChatsCard } from './features/TestChatsCard'
 import { ChatsCard } from './features/ChatsCard'
 import { LabelsCard } from './features/LabelsCard'
 import { StatusCard } from './features/StatusCard'
+import { ProfileCard } from './features/ProfileCard'
+import { ChannelsCard } from './features/ChannelsCard'
+import { CallsCard } from './features/CallsCard'
 import { type PlaygroundFeatureId } from './constants'
 import { WifiOff, Zap } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
@@ -62,12 +67,17 @@ export function SessionPlaygroundTab({ sessionId, isOnline }: SessionPlaygroundT
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             {activeFeature === 'messaging' && <MessagingCard sessionId={sessionId} />}
             {activeFeature === 'chats' && <ChatsCard sessionId={sessionId} />}
+            {activeFeature === 'test-chats' && <TestChatsCard sessionId={sessionId} />}
             {activeFeature === 'contacts' && <ContactsCard sessionId={sessionId} />}
             {activeFeature === 'groups' && <GroupsCard sessionId={sessionId} />}
             {activeFeature === 'test-groups' && <TestGroupsCard sessionId={sessionId} />}
             {activeFeature === 'labels' && <LabelsCard sessionId={sessionId} />}
             {activeFeature === 'status' && <StatusCard sessionId={sessionId} />}
-            {activeFeature === 'system' && <SystemCard sessionId={sessionId} />}
+            {activeFeature === 'profile' && <ProfileCard sessionId={sessionId} />}
+            {activeFeature === 'channels' && <ChannelsCard sessionId={sessionId} />}
+            {activeFeature === 'calls' && <CallsCard sessionId={sessionId} />}
+            {activeFeature === 'presences' && <PresencesCard sessionId={sessionId} />}
+            {activeFeature === 'test-presences' && <TestPresencesCard sessionId={sessionId} />}
           </div>
         </div>
       </div>

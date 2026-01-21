@@ -158,6 +158,59 @@ export const sessionApi = {
     await api.post(`/sessions/${sessionId}/chats/${chatId}/mark-read`, { read })
   },
 
+  // New Chat Methods (WAHA compatible)
+  getChatsOverview: async (sessionId: string, params: { limit?: number; offset?: number } = {}): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(`/sessions/${sessionId}/chats/overview`, { params })
+    return response.data.data
+  },
+
+  getChatPicture: async (sessionId: string, chatId: string): Promise<{ url: string | null }> => {
+    const response = await api.get(`/sessions/${sessionId}/chats/${chatId}/picture`)
+    return response.data
+  },
+
+  getChatMessagesSpecific: async (sessionId: string, chatId: string, params: { limit?: number; offset?: number; sort?: string } = {}): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(`/sessions/${sessionId}/chats/${chatId}/messages`, { params })
+    return response.data.data
+  },
+
+  clearChatMessages: async (sessionId: string, chatId: string): Promise<void> => {
+    await api.delete(`/sessions/${sessionId}/chats/${chatId}/messages`)
+  },
+
+  readChatMessages: async (sessionId: string, chatId: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/chats/${chatId}/messages/read`)
+  },
+  
+  unreadChat: async (sessionId: string, chatId: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/chats/${chatId}/unread`)
+  },
+
+  getChatMessage: async (sessionId: string, chatId: string, messageId: string): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/chats/${chatId}/messages/${messageId}`)
+    return response.data.data
+  },
+
+  deleteChatMessage: async (sessionId: string, chatId: string, messageId: string): Promise<void> => {
+    await api.delete(`/sessions/${sessionId}/chats/${chatId}/messages/${messageId}`)
+  },
+
+  editChatMessage: async (sessionId: string, chatId: string, messageId: string, content: string): Promise<void> => {
+    await api.put(`/sessions/${sessionId}/chats/${chatId}/messages/${messageId}`, { text: content })
+  },
+
+  pinChatMessage: async (sessionId: string, chatId: string, messageId: string, duration?: number): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/chats/${chatId}/messages/${messageId}/pin`, { duration })
+  },
+
+  unpinChatMessage: async (sessionId: string, chatId: string, messageId: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/chats/${chatId}/messages/${messageId}/unpin`)
+  },
+
+  unarchiveChat: async (sessionId: string, chatId: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/chats/${chatId}/unarchive`)
+  },
+
   // Contacts
   getContacts: async (sessionId: string): Promise<any[]> => {
     // Current FE uses live param to differentiate endpoints? 
@@ -218,9 +271,31 @@ export const sessionApi = {
     return response.data.data
   },
 
-  getMe: async (sessionId: string): Promise<any> => {
-    const response = await api.get(`/sessions/${sessionId}/me`)
+  // Profile
+  getProfile: async (sessionId: string): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/profile`)
     return response.data.data
+  },
+
+  setProfileName: async (sessionId: string, name: string): Promise<void> => {
+    await api.put(`/sessions/${sessionId}/profile/name`, { name })
+  },
+
+  setProfileStatus: async (sessionId: string, status: string): Promise<void> => {
+    await api.put(`/sessions/${sessionId}/profile/status`, { status })
+  },
+
+  setProfilePicture: async (sessionId: string, data: { imageUrl?: string; imageBase64?: string }): Promise<void> => {
+    await api.put(`/sessions/${sessionId}/profile/picture`, data)
+  },
+
+  deleteProfilePicture: async (sessionId: string): Promise<void> => {
+    await api.delete(`/sessions/${sessionId}/profile/picture`)
+  },
+
+  getMe: async (sessionId: string): Promise<any> => {
+    // Legacy support, maps to profile
+    return sessionApi.getProfile(sessionId)
   },
 
   // Groups
@@ -311,7 +386,7 @@ export const sessionApi = {
       return response.data
   },
 
-  getChatPicture: async (sessionId: string, groupId: string): Promise<{ url: string }> => {
+  getGroupPicture: async (sessionId: string, groupId: string): Promise<{ url: string }> => {
       // Missing in BE specific to groups, but usually /contacts/:id/profile-picture works for groups too if treated as contacts
       // Or trying /groups/:id/picture if implemented
       try {
@@ -376,14 +451,23 @@ export const sessionApi = {
     await api.post(`/sessions/${sessionId}/presence`, data)
   },
 
-  subscribePresence: async (sessionId: string, contactId: string): Promise<any> => {
-    const response = await api.post(`/sessions/${sessionId}/presence/subscribe`, { contactId })
-    return response.data
+  getPresences: async (sessionId: string): Promise<any[]> => {
+    const response = await api.get(`/sessions/${sessionId}/presence`)
+    return response.data.data
   },
 
-  getPresence: async (sessionId: string, contactId: string): Promise<any> => {
-    const response = await api.get(`/sessions/${sessionId}/presence/${contactId}`)
+  getPresence: async (sessionId: string, chatId: string): Promise<any> => {
+    const response = await api.get(`/sessions/${sessionId}/presence/${chatId}`)
     return response.data.data
+  },
+
+  subscribePresence: async (sessionId: string, chatId: string): Promise<any> => {
+    // WAHA uses POST /presence/{chatId}/subscribe
+    // Zetwa originally used POST /presence/subscribe body={contactId}
+    // Updating to match WAHA for the new feature, but keeping backward compat if possible?
+    // Actually, I'll update to match WAHA's route structure in BE, so FE should match.
+    const response = await api.post(`/sessions/${sessionId}/presence/${chatId}/subscribe`)
+    return response.data
   },
 
   // Extended Messages
@@ -480,12 +564,6 @@ export const sessionApi = {
     return response.data
   },
 
-  // Profile
-  getProfile: async (sessionId: string): Promise<any> => {
-    const response = await api.get<ApiResponse<any>>(`/sessions/${sessionId}/profile`)
-    return response.data.data
-  },
-
   requestPairingCode: async (sessionId: string, data: { phoneNumber: string }): Promise<{ code: string }> => {
     const response = await api.post<ApiResponse<{ code: string }>>(`/sessions/${sessionId}/pairing-code`, data)
     return response.data.data
@@ -530,5 +608,76 @@ export const sessionApi = {
   testWebhook: async (sessionId: string, webhookId: string): Promise<{ success: boolean; statusCode?: number; duration: number; error?: string }> => {
     const response = await api.post<ApiResponse<{ success: boolean; statusCode?: number; duration: number; error?: string }>>(`/sessions/${sessionId}/webhooks/${webhookId}/test`)
     return response.data.data
+  },
+
+  // Channels
+  listChannels: async (sessionId: string, query?: { role?: string }): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(`/sessions/${sessionId}/channels`, { params: query })
+    return response.data.data
+  },
+
+  createChannel: async (sessionId: string, data: { name: string; description?: string; picture?: string }): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>(`/sessions/${sessionId}/channels`, data)
+    return response.data.data
+  },
+
+  deleteChannel: async (sessionId: string, id: string): Promise<void> => {
+    await api.delete(`/sessions/${sessionId}/channels/${id}`)
+  },
+
+  getChannel: async (sessionId: string, id: string): Promise<any> => {
+    const response = await api.get<ApiResponse<any>>(`/sessions/${sessionId}/channels/${id}`)
+    return response.data.data
+  },
+
+  previewChannelMessages: async (sessionId: string, id: string, query?: { downloadMedia?: boolean; limit?: number }): Promise<any[]> => {
+    const response = await api.get(`/sessions/${sessionId}/channels/${id}/messages/preview`, { params: query })
+    return response.data
+  },
+
+  followChannel: async (sessionId: string, id: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/channels/${id}/follow`)
+  },
+
+  unfollowChannel: async (sessionId: string, id: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/channels/${id}/unfollow`)
+  },
+
+  muteChannel: async (sessionId: string, id: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/channels/${id}/mute`)
+  },
+
+  unmuteChannel: async (sessionId: string, id: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/channels/${id}/unmute`)
+  },
+
+  // Calls
+  rejectCall: async (sessionId: string, callId: string): Promise<void> => {
+    await api.post(`/sessions/${sessionId}/calls/reject`, { callId })
+  },
+
+  searchChannelsByView: async (sessionId: string, data: { view?: string; countries?: string[]; categories?: string[]; limit?: number; startCursor?: string }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/channels/search/by-view`, data)
+    return response.data
+  },
+
+  searchChannelsByText: async (sessionId: string, data: { text: string; categories?: string[]; limit?: number; startCursor?: string }): Promise<any> => {
+    const response = await api.post(`/sessions/${sessionId}/channels/search/by-text`, data)
+    return response.data
+  },
+
+  getChannelSearchViews: async (sessionId: string): Promise<any[]> => {
+    const response = await api.get(`/sessions/${sessionId}/channels/search/views`)
+    return response.data
+  },
+
+  getChannelSearchCountries: async (sessionId: string): Promise<any[]> => {
+    const response = await api.get(`/sessions/${sessionId}/channels/search/countries`)
+    return response.data
+  },
+
+  getChannelSearchCategories: async (sessionId: string): Promise<any[]> => {
+    const response = await api.get(`/sessions/${sessionId}/channels/search/categories`)
+    return response.data
   }
 }

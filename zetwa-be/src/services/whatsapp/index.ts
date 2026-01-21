@@ -329,6 +329,59 @@ export class WhatsAppService {
     return channels.getChannel(this.getSessionSafe(sessionId), id);
   }
 
+  async followChannel(sessionId: string, id: string): Promise<void> {
+    return channels.followChannel(this.getSessionSafe(sessionId), id);
+  }
+
+  async unfollowChannel(sessionId: string, id: string): Promise<void> {
+    return channels.unfollowChannel(this.getSessionSafe(sessionId), id);
+  }
+
+  async muteChannel(sessionId: string, id: string): Promise<void> {
+    return channels.muteChannel(this.getSessionSafe(sessionId), id);
+  }
+
+  async unmuteChannel(sessionId: string, id: string): Promise<void> {
+    return channels.unmuteChannel(this.getSessionSafe(sessionId), id);
+  }
+
+  async getChannelMessagesPreview(sessionId: string, id: string, limit?: number): Promise<any[]> {
+    return channels.getChannelMessagesPreview(this.getSessionSafe(sessionId), id, limit);
+  }
+
+  async searchChannelsByView(
+    sessionId: string, 
+    view?: string, 
+    countries?: string[], 
+    categories?: string[],
+    limit?: number,
+    startCursor?: string
+  ): Promise<any> {
+    return channels.searchChannelsByView(this.getSessionSafe(sessionId), view, countries, categories, limit, startCursor);
+  }
+
+  async searchChannelsByText(
+    sessionId: string, 
+    text: string, 
+    categories?: string[],
+    limit?: number,
+    startCursor?: string
+  ): Promise<any> {
+    return channels.searchChannelsByText(this.getSessionSafe(sessionId), text, categories, limit, startCursor);
+  }
+
+  getChannelSearchViews() {
+    return channels.getChannelSearchViews();
+  }
+
+  getChannelSearchCategories() {
+    return channels.getChannelSearchCategories();
+  }
+
+  getChannelSearchCountries() {
+    return channels.getChannelSearchCountries();
+  }
+
   // ================================
   // EVENTS (CALENDAR)
   // ================================
@@ -457,16 +510,28 @@ export class WhatsAppService {
     return presence.subscribePresence(this.getSessionSafe(sessionId), contactId);
   }
 
+  async getPresences(sessionId: string) {
+    return presence.getPresences(this.getSessionSafe(sessionId));
+  }
+
   async getPresence(sessionId: string, contactId: string) {
     return presence.getPresence(this.getSessionSafe(sessionId), contactId);
   }
 
   async sendTyping(sessionId: string, chatId: string, typing: boolean) {
-    return presence.sendTyping(this.getSessionSafe(sessionId), chatId, typing);
+    if (typing) {
+      return presence.setPresence(this.getSessionSafe(sessionId), 'composing', chatId);
+    } else {
+      return presence.setPresence(this.getSessionSafe(sessionId), 'paused', chatId);
+    }
   }
 
   async sendRecording(sessionId: string, chatId: string, recording: boolean) {
-    return presence.sendRecording(this.getSessionSafe(sessionId), chatId, recording);
+    if (recording) {
+      return presence.setPresence(this.getSessionSafe(sessionId), 'recording', chatId);
+    } else {
+      return presence.setPresence(this.getSessionSafe(sessionId), 'paused', chatId);
+    }
   }
 
   async markSeen(sessionId: string, chatId: string) {

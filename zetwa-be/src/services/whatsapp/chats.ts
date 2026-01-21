@@ -176,3 +176,76 @@ export async function clearChat(session: WASession, chatId: string): Promise<boo
   logger.info({ sessionId: session.sessionId, chatId: formattedChatId }, 'Chat messages cleared');
   return true;
 }
+
+/**
+ * Get chats overview
+ */
+export async function getChatsOverview(session: WASession, limit: number = 20, offset: number = 0) {
+  if (session.status !== 'CONNECTED') {
+    throw new SessionNotConnectedError(session.sessionId);
+  }
+
+  const chats = await session.client.getChats();
+  chats.sort((a, b) => b.timestamp - a.timestamp);
+  const sliced = chats.slice(offset, offset + limit);
+
+  return Promise.all(sliced.map(async (chat) => {
+    let picture = null;
+    try {
+       picture = await session.client.getProfilePicUrl(chat.id._serialized);
+    } catch (e) {}
+
+    return {
+      id: chat.id._serialized,
+      name: chat.name,
+      picture: { url: picture },
+      lastMessage: chat.lastMessage ? {
+        body: chat.lastMessage.body,
+        timestamp: chat.lastMessage.timestamp,
+        type: chat.lastMessage.type,
+        from: chat.lastMessage.from
+      } : null,
+      unreadCount: chat.unreadCount,
+      timestamp: chat.timestamp,
+      pinned: chat.pinned,
+      muted: chat.isMuted,
+      muteExpiration: chat.muteExpiration
+    };
+  }));
+}
+
+/**
+ * Get message by ID
+ */
+export async function getChatMessage(session: WASession, chatId: string, messageId: string) {
+    if (session.status !== 'CONNECTED') {
+        throw new SessionNotConnectedError(session.sessionId);
+    }
+    const msg = await session.client.getMessageById(messageId);
+    if (!msg) return null;
+    return {
+        id: msg.id._serialized,
+        body: msg.body,
+        timestamp: msg.timestamp,
+        from: msg.from,
+        to: msg.to,
+        type: msg.type,
+        hasMedia: msg.hasMedia,
+        author: msg.author,
+        deviceType: msg.deviceType,
+        isForwarded: msg.isForwarded,
+        forwardingScore: msg.forwardingScore,
+        isStatus: msg.isStatus,
+        isStarred: msg.isStarred,
+        broadcast: msg.broadcast,
+        fromMe: msg.fromMe,
+        hasQuotedMsg: msg.hasQuotedMsg,
+        location: msg.location,
+        vCards: msg.vCards,
+        mentionIds: msg.mentionedIds,
+        orderId: msg.orderId,
+        isGif: msg.isGif,
+        isEphemeral: msg.isEphemeral,
+        links: msg.links
+    };
+}
